@@ -19,7 +19,23 @@ SECRET_KEY = config(
 
 DEBUG = config("DEBUG", default=True, cast=bool)
 
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="*,127.0.0.1,localhost", cast=Csv())
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default="*,127.0.0.1,localhost,192.168.100.10,eems",
+    cast=Csv(),
+)
+
+# This app is reverse-proxied by nginx at /facturation/ (see server nginx
+# config) alongside sibling apps (/pedagogy/, and the main site at /).
+# nginx forwards a SCRIPT_NAME header which ScriptNameFromHeaderMiddleware
+# (added below) applies to the WSGI environ, and Django needs to trust the
+# proxy's forwarded host/proto for CSRF checks to pass on POST requests.
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="http://192.168.100.10,http://eems",
+    cast=Csv(),
+)
+USE_X_FORWARDED_HOST = True
 
 
 # ── Application definition ────────────────────────────────────────────────── #
@@ -59,6 +75,7 @@ if DEBUG:
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "core.middleware.ScriptNameFromHeaderMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -151,7 +168,12 @@ CURRENCY_SYMBOL = "DA"
 
 # ── Static files ──────────────────────────────────────────────────────────── #
 
-STATIC_URL = "/static/"
+# Prefixed with /facturation because nginx reverse-proxies this app at that
+# subpath and serves these paths directly via `alias` (see nginx config) -
+# Django needs to generate links matching that, even though it never
+# actually serves these files itself in production (whitenoise/runserver
+# only handle them in local dev where there's no /facturation/ prefix).
+STATIC_URL = config("STATIC_URL", default="/facturation/static/")
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
@@ -162,7 +184,7 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # ── Media files ───────────────────────────────────────────────────────────── #
 
-MEDIA_URL = "/media/"
+MEDIA_URL = config("MEDIA_URL", default="/facturation/media/")
 
 MEDIA_ROOT = BASE_DIR / "media"
 
