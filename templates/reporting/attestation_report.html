@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Attestations{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:sessions_report' %}" style="color:var(--text-muted);text-decoration:none;">Formations</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Attestations{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'reporting:export_attestations_csv' %}?date_from={{ date_from }}&date_to={{ date_to }}" class="topbar-btn primary"><i class="bi bi-download"></i> Exporter CSV</a>
+{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Rapport attestations</h1><p>Attestations émises, expirant et expirées</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-patch-check-fill"></i></div>
+      <div><div class="stat-value">{{ total }}</div><div class="stat-label">Émises (période)</div></div>
+    </div></div></div>
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-clock-fill"></i></div>
+      <div><div class="stat-value">{{ expiring_soon.count }}</div><div class="stat-label">Expirent dans 90j</div></div>
+    </div></div></div>
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon red" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-x-circle-fill"></i></div>
+      <div><div class="stat-value">{{ expired_count }}</div><div class="stat-label">Expirées</div></div>
+    </div></div></div>
+  </div>
+  {% if expiring_soon %}
+  <div class="alert alert-warning mb-4"><i class="bi bi-exclamation-triangle-fill"></i><div><strong>{{ expiring_soon.count }} attestation(s)</strong> expirent dans les 90 prochains jours.</div></div>
+  {% endif %}
+  <div class="isi-card fade-up-delay-1">
+    <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-patch-check-fill"></i></div><h3>Attestations émises</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>Référence</th><th>Formation</th><th>Participant</th><th>Employeur</th><th>Émise le</th><th>Valide jusqu'au</th></tr></thead>
+        <tbody>
+          {% for a in attestations %}
+          <tr>
+            <td style="font-family:monospace;font-size:13px;background:#f8fafc;padding:4px 8px;border-radius:4px;display:inline-block;">{{ a.reference }}</td>
+            <td style="font-weight:600;font-size:13px;">{{ a.participant.session.formation.title|truncatechars:28 }}</td>
+            <td>{{ a.participant.full_name }}</td>
+            <td style="color:#64748b;font-size:13px;">{{ a.participant.employer|default:"—"|truncatechars:20 }}</td>
+            <td style="white-space:nowrap;">{{ a.issue_date|date:"d/m/Y" }}</td>
+            <td style="white-space:nowrap;">
+              {% if a.is_expired %}<span class="isi-badge red">Expirée — {{ a.valid_until|date:"d/m/Y" }}</span>
+              {% else %}<span style="font-size:13px;">{{ a.valid_until|date:"d/m/Y" }}</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6"><div class="text-center" style="padding:40px;"><div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-patch-check"></i></div><p style="color:#64748b;margin:0;">Aucune attestation pour cette période.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Performance catalogue{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:sessions_report' %}" style="color:var(--text-muted);text-decoration:none;">Formations</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Performance catalogue{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Performance du catalogue</h1><p>Analyse par formation : sessions, participants, revenus</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="isi-card">
+    <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-collection-fill"></i></div><h3>Classement par revenu</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>#</th><th>Formation</th><th style="text-align:center;">Sessions</th><th style="text-align:center;">Participants</th><th style="text-align:right;">Revenu</th><th style="text-align:right;">Remplissage moy.</th></tr></thead>
+        <tbody>
+          {% for r in data %}
+          <tr>
+            <td style="color:#94a3b8;font-weight:700;font-family:var(--font-head);">{{ forloop.counter }}</td>
+            <td><a href="{% url 'formations:formation_detail' r.formation.pk %}" style="font-weight:600;color:var(--text-primary);text-decoration:none;">{{ r.formation.title|truncatechars:35 }}</a></td>
+            <td style="text-align:center;font-weight:600;">{{ r.session_count }}</td>
+            <td style="text-align:center;">{{ r.total_participants }}</td>
+            <td style="text-align:right;font-weight:700;font-family:var(--font-head);font-size:16px;">{{ r.revenue|floatformat:0 }} DA</td>
+            <td style="text-align:right;">
+              <span class="isi-badge {% if r.avg_fill >= 80 %}green{% elif r.avg_fill >= 50 %}amber{% else %}red{% endif %}">{{ r.avg_fill }}%</span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6"><div class="text-center" style="padding:40px;"><p style="color:#64748b;margin:0;">Aucune formation trouvée.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

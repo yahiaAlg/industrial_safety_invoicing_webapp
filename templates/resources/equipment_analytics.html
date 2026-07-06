@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block title %}Analytiques équipements{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:equipment_list' %}" style="color:var(--text-muted);text-decoration:none;">Équipements</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Analytiques{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'resources:utilization_report' %}" class="topbar-btn">
+  <i class="bi bi-bar-chart-fill"></i> Taux d'utilisation
+</a>
+<a href="{% url 'resources:idle_equipment_report' %}" class="topbar-btn">
+  <i class="bi bi-hourglass-split"></i> Équipements inactifs
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Analytiques Équipements</h1>
+      <p>Vue d'ensemble de l'utilisation et des coûts du parc matériel</p>
+    </div>
+  </div>
+
+  <!-- ── Navigation tabs ───────────────────────────────────────── -->
+  <div class="isi-card mb-4" style="padding:0;overflow:hidden;">
+    <div style="display:flex;border-bottom:1px solid var(--card-border);">
+      <a href="{% url 'resources:equipment_analytics' %}"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;
+                display:flex;align-items:center;gap:8px;
+                border-bottom:2px solid var(--accent);
+                color:var(--accent);">
+        <i class="bi bi-grid-1x2-fill"></i> Vue d'ensemble
+      </a>
+      <a href="{% url 'resources:utilization_report' %}"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;
+                display:flex;align-items:center;gap:8px;
+                border-bottom:2px solid transparent;
+                color:var(--text-muted);">
+        <i class="bi bi-bar-chart-fill"></i> Taux d'utilisation
+      </a>
+      <a href="{% url 'resources:idle_equipment_report' %}"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;
+                display:flex;align-items:center;gap:8px;
+                border-bottom:2px solid transparent;
+                color:var(--text-muted);">
+        <i class="bi bi-hourglass-split"></i> Inactifs
+      </a>
+    </div>
+  </div>
+
+  <!-- ── KPI row ────────────────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-tools"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ stats.total_count|default:"0" }}</div>
+            <div class="stat-label">Total équipements</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-currency-exchange"></i>
+          </div>
+          <div>
+            <div class="stat-value" style="font-size:18px;">{{ stats.total_value|floatformat:0|default:"0" }}</div>
+            <div class="stat-label">Valeur totale (DA)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon red" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-wrench"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ stats.maintenance_due_count|default:"0" }}</div>
+            <div class="stat-label">Maintenance due</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon blue" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-hourglass-split"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ stats.idle_count|default:"0" }}</div>
+            <div class="stat-label">Inactifs +90j</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ── Statut distribution chart ─────────────────────────── -->
+    <div class="col-lg-6">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-pie-chart-fill"></i></div>
+          <h3>Répartition par statut</h3>
+        </div>
+        <div class="isi-card-body" style="padding:24px;">
+          <canvas id="statusChart" style="max-height:260px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Condition distribution chart ──────────────────────── -->
+    <div class="col-lg-6">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-bar-chart-fill"></i></div>
+          <h3>Répartition par état</h3>
+        </div>
+        <div class="isi-card-body" style="padding:24px;">
+          <canvas id="conditionChart" style="max-height:260px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Top utilisés ───────────────────────────────────────── -->
+    <div class="col-lg-6">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon green"><i class="bi bi-trophy-fill"></i></div>
+          <h3>Équipements les plus utilisés</h3>
+        </div>
+        {% if most_used %}
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Équipement</th>
+                <th>Utilisations</th>
+                <th>Heures totales</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for eq in most_used %}
+              <tr>
+                <td>
+                  <span style="font-family:var(--font-head);font-size:16px;font-weight:700;
+                                color:{% if forloop.counter == 1 %}#d97706{% elif forloop.counter == 2 %}#94a3b8{% elif forloop.counter == 3 %}#b45309{% else %}var(--text-muted){% endif %};">
+                    {{ forloop.counter }}
+                  </span>
+                </td>
+                <td>
+                  <a href="{% url 'resources:equipment_detail' eq.pk %}"
+                     style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                    {{ eq.name }}
+                  </a>
+                  <div style="font-size:12px;color:var(--text-muted);">{{ eq.category }}</div>
+                </td>
+                <td><span style="font-weight:600;">{{ eq.usage_count }}</span></td>
+                <td><span style="color:var(--text-muted);">{{ eq.total_usage_hours }}h</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="isi-card-body text-center" style="padding:36px 24px;">
+          <div style="font-size:36px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-bar-chart"></i></div>
+          <p style="color:var(--text-muted);font-size:14px;margin:0;">Aucune donnée d'utilisation disponible.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ── Meilleur ROI ───────────────────────────────────────── -->
+    <div class="col-lg-6">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon purple"><i class="bi bi-graph-down-arrow"></i></div>
+          <h3>Meilleur coût / utilisation</h3>
+        </div>
+        {% if best_roi %}
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead>
+              <tr>
+                <th>Équipement</th>
+                <th>Utilisations</th>
+                <th>Coût total</th>
+                <th>Coût / usage</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for eq in best_roi %}
+              <tr>
+                <td>
+                  <a href="{% url 'resources:equipment_detail' eq.pk %}"
+                     style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                    {{ eq.name }}
+                  </a>
+                </td>
+                <td><span style="color:var(--text-muted);">{{ eq.usage_count }}</span></td>
+                <td><span style="color:var(--text-muted);">{{ eq.total_cost_of_ownership|floatformat:0 }} DA</span></td>
+                <td>
+                  <span style="font-weight:600;color:var(--success);">{{ eq.cost_per_use|floatformat:0 }}
+                    <span style="font-size:11px;font-weight:400;color:var(--text-muted);">DA</span>
+                  </span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="isi-card-body text-center" style="padding:36px 24px;">
+          <div style="font-size:36px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-graph-up"></i></div>
+          <p style="color:var(--text-muted);font-size:14px;margin:0;">Aucune donnée disponible.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ── Alertes maintenance ─────────────────────────────────── -->
+    {% if maintenance_due %}
+    <div class="col-12">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div>
+          <h3>Alertes — Maintenance en retard ou due</h3>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead>
+              <tr>
+                <th>Équipement</th>
+                <th>Catégorie</th>
+                <th>Dernière maintenance</th>
+                <th>Prochaine due</th>
+                <th style="text-align:right;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for eq in maintenance_due %}
+              <tr>
+                <td>
+                  <a href="{% url 'resources:equipment_detail' eq.pk %}"
+                     style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                    {{ eq.name }}
+                  </a>
+                </td>
+                <td><span style="color:var(--text-muted);font-size:13px;">{{ eq.category }}</span></td>
+                <td>
+                  <span style="color:var(--text-muted);font-size:13px;">
+                    {% with last_log=eq.maintenance_logs.first %}
+                      {% if last_log %}{{ last_log.date|date:"d/m/Y" }}{% else %}Jamais{% endif %}
+                    {% endwith %}
+                  </span>
+                </td>
+                <td>
+                  <span style="color:var(--danger);font-weight:600;font-size:13px;">
+                    {{ eq.next_maintenance_due|date:"d/m/Y" }}
+                  </span>
+                </td>
+                <td>
+                  <div style="display:flex;justify-content:flex-end;">
+                    <a href="{% url 'resources:maintenance_add' eq.pk %}" class="btn btn-amber btn-sm">
+                      <i class="bi bi-wrench"></i> Planifier
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- /row -->
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const chartDefaults = {
+    font: { family: "'Barlow', sans-serif", size: 12 },
+    color: '#64748b',
+  };
+  Chart.defaults.font = chartDefaults.font;
+  Chart.defaults.color = chartDefaults.color;
+
+  // Status donut
+  const statusCtx = document.getElementById('statusChart');
+  if (statusCtx) {
+    new Chart(statusCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Actif', 'En maintenance', 'Réservé', 'À vendre'],
+        datasets: [{
+          data: [
+            {{ stats.count_active|default:0 }},
+            {{ stats.count_maintenance|default:0 }},
+            {{ stats.count_reserved|default:0 }},
+            {{ stats.count_for_sale|default:0 }}
+          ],
+          backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#94a3b8'],
+          borderWidth: 0,
+          hoverOffset: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        cutout: '62%',
+        plugins: {
+          legend: { position: 'right', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } }
+        }
+      }
+    });
+  }
+
+  // Condition bar chart
+  const conditionCtx = document.getElementById('conditionChart');
+  if (conditionCtx) {
+    new Chart(conditionCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Bon état', 'À réviser', 'Hors service'],
+        datasets: [{
+          label: 'Équipements',
+          data: [
+            {{ stats.count_good|default:0 }},
+            {{ stats.count_needs_review|default:0 }},
+            {{ stats.count_out_of_service|default:0 }}
+          ],
+          backgroundColor: ['rgba(16,185,129,.15)', 'rgba(245,158,11,.15)', 'rgba(239,68,68,.15)'],
+          borderColor: ['#10b981', '#f59e0b', '#ef4444'],
+          borderWidth: 2,
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(0,0,0,.05)' },
+            ticks: { precision: 0 }
+          },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+</script>
+{% endblock %}

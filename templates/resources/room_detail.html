@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}{{ room.name }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:room_list' %}" style="color:var(--text-muted);text-decoration:none;">Salles</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ room.name }}{% endblock %}
+
+{% block topbar_actions %}
+{% if request.user.profile.is_admin %}
+<a href="{% url 'resources:room_edit' room.pk %}" class="topbar-btn primary">
+  <i class="bi bi-pencil-fill"></i> Modifier
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ room.name }}</h1>
+      <p>Salle de formation — capacité {{ room.capacity }} places</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ── Left column ────────────────────────────────────────── -->
+    <div class="col-lg-4">
+
+      <!-- Identity card -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-body" style="padding:28px 24px;text-align:center;">
+          <div style="width:72px;height:72px;border-radius:18px;
+                      background:rgba(245,158,11,.12);color:#d97706;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:32px;margin:0 auto 16px;">
+            <i class="bi bi-door-open-fill"></i>
+          </div>
+          <h2 style="font-family:var(--font-head);font-size:20px;font-weight:700;
+                     margin:0 0 8px;color:var(--text-primary);">
+            {{ room.name }}
+          </h2>
+          <div style="margin-bottom:12px;">
+            {% if room.is_active %}
+              <span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Active</span>
+            {% else %}
+              <span class="isi-badge gray"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Inactive</span>
+            {% endif %}
+          </div>
+          {% if room.location %}
+          <div style="font-size:13px;color:var(--text-muted);">
+            <i class="bi bi-geo-alt-fill" style="color:var(--accent);"></i>
+            {{ room.location }}
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="section-divider" style="margin:0;"></div>
+
+        <!-- Stats -->
+        <div class="isi-card-body" style="padding:16px 24px;">
+          <div class="row g-3 text-center">
+            <div class="col-6">
+              <div class="stat-value">{{ room.capacity }}</div>
+              <div class="stat-label">Capacité</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-value">{{ session_count|default:"0" }}</div>
+              <div class="stat-label">Sessions</div>
+            </div>
+          </div>
+        </div>
+
+        {% if request.user.profile.is_admin %}
+        <div class="section-divider" style="margin:0;"></div>
+        <div class="isi-card-body" style="padding:16px 24px;">
+          <div class="d-flex flex-column gap-2">
+            <a href="{% url 'resources:room_edit' room.pk %}" class="btn btn-amber">
+              <i class="bi bi-pencil-fill"></i> Modifier
+            </a>
+            <form method="post" action="{% url 'resources:room_deactivate' room.pk %}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="btn {% if room.is_active %}btn-danger-soft{% else %}btn-ghost{% endif %} w-100"
+                      onclick="return confirm('{% if room.is_active %}Désactiver cette salle ?{% else %}Réactiver cette salle ?{% endif %}')">
+                <i class="bi bi-{% if room.is_active %}slash-circle-fill{% else %}check-circle-fill{% endif %}"></i>
+                {% if room.is_active %}Désactiver{% else %}Réactiver{% endif %}
+              </button>
+            </form>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- System info -->
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-info-circle-fill"></i></div>
+          <h3>Informations système</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="stat-label mb-1">Créé le</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ room.created_at|date:"d/m/Y à H:i" }}</div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Modifié le</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ room.updated_at|date:"d/m/Y à H:i" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /col-lg-4 -->
+
+    <!-- ── Right column ──────────────────────────────────────── -->
+    <div class="col-lg-8">
+
+      <!-- Description -->
+      {% if room.description %}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-card-text"></i></div>
+          <h3>Description</h3>
+        </div>
+        <div class="isi-card-body">
+          <p style="font-size:14px;color:var(--text-primary);line-height:1.7;margin:0;white-space:pre-wrap;">{{ room.description }}</p>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Sessions planifiées -->
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-calendar3-fill"></i></div>
+          <h3>Sessions planifiées dans cette salle</h3>
+        </div>
+        {% if sessions %}
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead>
+              <tr>
+                <th>Formation</th>
+                <th>Date début</th>
+                <th>Date fin</th>
+                <th>Formateur</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for session in sessions %}
+              <tr>
+                <td>
+                  <a href="{% url 'formations:session_detail' session.pk %}"
+                     style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                    {{ session.formation.title }}
+                  </a>
+                </td>
+                <td><span style="color:var(--text-muted);font-size:13px;">{{ session.date_start|date:"d/m/Y" }}</span></td>
+                <td><span style="color:var(--text-muted);font-size:13px;">{{ session.date_end|date:"d/m/Y" }}</span></td>
+                <td>
+                  <span style="color:var(--text-muted);font-size:13px;">
+                    {% if session.trainer %}{{ session.trainer.first_name }} {{ session.trainer.last_name }}{% else %}—{% endif %}
+                  </span>
+                </td>
+                <td>
+                  {% if session.status == 'planned' %}
+                    <span class="isi-badge blue"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Planifiée</span>
+                  {% elif session.status == 'in_progress' %}
+                    <span class="isi-badge amber"><i class="bi bi-circle-fill" style="font-size:7px;"></i> En cours</span>
+                  {% elif session.status == 'completed' %}
+                    <span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Terminée</span>
+                  {% else %}
+                    <span class="isi-badge gray"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Annulée</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="isi-card-body text-center" style="padding:36px 24px;">
+          <div style="font-size:36px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-calendar3"></i></div>
+          <p style="color:var(--text-muted);font-size:14px;margin:0;">Aucune session planifiée dans cette salle.</p>
+        </div>
+        {% endif %}
+      </div>
+
+    </div><!-- /col-lg-8 -->
+  </div>
+</div>
+{% endblock %}

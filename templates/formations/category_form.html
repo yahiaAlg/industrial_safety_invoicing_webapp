@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'formations:formation_list' %}" style="color:var(--text-muted);text-decoration:none;">Catalogue</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'formations:category_list' %}" style="color:var(--text-muted);text-decoration:none;">Catégories</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ action }}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ action }}</h1>
+      <p>{% if category %}Modifier la catégorie{% else %}Créer une nouvelle catégorie de formations{% endif %}</p>
+    </div>
+    <a href="{% url 'formations:category_list' %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-5 col-md-7">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-tags-fill"></i></div>
+          <h3>Informations de la catégorie</h3>
+        </div>
+        <div class="isi-card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-4">
+              <label class="form-label" for="{{ form.code.id_for_label }}">
+                Code branche <span style="color:var(--danger);">*</span>
+              </label>
+              <input type="text" name="{{ form.code.html_name }}" id="{{ form.code.id_for_label }}"
+                     class="form-control {% if form.code.errors %}is-invalid{% endif %}"
+                     value="{{ form.code.value|default:'' }}"
+                     placeholder="Ex. BTP, ELE, AGR…"
+                     style="text-transform:uppercase;font-family:var(--font-mono,monospace);letter-spacing:1px;"
+                     maxlength="10">
+              {% if form.code.errors %}
+              <div class="invalid-feedback d-block">{{ form.code.errors|join:", " }}</div>
+              {% endif %}
+              <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">
+                Code officiel de la branche professionnelle (2019) — unique, max. 10 caractères.
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label" for="{{ form.name.id_for_label }}">
+                Nom de la catégorie <span style="color:var(--danger);">*</span>
+              </label>
+              <input type="text" name="{{ form.name.html_name }}" id="{{ form.name.id_for_label }}"
+                     class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                     value="{{ form.name.value|default:'' }}"
+                     placeholder="Ex. Sécurité incendie, HSE, Premiers secours…">
+              {% if form.name.errors %}
+              <div class="invalid-feedback d-block">{{ form.name.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
+              <textarea name="{{ form.description.html_name }}" id="{{ form.description.id_for_label }}"
+                        class="form-control" rows="3"
+                        placeholder="Description courte de la thématique…">{{ form.description.value|default:'' }}</textarea>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label" for="{{ form.color.id_for_label }}">Couleur d'identification</label>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <input type="color" name="{{ form.color.html_name }}" id="{{ form.color.id_for_label }}"
+                       class="form-control {% if form.color.errors %}is-invalid{% endif %}"
+                       value="{{ form.color.value|default:'#f59e0b' }}"
+                       style="width:60px;height:40px;padding:4px;cursor:pointer;">
+                <span style="font-size:13px;color:var(--text-muted);">Utilisée dans le catalogue pour identifier visuellement la catégorie</span>
+              </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-4">
+              <i class="bi bi-exclamation-circle-fill"></i>
+              <div>{{ form.non_field_errors|join:"<br>" }}</div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i>
+                {% if category %}Enregistrer{% else %}Créer la catégorie{% endif %}
+              </button>
+              <a href="{% url 'formations:category_list' %}" class="btn btn-ghost">Annuler</a>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

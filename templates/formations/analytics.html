@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Analytique formations{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'formations:session_list' %}" style="color:var(--text-muted);text-decoration:none;">Sessions</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Analytique{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'formations:fill_rates' %}" class="topbar-btn">
+  <i class="bi bi-bar-chart-fill"></i> Taux de remplissage
+</a>
+<a href="{% url 'formations:trainer_utilization' %}" class="topbar-btn">
+  <i class="bi bi-person-fill-check"></i> Formateurs
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Analytique formations</h1>
+      <p>Performance et suivi du centre de formation</p>
+    </div>
+  </div>
+
+  <!-- KPI row -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-2">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:14px;padding:16px 18px;">
+          <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;flex-shrink:0;">
+            <i class="bi bi-calendar3-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ total_sessions }}</div>
+            <div class="stat-label">Sessions total</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-2">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:14px;padding:16px 18px;">
+          <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;flex-shrink:0;">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ total_completed }}</div>
+            <div class="stat-label">Terminées</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-2">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:14px;padding:16px 18px;">
+          <div class="card-icon blue" style="width:44px;height:44px;font-size:20px;border-radius:12px;flex-shrink:0;">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ total_participants }}</div>
+            <div class="stat-label">Participants</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-2">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:14px;padding:16px 18px;">
+          <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;flex-shrink:0;">
+            <i class="bi bi-person-check-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ total_attended }}</div>
+            <div class="stat-label">Présences</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-2">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:14px;padding:16px 18px;">
+          <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;flex-shrink:0;">
+            <i class="bi bi-patch-check-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ total_attestations }}</div>
+            <div class="stat-label">Attestations</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-2">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:14px;padding:16px 18px;">
+          <div class="card-icon purple" style="width:44px;height:44px;font-size:20px;border-radius:12px;flex-shrink:0;">
+            <i class="bi bi-currency-exchange"></i>
+          </div>
+          <div>
+            <div class="stat-value" style="font-size:18px;">{{ revenue|floatformat:0 }}</div>
+            <div class="stat-label">CA (DA)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Attendance rate chart -->
+    <div class="col-lg-6">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-bar-chart-fill"></i></div>
+          <h3>Taux de présence</h3>
+        </div>
+        <div class="isi-card-body">
+          {% if total_participants > 0 %}
+          <div style="position:relative;margin-bottom:20px;">
+            <canvas id="attendanceChart" height="180"></canvas>
+          </div>
+          <div style="display:flex;justify-content:center;gap:24px;font-size:13px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:12px;height:12px;border-radius:3px;background:#10b981;flex-shrink:0;"></div>
+              <span>Présents ({{ total_attended }})</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:12px;height:12px;border-radius:3px;background:#e2e8f0;flex-shrink:0;"></div>
+              <span>Absents ({{ total_participants|add:"-total_attended"|default:0 }})</span>
+            </div>
+          </div>
+          {% else %}
+          <p style="color:var(--text-muted);text-align:center;padding:40px 0;">Aucune donnée disponible.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Top formations -->
+    <div class="col-lg-6">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-trophy-fill"></i></div>
+          <h3>Formations les plus planifiées</h3>
+        </div>
+        {% if top_formations %}
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead>
+              <tr>
+                <th>Formation</th>
+                <th>Sessions</th>
+                <th>Part</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for formation in top_formations %}
+              <tr>
+                <td>
+                  <a href="{% url 'formations:formation_detail' formation.pk %}"
+                     style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                    {{ formation.title|truncatechars:40 }}
+                  </a>
+                </td>
+                <td><span style="font-weight:600;">{{ formation.session_count }}</span></td>
+                <td>
+                  {% if total_sessions > 0 %}
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:60px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                      <div style="height:100%;
+                                  width:{% widthratio formation.session_count total_sessions 100 %}%;
+                                  background:var(--accent);border-radius:3px;"></div>
+                    </div>
+                    <span style="font-size:12px;color:var(--text-muted);">
+                      {% widthratio formation.session_count total_sessions 100 %}%
+                    </span>
+                  </div>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="isi-card-body text-center" style="padding:40px 24px;">
+          <p style="color:var(--text-muted);">Aucune donnée disponible.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Quick links -->
+    <div class="col-12">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon purple"><i class="bi bi-grid-1x2-fill"></i></div>
+          <h3>Rapports détaillés</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <a href="{% url 'formations:fill_rates' %}"
+                 style="display:flex;align-items:center;gap:14px;padding:16px;
+                        border:1px solid var(--card-border);border-radius:10px;
+                        text-decoration:none;color:var(--text-primary);
+                        transition:border-color .15s, box-shadow .15s;"
+                 onmouseover="this.style.borderColor='var(--accent)';this.style.boxShadow='0 0 0 3px rgba(245,158,11,.08)'"
+                 onmouseout="this.style.borderColor='var(--card-border)';this.style.boxShadow='none'">
+                <div class="card-icon amber" style="flex-shrink:0;"><i class="bi bi-bar-chart-fill"></i></div>
+                <div>
+                  <div style="font-weight:600;font-size:14px;">Taux de remplissage</div>
+                  <div style="font-size:12px;color:var(--text-muted);">Capacité vs inscriptions par session</div>
+                </div>
+              </a>
+            </div>
+            <div class="col-md-4">
+              <a href="{% url 'formations:trainer_utilization' %}"
+                 style="display:flex;align-items:center;gap:14px;padding:16px;
+                        border:1px solid var(--card-border);border-radius:10px;
+                        text-decoration:none;color:var(--text-primary);
+                        transition:border-color .15s, box-shadow .15s;"
+                 onmouseover="this.style.borderColor='var(--accent)';this.style.boxShadow='0 0 0 3px rgba(245,158,11,.08)'"
+                 onmouseout="this.style.borderColor='var(--card-border)';this.style.boxShadow='none'">
+                <div class="card-icon blue" style="flex-shrink:0;"><i class="bi bi-person-fill-check"></i></div>
+                <div>
+                  <div style="font-weight:600;font-size:14px;">Utilisation des formateurs</div>
+                  <div style="font-size:12px;color:var(--text-muted);">Sessions et revenus par formateur</div>
+                </div>
+              </a>
+            </div>
+            <div class="col-md-4">
+              <a href="{% url 'formations:formation_list' %}"
+                 style="display:flex;align-items:center;gap:14px;padding:16px;
+                        border:1px solid var(--card-border);border-radius:10px;
+                        text-decoration:none;color:var(--text-primary);
+                        transition:border-color .15s, box-shadow .15s;"
+                 onmouseover="this.style.borderColor='var(--accent)';this.style.boxShadow='0 0 0 3px rgba(245,158,11,.08)'"
+                 onmouseout="this.style.borderColor='var(--card-border)';this.style.boxShadow='none'">
+                <div class="card-icon green" style="flex-shrink:0;"><i class="bi bi-collection-fill"></i></div>
+                <div>
+                  <div style="font-weight:600;font-size:14px;">Catalogue formations</div>
+                  <div style="font-size:12px;color:var(--text-muted);">Gérer les programmes de formation</div>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if total_participants > 0 %}
+<script>
+  const absent = {{ total_participants }} - {{ total_attended }};
+  const ctx = document.getElementById('attendanceChart');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Présents', 'Absents'],
+        datasets: [{
+          data: [{{ total_attended }}, absent < 0 ? 0 : absent],
+          backgroundColor: ['#10b981', '#e2e8f0'],
+          borderWidth: 0,
+          hoverOffset: 4,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '70%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ` ${ctx.label} : ${ctx.parsed}`,
+            },
+          },
+        },
+      },
+    });
+  }
+</script>
+{% endif %}
+{% endblock %}

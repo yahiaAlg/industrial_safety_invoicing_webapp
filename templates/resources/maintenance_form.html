@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}{% if log %}Modifier la maintenance{% else %}Nouvelle maintenance{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:equipment_list' %}" style="color:var(--text-muted);text-decoration:none;">Équipements</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:equipment_detail' equipment.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ equipment.name }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{% if log %}Modifier{% else %}Nouvelle maintenance{% endif %}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{% if log %}Modifier la maintenance{% else %}Enregistrer une maintenance{% endif %}</h1>
+      <p>{{ equipment.name }} — {{ equipment.category }}</p>
+    </div>
+  </div>
+
+  <div class="row g-4 justify-content-center">
+    <div class="col-lg-7">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-wrench-adjustable"></i></div>
+            <h3>Détails de la maintenance</h3>
+          </div>
+          <div class="isi-card-body">
+
+            <div class="form-section-title">Type & date</div>
+            <div class="row g-3 mb-3">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.date.id_for_label }}">Date *</label>
+                {{ form.date }}
+                {% if form.date.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.date.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.maintenance_type.id_for_label }}">Type *</label>
+                {{ form.maintenance_type }}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.next_due_date.id_for_label }}">Prochaine échéance</label>
+                {{ form.next_due_date }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Laissez vide pour calculer automatiquement selon l'intervalle configuré.</div>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.cost.id_for_label }}">Coût (DA)</label>
+                {{ form.cost }}
+                {% if form.cost.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.cost.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title">Intervenant</div>
+            <div class="row g-3 mb-3">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.performed_by.id_for_label }}">Effectué par</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-person-fill"></i>
+                  {{ form.performed_by }}
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Technicien, entreprise de maintenance, nom interne…</div>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title">Description</div>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.description.id_for_label }}">Description des travaux *</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.description.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+          </div>
+
+          <div style="padding:16px 24px;border-top:1px solid var(--card-border);">
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i> {% if log %}Enregistrer{% else %}Créer l'entrée{% endif %}
+              </button>
+              <a href="{% url 'resources:equipment_detail' equipment.pk %}" class="btn btn-ghost">
+                <i class="bi bi-x-lg"></i> Annuler
+              </a>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Sidebar info -->
+    <div class="col-lg-4">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-tools"></i></div>
+          <h3>{{ equipment.name }}</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="stat-label mb-1">État actuel</div>
+              <div style="margin-top:4px;">
+                {% if equipment.condition == 'good' %}
+                  <span class="isi-badge green">Bon état</span>
+                {% elif equipment.condition == 'needs_review' %}
+                  <span class="isi-badge amber">À réviser</span>
+                {% else %}
+                  <span class="isi-badge red">Hors service</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Coût maintenance total</div>
+              <div class="stat-value" style="font-size:18px;">{{ equipment.total_maintenance_cost|floatformat:0 }}
+                <span style="font-size:11px;font-weight:400;color:var(--text-muted);">DA</span>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Prochaine maintenance prévue</div>
+              <div style="font-size:13.5px;font-weight:500;
+                          color:{% if equipment.is_maintenance_due %}var(--danger){% else %}var(--text-primary){% endif %};">
+                {{ equipment.next_maintenance_due|date:"d/m/Y" }}
+                {% if equipment.is_maintenance_due %}
+                  <span class="isi-badge red ms-1" style="font-size:10px;">En retard</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Utilisation des formateurs{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'formations:analytics' %}" style="color:var(--text-muted);text-decoration:none;">Analytique</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Formateurs{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Utilisation des formateurs</h1>
+      <p>Sessions, interventions et revenus générés par formateur</p>
+    </div>
+    <a href="{% url 'formations:analytics' %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  {% if data %}
+  <!-- Chart row -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-8">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-bar-chart-fill"></i></div>
+          <h3>Sessions par formateur</h3>
+        </div>
+        <div class="isi-card-body">
+          <canvas id="trainerChart" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon purple"><i class="bi bi-currency-exchange"></i></div>
+          <h3>Revenus générés</h3>
+        </div>
+        <div class="isi-card-body" style="padding-top:12px;">
+          {% for d in data %}
+          <div style="display:flex;align-items:center;justify-content:space-between;
+                      padding:10px 0;border-bottom:1px solid var(--card-border);">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:28px;height:28px;border-radius:7px;background:var(--accent-soft);
+                          color:var(--accent);display:flex;align-items:center;justify-content:center;
+                          font-family:var(--font-head);font-size:12px;font-weight:700;">
+                {{ d.trainer.first_name|slice:":1" }}{{ d.trainer.last_name|slice:":1" }}
+              </div>
+              <span style="font-weight:600;font-size:13px;">
+                {{ d.trainer.first_name }} {{ d.trainer.last_name }}
+              </span>
+            </div>
+            <span style="font-weight:600;font-size:13px;color:var(--accent);">
+              {{ d.total_earnings|floatformat:0 }} DA
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail table -->
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-person-fill-check"></i></div>
+      <h3>Détail par formateur</h3>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Formateur</th>
+            <th>Spécialité</th>
+            <th>Sessions total</th>
+            <th>Revenus générés</th>
+            <th>Prochaines sessions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in data %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:34px;height:34px;border-radius:8px;background:var(--accent-soft);
+                            color:var(--accent);display:flex;align-items:center;justify-content:center;
+                            font-family:var(--font-head);font-size:13px;font-weight:700;flex-shrink:0;">
+                  {{ d.trainer.first_name|slice:":1" }}{{ d.trainer.last_name|slice:":1" }}
+                </div>
+                <div>
+                  <div style="font-weight:600;">{{ d.trainer.first_name }} {{ d.trainer.last_name }}</div>
+                  {% if d.trainer.daily_rate %}
+                  <div style="font-size:12px;color:var(--text-muted);">{{ d.trainer.daily_rate|floatformat:0 }} DA/jour</div>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">
+                {{ d.trainer.specialty|default:"—" }}
+              </span>
+            </td>
+            <td>
+              <span class="stat-value" style="font-size:18px;">{{ d.session_count }}</span>
+            </td>
+            <td>
+              <span style="font-weight:600;color:var(--accent);">
+                {{ d.total_earnings|floatformat:0 }} DA
+              </span>
+            </td>
+            <td>
+              {% if d.upcoming %}
+                {% for session in d.upcoming %}
+                <div style="font-size:12px;margin-bottom:2px;">
+                  <span style="font-weight:500;">{{ session.date_start|date:"d/m" }}</span>
+                  <span style="color:var(--text-muted);"> · {{ session.formation.title|truncatechars:25 }}</span>
+                </div>
+                {% endfor %}
+              {% else %}
+                <span style="color:var(--text-muted);font-size:13px;">Aucune planifiée</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="isi-card">
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;">
+        <i class="bi bi-person-fill-check"></i>
+      </div>
+      <p style="color:var(--text-muted);font-size:15px;margin:0 0 16px;">
+        Aucun formateur actif enregistré.
+      </p>
+      <a href="{% url 'resources:trainer_create' %}" class="btn btn-amber">
+        <i class="bi bi-plus-lg"></i> Ajouter un formateur
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if data %}
+<script>
+  const labels = [{% for d in data %}"{{ d.trainer.first_name }} {{ d.trainer.last_name }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+  const values = [{% for d in data %}{{ d.session_count }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+  const ctx = document.getElementById('trainerChart');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Sessions',
+          data: values,
+          backgroundColor: 'rgba(245,158,11,.7)',
+          borderColor: '#f59e0b',
+          borderWidth: 2,
+          borderRadius: 6,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1 },
+            grid: { color: '#f1f5f9' },
+          },
+          x: {
+            grid: { display: false },
+          },
+        },
+      },
+    });
+  }
+</script>
+{% endif %}
+{% endblock %}

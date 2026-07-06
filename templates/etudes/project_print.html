@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projet {{ project.reference|default:project.pk }} — {{ project.title }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --accent: #f59e0b;
+      --blue:   #3b82f6;
+      --green:  #10b981;
+      --red:    #ef4444;
+      --text-primary: #0f172a;
+      --text-muted:   #64748b;
+      --border: #e2e8f0;
+      --font-head: 'Barlow Condensed', sans-serif;
+      --font-body: 'Barlow', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--text-primary);
+      background: #fff;
+      line-height: 1.45;
+    }
+    .page {
+      width: 210mm;
+      margin: 0 auto;
+      padding: 13mm 15mm 10mm;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 3px solid var(--accent);
+    }
+    .brand-logo { display: flex; align-items: center; gap: 10px; }
+    .brand-icon {
+      width: 40px; height: 40px;
+      background: var(--accent); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: #0f172a; flex-shrink: 0;
+    }
+    .brand-name {
+      font-family: var(--font-head);
+      font-size: 19px; font-weight: 700;
+      letter-spacing: .5px; text-transform: uppercase;
+      color: var(--text-primary); line-height: 1.1;
+    }
+    .brand-sub { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+    .brand-address { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+    .doc-title-block { text-align: right; }
+    .doc-type {
+      font-family: var(--font-head); font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted);
+    }
+    .doc-title {
+      font-family: var(--font-head); font-size: 26px; font-weight: 700;
+      color: var(--accent); text-transform: uppercase;
+      letter-spacing: 1px; line-height: 1;
+    }
+    .doc-ref {
+      font-family: var(--font-head); font-size: 14px; font-weight: 600;
+      color: var(--text-primary); margin-top: 3px;
+    }
+    .doc-date { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+
+    /* ── Parties ── */
+    .parties-row { display: flex; gap: 18px; margin-bottom: 12px; }
+    .party-block { flex: 1; }
+    .party-label {
+      font-family: var(--font-head); font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted);
+      margin-bottom: 4px; padding-bottom: 3px; border-bottom: 1px solid var(--border);
+    }
+    .party-name { font-family: var(--font-head); font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+    .party-detail { font-size: 10.5px; color: var(--text-muted); line-height: 1.55; }
+
+    /* ── KPI strip ── */
+    .kpi-row {
+      display: flex; gap: 0; margin-bottom: 12px;
+      border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+    }
+    .kpi-cell {
+      flex: 1; padding: 7px 11px;
+      border-right: 1px solid var(--border);
+    }
+    .kpi-cell:last-child { border-right: none; }
+    .kpi-label {
+      font-family: var(--font-head); font-size: 8px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 2px;
+    }
+    .kpi-value { font-weight: 700; font-size: 13px; color: var(--text-primary); }
+    .kpi-value.accent { color: var(--accent); }
+    .kpi-value.green  { color: var(--green); }
+    .kpi-value.red    { color: var(--red); }
+
+    /* ── Section header ── */
+    .section-title {
+      font-family: var(--font-head); font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted);
+      margin-bottom: 6px; padding-bottom: 4px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    /* ── Description ── */
+    .desc-block {
+      margin-bottom: 12px;
+      padding: 9px 12px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 11px;
+      line-height: 1.6;
+      color: var(--text-primary);
+    }
+
+    /* ── Phases table ── */
+    .phases-table {
+      width: 100%; border-collapse: collapse;
+      margin-bottom: 12px; font-size: 11px;
+    }
+    .phases-table thead tr { background: var(--text-primary); color: #fff; }
+    .phases-table thead th {
+      font-family: var(--font-head); font-size: 8.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px; padding: 6px 9px;
+      text-align: left;
+    }
+    .phases-table thead th.r { text-align: right; }
+    .phases-table tbody tr { border-bottom: 1px solid var(--border); }
+    .phases-table tbody tr:nth-child(even) { background: #f8fafc; }
+    .phases-table tbody td { padding: 6px 9px; vertical-align: middle; }
+    .phases-table tbody td.r { text-align: right; }
+
+    .phase-status {
+      display: inline-block;
+      padding: 2px 7px; border-radius: 4px;
+      font-size: 9px; font-weight: 700;
+      font-family: var(--font-head); text-transform: uppercase; letter-spacing: .5px;
+    }
+    .ps-pending   { background: #f1f5f9; color: #64748b; }
+    .ps-progress  { background: rgba(59,130,246,.12); color: #1d4ed8; }
+    .ps-completed { background: rgba(16,185,129,.12); color: #065f46; }
+    .ps-blocked   { background: rgba(239,68,68,.12); color: #991b1b; }
+
+    /* ── Financial summary ── */
+    .fin-row {
+      display: flex; justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+    .fin-inner { min-width: 210px; }
+    .fin-line {
+      display: flex; justify-content: space-between;
+      padding: 4px 0; border-bottom: 1px solid var(--border);
+      font-size: 11px;
+    }
+    .fin-line:last-child { border-bottom: none; }
+    .fin-line.total {
+      background: var(--accent); padding: 7px 10px;
+      border-radius: 5px; margin-top: 4px;
+    }
+    .fin-line.total span {
+      font-family: var(--font-head); font-size: 14px; font-weight: 700; color: #0f172a;
+    }
+    .fin-line span:first-child { color: var(--text-muted); }
+    .fin-line.total span:first-child { color: #0f172a; }
+
+    /* ── Progress bar ── */
+    .progress-bar-wrap {
+      background: var(--border); border-radius: 4px; height: 8px;
+      overflow: hidden; margin-top: 4px;
+    }
+    .progress-bar-fill {
+      height: 100%; border-radius: 4px;
+      background: var(--accent);
+      transition: width .3s;
+    }
+
+    /* ── Footer ── */
+    .doc-footer {
+      margin-top: auto; padding-top: 8px;
+      border-top: 1px solid var(--border);
+      font-size: 10px; color: var(--text-muted);
+      display: flex; justify-content: space-between; align-items: flex-end;
+    }
+
+    /* ── Registration IDs ── */
+    .ids-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+    .id-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 6px; background: #f8fafc;
+      border: 1px solid var(--border); border-radius: 4px;
+      font-size: 10px; font-family: monospace;
+    }
+    .id-label {
+      font-family: var(--font-head); font-size: 8.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted);
+    }
+
+    .no-print { display: block; }
+
+    /* ── PRINT ── */
+    @media print {
+      @page { size: A4 portrait; margin: 0; }
+      html, body { height: 297mm; overflow: hidden; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 10.5px; }
+      .no-print { display: none !important; }
+      .page {
+        width: 210mm; height: 297mm;
+        padding: 9mm 12mm 7mm;
+        overflow: hidden;
+        page-break-after: avoid;
+        page-break-inside: avoid;
+      }
+      .brand-name { font-size: 17px; }
+      .doc-title  { font-size: 22px; }
+      .kpi-value  { font-size: 12px; }
+      .phases-table tbody td { padding: 5px 7px; font-size: 10px; }
+      .phases-table thead th { padding: 5px 7px; font-size: 8px; }
+      .doc-header  { margin-bottom: 10px; padding-bottom: 10px; }
+      .parties-row { margin-bottom: 8px; }
+      .kpi-row     { margin-bottom: 8px; }
+      .desc-block  { margin-bottom: 8px; padding: 7px 10px; }
+      .phases-table { margin-bottom: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Screen-only action bar -->
+<div class="no-print" style="position:fixed;top:16px;right:16px;display:flex;gap:8px;z-index:100;">
+  <a href="{% url 'etudes:project_detail' project.pk %}"
+     style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
+            background:#fff;border:1px solid #e2e8f0;border-radius:8px;
+            font-family:'Barlow',sans-serif;font-size:13px;color:#64748b;text-decoration:none;">
+    ← Retour
+  </a>
+  <button onclick="window.print()"
+          style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
+                 background:#f59e0b;border:none;border-radius:8px;cursor:pointer;
+                 font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;color:#0f172a;">
+    🖨 Imprimer
+  </button>
+</div>
+
+<div class="page">
+
+  <!-- ── Header ── -->
+  <div class="doc-header">
+    <div class="brand-logo">
+      {% if institute.logo %}
+        <img src="{{ institute.logo.url }}" alt="Logo"
+             style="height:42px;max-width:105px;object-fit:contain;">
+      {% else %}
+        <div class="brand-icon">🛡</div>
+      {% endif %}
+      <div>
+        <div class="brand-name">{{ institute.name|default:"ISI" }}</div>
+        {% if bureau.name %}
+          <div class="brand-sub">{{ bureau.name }}</div>
+        {% elif institute.abbreviation %}
+          <div class="brand-sub">{{ institute.abbreviation }}</div>
+        {% endif %}
+        {% if institute.address %}
+          <div class="brand-address">{{ institute.address }}{% if institute.city %} — {{ institute.city }}{% endif %}</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="doc-title-block">
+      <div class="doc-type">Fiche de Projet</div>
+      <div class="doc-title">Étude</div>
+      {% if project.reference %}
+        <div class="doc-ref">{{ project.reference }}</div>
+      {% endif %}
+      <div class="doc-date">Édité le {% now "d/m/Y" %}</div>
+    </div>
+  </div>
+
+  <!-- ── Parties ── -->
+  <div class="parties-row">
+    <div class="party-block">
+      <div class="party-label">Bureau d'étude</div>
+      <div class="party-name">{{ bureau.name|default:institute.name }}</div>
+      <div class="party-detail">
+        {{ bureau.address|default:institute.address }}<br>
+        {% if institute.postal_code %}{{ institute.postal_code }} {% endif %}{{ institute.city }}<br>
+        {% if bureau.phone or institute.phone %}Tél : {{ bureau.phone|default:institute.phone }}<br>{% endif %}
+        {% if bureau.email or institute.email %}{{ bureau.email|default:institute.email }}{% endif %}
+      </div>
+    </div>
+    <div class="party-block">
+      <div class="party-label">Client</div>
+      <div class="party-name">{{ project.client.name }}</div>
+      <div class="party-detail">
+        {% if project.client.address %}{{ project.client.address }}<br>{% endif %}
+        {% if project.client.postal_code or project.client.city %}
+          {{ project.client.postal_code }} {{ project.client.city }}<br>
+        {% endif %}
+        {% if project.client.phone %}Tél : {{ project.client.phone }}<br>{% endif %}
+        {% if project.client.email %}{{ project.client.email }}{% endif %}
+      </div>
+    </div>
+    <div class="party-block">
+      <div class="party-label">Projet</div>
+      <div class="party-name" style="font-size:12px;">{{ project.title }}</div>
+      <div class="party-detail">
+        {% if project.project_type %}Type : {{ project.project_type }}<br>{% endif %}
+        {% if project.site_address %}Site : {{ project.site_address }}{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Registration IDs ── -->
+  {% if institute.registration_number or institute.nif or institute.nis %}
+  <div class="ids-row">
+    {% if institute.registration_number %}
+      <span class="id-label">RC</span>
+      <span class="id-chip">{{ institute.registration_number }}</span>
+    {% endif %}
+    {% if institute.nif %}
+      <span class="id-label">NIF</span>
+      <span class="id-chip">{{ institute.nif }}</span>
+    {% endif %}
+    {% if institute.nis %}
+      <span class="id-label">NIS</span>
+      <span class="id-chip">{{ institute.nis }}</span>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- ── KPI strip ── -->
+  <div class="kpi-row">
+    <div class="kpi-cell">
+      <div class="kpi-label">Statut</div>
+      <div class="kpi-value
+        {% if project.status == 'completed' %}green
+        {% elif project.status == 'in_progress' %}accent
+        {% elif project.status == 'cancelled' %}red{% endif %}">
+        {{ project.get_status_display }}
+      </div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-label">Priorité</div>
+      <div class="kpi-value">{{ project.get_priority_display }}</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-label">Début</div>
+      <div class="kpi-value">{{ project.start_date|date:"d/m/Y" }}</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-label">Fin prévue</div>
+      <div class="kpi-value {% if project.is_overdue %}red{% endif %}">
+        {{ project.end_date|date:"d/m/Y"|default:"—" }}
+        {% if project.is_overdue %} ⚠{% endif %}
+      </div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-label">Avancement</div>
+      <div class="kpi-value">{{ project.progress_percentage }}%</div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" style="width:{{ project.progress_percentage }}%;
+          background:{% if project.progress_percentage == 100 %}#10b981{% elif project.progress_percentage >= 50 %}#3b82f6{% else %}#f59e0b{% endif %};"></div>
+      </div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-label">Phases</div>
+      <div class="kpi-value">{{ project.completed_phase_count }}/{{ project.phase_count }}</div>
+    </div>
+  </div>
+
+  <!-- ── Description ── -->
+  {% if project.description %}
+  <div class="desc-block">{{ project.description }}</div>
+  {% endif %}
+
+  <!-- ── Phases ── -->
+  {% if phases %}
+  <div class="section-title">Phases du projet</div>
+  <table class="phases-table">
+    <thead>
+      <tr>
+        <th style="width:4%;">#</th>
+        <th style="width:28%;">Nom</th>
+        <th style="width:14%;">Statut</th>
+        <th>Début</th>
+        <th>Échéance</th>
+        <th class="r">H. estimées</th>
+        <th class="r">H. réelles</th>
+        <th style="width:22%;">Livrable</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for phase in phases %}
+      <tr>
+        <td style="color:var(--text-muted);font-weight:600;">{{ phase.order }}</td>
+        <td style="font-weight:600;">{{ phase.name }}</td>
+        <td>
+          <span class="phase-status
+            {% if phase.status == 'pending' %}ps-pending
+            {% elif phase.status == 'in_progress' %}ps-progress
+            {% elif phase.status == 'completed' %}ps-completed
+            {% elif phase.status == 'blocked' %}ps-blocked{% endif %}">
+            {{ phase.get_status_display }}
+          </span>
+        </td>
+        <td>{{ phase.start_date|date:"d/m/Y"|default:"—" }}</td>
+        <td style="{% if phase.is_overdue %}color:var(--red);font-weight:600;{% endif %}">
+          {{ phase.due_date|date:"d/m/Y"|default:"—" }}
+        </td>
+        <td class="r">{{ phase.estimated_hours|default:"—" }}</td>
+        <td class="r">{{ phase.actual_hours|default:"—" }}</td>
+        <td style="font-size:10px;color:var(--text-muted);">{{ phase.deliverable|default:"—"|truncatechars:35 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <!-- ── Financial summary ── -->
+  {% if project.budget %}
+  <div class="fin-row">
+    <div class="fin-inner">
+      <div class="fin-line">
+        <span>Budget contractuel</span>
+        <span style="font-weight:600;">{{ project.budget|floatformat:2 }} DA</span>
+      </div>
+      <div class="fin-line">
+        <span>Dépenses engagées</span>
+        <span style="font-weight:600;">{{ project.total_expenses|floatformat:2 }} DA</span>
+      </div>
+      <div class="fin-line total">
+        <span>Marge ({{ project.margin_rate }}%)</span>
+        <span>{{ project.margin|floatformat:2 }} DA</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Footer ── -->
+  <div class="doc-footer">
+    <div>
+      {% if institute.invoice_footer_text %}{{ institute.invoice_footer_text }}{% endif %}
+    </div>
+    {% if bureau.chief_engineer_name %}
+    <div style="text-align:right;">
+      {% if bureau.chief_engineer_signature %}
+        <img src="{{ bureau.chief_engineer_signature.url }}" alt="Signature"
+             style="height:38px;max-width:100px;object-fit:contain;display:block;margin-left:auto;margin-bottom:3px;">
+      {% else %}
+        <div style="height:30px;"></div>
+      {% endif %}
+      <div style="font-weight:600;color:var(--text-primary);font-size:11px;">{{ bureau.chief_engineer_name }}</div>
+      <div style="font-size:9.5px;color:var(--text-muted);">{{ bureau.chief_engineer_title }}</div>
+    </div>
+    {% elif institute.director_name %}
+    <div style="text-align:right;">
+      {% if institute.director_signature %}
+        <img src="{{ institute.director_signature.url }}" alt="Signature"
+             style="height:38px;max-width:100px;object-fit:contain;display:block;margin-left:auto;margin-bottom:3px;">
+      {% else %}
+        <div style="height:30px;"></div>
+      {% endif %}
+      <div style="font-weight:600;color:var(--text-primary);font-size:11px;">{{ institute.director_name }}</div>
+      <div style="font-size:9.5px;color:var(--text-muted);">{{ institute.director_title }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+</div><!-- .page -->
+</body>
+</html>

@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+
+{% block title %}{{ expense.description|truncatechars:40 }} — Dépense{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:expense_list' %}" style="color:var(--text-muted);text-decoration:none;">Dépenses</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ expense.description|truncatechars:30 }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'financial:expense_edit' expense.pk %}" class="topbar-btn primary">
+  <i class="bi bi-pencil-fill"></i> Modifier
+</a>
+{% if expense.approval_status == 'pending' %}
+<form method="post" action="{% url 'financial:expense_approve' expense.pk %}" style="display:inline;">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{% url 'financial:expense_detail' expense.pk %}">
+  <button type="submit" class="topbar-btn"
+          style="border-color:rgba(16,185,129,.4);color:var(--success);"
+          onclick="return confirm('Approuver cette dépense ?')">
+    <i class="bi bi-check-lg"></i> Approuver
+  </button>
+</form>
+<form method="post" action="{% url 'financial:expense_reject' expense.pk %}" style="display:inline;">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{% url 'financial:expense_detail' expense.pk %}">
+  <button type="submit" class="topbar-btn"
+          style="border-color:rgba(239,68,68,.4);color:var(--danger);"
+          onclick="return confirm('Refuser cette dépense ?')">
+    <i class="bi bi-x-lg"></i> Refuser
+  </button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <!-- ── Page header ──────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ expense.description }}</h1>
+      <p>
+        {{ expense.date|date:"d/m/Y" }}
+        {% if expense.beneficiary %} — <i class="bi bi-person-fill" style="font-size:11px;"></i> {{ expense.payee_display }}{% elif expense.supplier %} — <i class="bi bi-shop" style="font-size:11px;"></i> {{ expense.supplier }}{% endif %}
+      </p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      {% if expense.approval_status == 'approved' %}
+        <span class="isi-badge green" style="font-size:13px;padding:6px 14px;">
+          <i class="bi bi-check-circle-fill"></i> Approuvée
+        </span>
+      {% elif expense.approval_status == 'rejected' %}
+        <span class="isi-badge red" style="font-size:13px;padding:6px 14px;">
+          <i class="bi bi-x-circle-fill"></i> Refusée
+        </span>
+      {% else %}
+        <span class="isi-badge amber" style="font-size:13px;padding:6px 14px;">
+          <i class="bi bi-clock-fill"></i> En attente
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ══════════ LEFT COLUMN ══════════ -->
+    <div class="col-lg-8">
+
+      <!-- Main info card -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon red"><i class="bi bi-credit-card-fill"></i></div>
+          <h3>Détails de la dépense</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-4">
+
+            <div class="col-md-6">
+              <div class="stat-label mb-1">Description</div>
+              <div style="font-weight:600;font-size:15px;">{{ expense.description }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="stat-label mb-1">Coût total organisme</div>
+              <div style="font-family:var(--font-head);font-size:28px;font-weight:700;color:var(--danger);">
+                {{ expense.amount|floatformat:2 }}
+                <span style="font-size:14px;color:var(--text-muted);font-weight:400;">DA</span>
+              </div>
+              {% if expense.has_tva or expense.has_irg %}
+              <div style="margin-top:8px;padding:10px 12px;background:rgba(245,158,11,.05);
+                          border-radius:8px;border:1px solid rgba(245,158,11,.2);">
+                <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--text-muted);margin-bottom:4px;">
+                  <span>Montant TTC (payé)</span>
+                  <span style="font-weight:600;">{{ expense.gross_amount|floatformat:2 }} DA</span>
+                </div>
+                {% if expense.has_tva %}
+                <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#3b82f6;margin-bottom:4px;">
+                  <span>TVA déductible ({% widthratio expense.tva_rate 0.01 1 %}%)</span>
+                  <span style="font-weight:600;">{{ expense.tva_amount|floatformat:2 }} DA</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--text-muted);margin-bottom:4px;">
+                  <span>Montant HT</span>
+                  <span style="font-weight:600;">{{ expense.amount_ht|floatformat:2 }} DA</span>
+                </div>
+                {% endif %}
+                {% if expense.has_irg %}
+                <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#b45309;margin-bottom:4px;">
+                  <span>IRG versé à l'État ({% widthratio expense.irg_rate 0.01 1 %}%)</span>
+                  <span style="font-weight:600;">+ {{ expense.irg_amount|floatformat:2 }} DA</span>
+                </div>
+                {% endif %}
+                <div style="border-top:1px solid rgba(245,158,11,.25);padding-top:4px;
+                            display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;">
+                  <span>Coût total organisme</span>
+                  <span style="color:var(--danger);">{{ expense.amount|floatformat:2 }} DA</span>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <div class="stat-label mb-1">Date</div>
+              <div style="font-weight:500;font-size:14px;">{{ expense.date|date:"d/m/Y" }}</div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="stat-label mb-1">Catégorie</div>
+              <div style="margin-top:4px;">
+                {% if expense.category %}
+                  <span class="isi-badge amber"
+                        {% if expense.category.color %}
+                        style="background:{{ expense.category.color }}20;color:{{ expense.category.color }};"
+                        {% endif %}>
+                    {{ expense.category.name }}
+                  </span>
+                  {% if expense.category.is_direct_cost %}
+                    <span class="isi-badge green" style="margin-left:4px;font-size:10px;">Coût direct</span>
+                  {% else %}
+                    <span class="isi-badge gray" style="margin-left:4px;font-size:10px;">Généraux</span>
+                  {% endif %}
+                {% else %}
+                  <span style="color:var(--text-muted);">Non catégorisée</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="stat-label mb-1">Bénéficiaire</div>
+              {% if expense.beneficiary %}
+              <div style="margin-top:4px;">
+                <div style="font-weight:600;font-size:14px;">{{ expense.beneficiary.name }}</div>
+                <div style="margin-top:4px;">
+                  <span class="isi-badge"
+                        style="font-size:10px;background:{{ expense.beneficiary.beneficiary_type.color }}20;
+                               color:{{ expense.beneficiary.beneficiary_type.color }};">
+                    {{ expense.beneficiary.beneficiary_type }}
+                  </span>
+                </div>
+                {% if expense.beneficiary.nif %}
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+                  NIF : {{ expense.beneficiary.nif }}
+                </div>
+                {% endif %}
+              </div>
+              {% elif expense.supplier %}
+              <div style="font-weight:500;font-size:14px;">
+                <i class="bi bi-shop" style="font-size:11px;color:var(--text-muted);"></i>
+                {{ expense.supplier }}
+                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Fournisseur libre</div>
+              </div>
+              {% else %}
+              <div style="color:var(--text-muted);">—</div>
+              {% endif %}
+            </div>
+
+            {% if expense.payment_account %}
+            <div class="col-md-4">
+              <div class="stat-label mb-1">Compte de paiement</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ expense.payment_account }}</div>
+              {% if expense.payment_account.bank_name %}
+              <div style="font-size:12px;color:var(--text-muted);">{{ expense.payment_account.bank_name }}</div>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            {% if expense.payment_reference %}
+            <div class="col-md-{% if expense.payment_account %}4{% else %}6{% endif %}">
+              <div class="stat-label mb-1">Référence de paiement</div>
+              <div style="font-weight:500;font-size:13.5px;font-family:monospace;color:var(--text-muted);">
+                {{ expense.payment_reference }}
+              </div>
+            </div>
+            {% endif %}
+
+            {% if expense.payment_date %}
+            <div class="col-md-4">
+              <div class="stat-label mb-1">Date de règlement</div>
+              <div style="font-weight:500;font-size:14px;">
+                <i class="bi bi-calendar-check-fill" style="font-size:11px;color:var(--success);margin-right:4px;"></i>
+                {{ expense.payment_date|date:"d/m/Y" }}
+              </div>
+            </div>
+            {% endif %}
+
+            {% if expense.g50_month %}
+            <div class="col-md-4">
+              <div class="stat-label mb-1">Mois G50</div>
+              <div style="font-weight:500;font-size:14px;">
+                <i class="bi bi-calendar3" style="font-size:11px;color:var(--text-muted);margin-right:4px;"></i>
+                {{ expense.g50_month|date:"F Y" }}
+              </div>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Imputation -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-diagram-2-fill"></i></div>
+          <h3>Imputation</h3>
+        </div>
+        <div class="isi-card-body">
+          {% if expense.allocated_to_session %}
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;
+                      background:rgba(59,130,246,.08);border-radius:10px;
+                      border:1px solid rgba(59,130,246,.15);">
+            <div class="card-icon blue" style="flex-shrink:0;">
+              <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <div>
+              <div class="stat-label mb-1">Session de formation</div>
+              <a href="{% url 'formations:session_detail' expense.allocated_to_session.pk %}"
+                 style="font-weight:700;font-size:14px;color:#3b82f6;text-decoration:none;">
+                {{ expense.allocated_to_session }}
+              </a>
+            </div>
+          </div>
+
+          {% elif expense.allocated_to_project %}
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;
+                      background:rgba(139,92,246,.08);border-radius:10px;
+                      border:1px solid rgba(139,92,246,.15);">
+            <div class="card-icon purple" style="flex-shrink:0;">
+              <i class="bi bi-diagram-3-fill"></i>
+            </div>
+            <div>
+              <div class="stat-label mb-1">Projet d'étude</div>
+              <a href="{% url 'etudes:project_detail' expense.allocated_to_project.pk %}"
+                 style="font-weight:700;font-size:14px;color:#8b5cf6;text-decoration:none;">
+                {{ expense.allocated_to_project.title }}
+              </a>
+            </div>
+          </div>
+
+          {% elif expense.is_overhead %}
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;
+                      background:#f8fafc;border-radius:10px;
+                      border:1px solid var(--card-border);">
+            <div class="card-icon blue" style="background:rgba(100,116,139,.1);color:#64748b;flex-shrink:0;">
+              <i class="bi bi-building-fill"></i>
+            </div>
+            <div>
+              <div class="stat-label mb-1">Imputation</div>
+              <div style="font-weight:600;font-size:14px;color:var(--text-muted);">Frais généraux</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+                Charge non imputable à un service ou projet spécifique.
+              </div>
+            </div>
+          </div>
+
+          {% else %}
+          <div style="padding:20px;text-align:center;color:var(--text-muted);">
+            <i class="bi bi-dash-circle" style="font-size:24px;color:#e2e8f0;margin-bottom:8px;display:block;"></i>
+            Aucune imputation définie.
+            <div style="margin-top:8px;">
+              <a href="{% url 'financial:expense_edit' expense.pk %}" class="btn btn-ghost btn-sm">
+                <i class="bi bi-pencil-fill"></i> Définir une imputation
+              </a>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Trainer details (shown only when trainer_payment_mode is set) -->
+      {% if expense.trainer_payment_mode %}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon" style="background:rgba(99,102,241,.12);color:#6366f1;">
+            <i class="bi bi-person-badge-fill"></i>
+          </div>
+          <h3>Paiement formateur</h3>
+          <span class="isi-badge" style="margin-left:auto;font-size:11px;
+                background:rgba(99,102,241,.1);color:#6366f1;">
+            {{ expense.get_trainer_payment_mode_display }}
+          </span>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+
+            {% if expense.linked_formation %}
+            <div class="col-md-6">
+              <div class="stat-label mb-1">Formation liée</div>
+              <a href="{% url 'formations:formation_detail' expense.linked_formation.pk %}"
+                 style="font-weight:600;font-size:13.5px;color:#6366f1;text-decoration:none;">
+                {{ expense.linked_formation.title }}
+              </a>
+            </div>
+            {% endif %}
+
+            {% if expense.training_period_label %}
+            <div class="col-md-6">
+              <div class="stat-label mb-1">Période couverte</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ expense.training_period_label }}</div>
+            </div>
+            {% endif %}
+
+            {% if expense.daily_rate_snapshot %}
+            <div class="col-md-3">
+              <div class="stat-label mb-1">Tarif/jour (snapshot)</div>
+              <div style="font-weight:600;font-size:13.5px;font-family:var(--font-head);">
+                {{ expense.daily_rate_snapshot|floatformat:0 }} DA
+              </div>
+            </div>
+            {% endif %}
+
+            {% if expense.monthly_rate_snapshot %}
+            <div class="col-md-3">
+              <div class="stat-label mb-1">Tarif/mois (snapshot)</div>
+              <div style="font-weight:600;font-size:13.5px;font-family:var(--font-head);">
+                {{ expense.monthly_rate_snapshot|floatformat:0 }} DA
+              </div>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Notes -->
+      {% if expense.notes %}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon purple"><i class="bi bi-sticky-fill"></i></div>
+          <h3>Notes</h3>
+        </div>
+        <div class="isi-card-body">
+          <p style="font-size:14px;color:var(--text-primary);line-height:1.7;margin:0;white-space:pre-wrap;">
+            {{ expense.notes }}
+          </p>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Justificatif -->
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-file-earmark-fill"></i></div>
+          <h3>Justificatif</h3>
+        </div>
+        <div class="isi-card-body">
+          {% if expense.receipt %}
+          <div style="display:flex;align-items:center;gap:14px;padding:16px;
+                      background:rgba(16,185,129,.08);border-radius:10px;
+                      border:1px solid rgba(16,185,129,.2);">
+            <i class="bi bi-file-earmark-check-fill"
+               style="font-size:28px;color:var(--success);flex-shrink:0;"></i>
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:14px;color:var(--success);">Justificatif disponible</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+                Uploadé le {{ expense.updated_at|date:"d/m/Y" }}
+              </div>
+            </div>
+            <a href="{{ expense.receipt.url }}" target="_blank" class="btn btn-ghost btn-sm">
+              <i class="bi bi-eye-fill"></i> Voir
+            </a>
+            <a href="{{ expense.receipt.url }}" download class="btn btn-ghost btn-sm">
+              <i class="bi bi-download"></i>
+            </a>
+          </div>
+
+          {% elif expense.receipt_missing %}
+          <div style="display:flex;align-items:center;gap:14px;padding:16px;
+                      background:rgba(245,158,11,.08);border-radius:10px;
+                      border:1px solid rgba(245,158,11,.2);">
+            <i class="bi bi-exclamation-triangle-fill"
+               style="font-size:28px;color:var(--accent);flex-shrink:0;"></i>
+            <div>
+              <div style="font-weight:600;font-size:14px;color:#92400e;">Justificatif déclaré manquant</div>
+              <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">
+                Le responsable a confirmé que le reçu ne peut pas être fourni.
+              </div>
+            </div>
+          </div>
+
+          {% else %}
+          <div style="display:flex;align-items:center;gap:14px;padding:16px;
+                      background:rgba(239,68,68,.06);border-radius:10px;
+                      border:1px solid rgba(239,68,68,.2);">
+            <i class="bi bi-file-earmark-x-fill"
+               style="font-size:28px;color:var(--danger);flex-shrink:0;"></i>
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:14px;color:var(--danger);">Aucun justificatif</div>
+              <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">
+                Uploadez un justificatif pour régulariser cette dépense.
+              </div>
+            </div>
+            <a href="{% url 'financial:expense_edit' expense.pk %}" class="btn btn-ghost btn-sm">
+              <i class="bi bi-upload"></i> Uploader
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div><!-- /col-lg-8 -->
+
+    <!-- ══════════ RIGHT COLUMN ══════════ -->
+    <div class="col-lg-4">
+
+      <!-- Approval card -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon
+            {% if expense.approval_status == 'approved' %}green
+            {% elif expense.approval_status == 'rejected' %}red
+            {% else %}amber{% endif %}">
+            <i class="bi bi-shield-{% if expense.approval_status == 'approved' %}check{% elif expense.approval_status == 'rejected' %}x{% else %}exclamation{% endif %}"></i>
+          </div>
+          <h3>Approbation</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="stat-label mb-1">Statut</div>
+              <div style="margin-top:4px;">
+                {% if expense.approval_status == 'approved' %}
+                  <span class="isi-badge green" style="font-size:13px;padding:5px 12px;">
+                    <i class="bi bi-check-circle-fill"></i> Approuvée
+                  </span>
+                {% elif expense.approval_status == 'rejected' %}
+                  <span class="isi-badge red" style="font-size:13px;padding:5px 12px;">
+                    <i class="bi bi-x-circle-fill"></i> Refusée
+                  </span>
+                {% else %}
+                  <span class="isi-badge amber" style="font-size:13px;padding:5px 12px;">
+                    <i class="bi bi-clock-fill"></i> En attente
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            {% if expense.approval_notes %}
+            <div class="col-12">
+              <div class="stat-label mb-1">Motif</div>
+              <div style="font-size:13px;color:var(--danger);padding:10px 12px;
+                          background:rgba(239,68,68,.06);border-radius:8px;
+                          border-left:3px solid var(--danger);line-height:1.5;">
+                {{ expense.approval_notes }}
+              </div>
+            </div>
+            {% endif %}
+
+          </div>
+
+          {% if expense.approval_status == 'pending' %}
+          <div class="section-divider"></div>
+          <div class="d-flex gap-2">
+            <form method="post" action="{% url 'financial:expense_approve' expense.pk %}" style="flex:1;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost w-100"
+                      style="color:var(--success);border-color:rgba(16,185,129,.3);"
+                      onclick="return confirm('Approuver cette dépense ?')">
+                <i class="bi bi-check-lg"></i> Approuver
+              </button>
+            </form>
+            <form method="post" action="{% url 'financial:expense_reject' expense.pk %}" style="flex:1;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger-soft w-100"
+                      onclick="return confirm('Refuser cette dépense ?')">
+                <i class="bi bi-x-lg"></i> Refuser
+              </button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-lightning-fill"></i></div>
+          <h3>Actions</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="d-flex flex-column gap-2">
+            <a href="{% url 'financial:expense_edit' expense.pk %}" class="btn btn-amber">
+              <i class="bi bi-pencil-fill"></i> Modifier la dépense
+            </a>
+            {% if expense.receipt %}
+            <a href="{{ expense.receipt.url }}" target="_blank" class="btn btn-ghost">
+              <i class="bi bi-file-earmark-fill"></i> Voir le justificatif
+            </a>
+            {% endif %}
+            {% if expense.allocated_to_session %}
+            <a href="{% url 'formations:session_detail' expense.allocated_to_session.pk %}"
+               class="btn btn-ghost">
+              <i class="bi bi-mortarboard-fill"></i> Voir la session
+            </a>
+            {% endif %}
+            {% if expense.allocated_to_project %}
+            <a href="{% url 'etudes:project_detail' expense.allocated_to_project.pk %}"
+               class="btn btn-ghost">
+              <i class="bi bi-diagram-3-fill"></i> Voir le projet
+            </a>
+            {% endif %}
+            {% if expense.linked_formation %}
+            <a href="{% url 'formations:formation_detail' expense.linked_formation.pk %}"
+               class="btn btn-ghost">
+              <i class="bi bi-collection-fill"></i> Voir la formation liée
+            </a>
+            {% endif %}
+            <form method="post" action="{% url 'financial:expense_delete' expense.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger-soft w-100"
+                      onclick="return confirm('Supprimer définitivement cette dépense ? Cette action est irréversible.')">
+                <i class="bi bi-trash-fill"></i> Supprimer
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- System meta -->
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-info-circle-fill"></i></div>
+          <h3>Informations système</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            {% if expense.fiscal_year %}
+            <div class="col-6">
+              <div class="stat-label mb-1">Exercice</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ expense.fiscal_year }}</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Trimestre</div>
+              <div style="font-weight:500;font-size:13.5px;">T{{ expense.quarter }}</div>
+            </div>
+            {% endif %}
+            <div class="col-12">
+              <div class="stat-label mb-1">Créée le</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ expense.created_at|date:"d/m/Y à H:i" }}</div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Modifiée le</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ expense.updated_at|date:"d/m/Y à H:i" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /col-lg-4 -->
+  </div>
+
+</div>
+{% endblock %}

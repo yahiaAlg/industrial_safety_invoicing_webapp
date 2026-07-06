@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer {{ client.name }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'clients:client_list' %}" style="color:var(--text-muted);text-decoration:none;">Clients</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'clients:client_detail' client.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ client.name }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Supprimer{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Supprimer le client</h1>
+      <p>Cette action est <strong>irréversible</strong>.</p>
+    </div>
+    <a href="{% url 'clients:client_detail' client.pk %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Annuler
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+
+      <!-- Client identity recap -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-body" style="padding:24px;display:flex;align-items:center;gap:16px;">
+          <div style="width:56px;height:56px;border-radius:14px;flex-shrink:0;
+                      {% if client.client_type == 'entreprise' or client.client_type == 'startup' %}
+                        background:rgba(245,158,11,.12);color:#d97706;
+                      {% elif client.client_type == 'auto_entrepreneur' %}
+                        background:rgba(124,58,237,.12);color:#7c3aed;
+                      {% else %}
+                        background:rgba(59,130,246,.12);color:#3b82f6;
+                      {% endif %}
+                      display:flex;align-items:center;justify-content:center;
+                      font-family:var(--font-head);font-size:24px;font-weight:700;">
+            {{ client.name|slice:":1"|upper }}
+          </div>
+          <div>
+            <div style="font-family:var(--font-head);font-size:18px;font-weight:700;color:var(--text-primary);">
+              {{ client.name }}
+            </div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">
+              {% if client.client_type == 'entreprise' %}Entreprise
+              {% elif client.client_type == 'startup' %}Startup
+              {% elif client.client_type == 'auto_entrepreneur' %}Auto-entrepreneur
+              {% else %}Particulier
+              {% endif %}
+              {% if client.city %} — {{ client.city }}{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Warning block -->
+      {% if has_related %}
+      <div class="alert alert-danger mb-4" style="display:flex;align-items:flex-start;gap:12px;">
+        <i class="bi bi-exclamation-triangle-fill" style="font-size:20px;flex-shrink:0;margin-top:2px;"></i>
+        <div>
+          <strong>Ce client possède des données liées qui seront également supprimées :</strong>
+          <ul style="margin:10px 0 0;padding-left:18px;font-size:13.5px;line-height:1.9;">
+            {% if invoice_count %}
+            <li>
+              <strong>{{ invoice_count }}</strong> facture{{ invoice_count|pluralize }}
+              (proformas + finales, tous les règlements associés)
+            </li>
+            {% endif %}
+            {% if session_count %}
+            <li>
+              <strong>{{ session_count }}</strong> session{{ session_count|pluralize }} de formation
+            </li>
+            {% endif %}
+            {% if project_count %}
+            <li>
+              <strong>{{ project_count }}</strong> projet{{ project_count|pluralize }} d'étude
+            </li>
+            {% endif %}
+          </ul>
+          <p style="margin:10px 0 0;font-size:13px;">
+            Envisagez plutôt de <strong>désactiver</strong> ce client pour conserver l'historique.
+          </p>
+        </div>
+      </div>
+      {% else %}
+      <div class="alert alert-warning mb-4" style="display:flex;align-items:flex-start;gap:12px;">
+        <i class="bi bi-exclamation-circle-fill" style="font-size:18px;flex-shrink:0;margin-top:2px;"></i>
+        <div>
+          <strong>Confirmer la suppression définitive de « {{ client.name }} ».</strong>
+          <p style="margin:6px 0 0;font-size:13px;color:var(--text-muted);">
+            Aucune donnée liée n'a été trouvée. La suppression est possible.
+          </p>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Action buttons -->
+      <div class="isi-card">
+        <div class="isi-card-body" style="padding:24px;">
+          <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn flex-grow-1"
+                      style="background:#dc2626;color:#fff;border:none;font-weight:600;">
+                <i class="bi bi-trash3-fill"></i> Oui, supprimer définitivement
+              </button>
+              <a href="{% url 'clients:client_detail' client.pk %}" class="btn btn-ghost flex-grow-1">
+                <i class="bi bi-x-lg"></i> Annuler
+              </a>
+            </div>
+            {% if has_related %}
+            <div style="margin-top:12px;text-align:center;">
+              <form method="post" action="{% url 'clients:client_deactivate' client.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-ghost" style="font-size:13px;">
+                  <i class="bi bi-slash-circle-fill"></i> Désactiver plutôt ce client
+                </button>
+              </form>
+            </div>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

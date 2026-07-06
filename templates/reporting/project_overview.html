@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Vue d'ensemble projets{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:dashboard' %}" style="color:var(--text-muted);text-decoration:none;">Rapports</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Projets{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'reporting:project_delivery_report' %}" class="topbar-btn"><i class="bi bi-clock-fill"></i> Livraison</a>
+<a href="{% url 'reporting:project_phase_report' %}" class="topbar-btn"><i class="bi bi-layers-fill"></i> Phases</a>
+{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Vue d'ensemble des projets</h1><p>Statut et budget des projets d'études</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Depuis</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="row g-3 mb-4">
+    {% for s in by_status %}
+    <div class="col-sm-6 col-lg-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon {% if s.status == 'in_progress' %}blue{% elif s.status == 'completed' %}green{% elif s.status == 'on_hold' %}amber{% else %}red{% endif %}" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-diagram-3-fill"></i></div>
+      <div><div class="stat-value">{{ s.count }}</div><div class="stat-label">{% if s.status == 'in_progress' %}En cours{% elif s.status == 'completed' %}Terminés{% elif s.status == 'on_hold' %}En pause{% else %}Annulés{% endif %}</div><div style="font-size:11.5px;color:#64748b;">{{ s.total_budget|default:0|floatformat:0 }} DA</div></div>
+    </div></div></div>
+    {% empty %}
+    <div class="col-12"><div class="alert alert-info"><i class="bi bi-info-circle-fill"></i><div>Aucun projet trouvé.</div></div></div>
+    {% endfor %}
+  </div>
+  {% if overdue %}
+  <div class="alert alert-danger mb-4"><i class="bi bi-exclamation-circle-fill"></i><div><strong>{{ overdue|length }} projet(s) en retard</strong></div></div>
+  {% endif %}
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4">
+      <div class="isi-card">
+        <div class="isi-card-header"><div class="card-icon purple"><i class="bi bi-pie-chart-fill"></i></div><h3>Répartition statut</h3></div>
+        <div class="isi-card-body"><div style="position:relative;height:220px;"><canvas id="chartProjStatus"></canvas></div></div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="isi-card">
+        <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-diagram-3-fill"></i></div><h3>Liste des projets</h3><div class="ms-auto" style="font-size:13px;color:#64748b;">Budget total : {{ total_budget|floatformat:0 }} DA</div></div>
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead><tr><th>Projet</th><th>Client</th><th>Priorité</th><th>Fin prévue</th><th>Avancement</th><th>Statut</th></tr></thead>
+            <tbody>
+              {% for p in projects %}
+              <tr>
+                <td><a href="{% url 'etudes:project_detail' p.pk %}" style="font-weight:600;color:var(--text-primary);text-decoration:none;">{{ p.title|truncatechars:26 }}</a></td>
+                <td style="font-size:13px;color:#64748b;">{{ p.client.name|truncatechars:20 }}</td>
+                <td>{% if p.priority == 'urgent' %}<span class="isi-badge red">Urgente</span>{% elif p.priority == 'high' %}<span class="isi-badge amber">Haute</span>{% elif p.priority == 'medium' %}<span class="isi-badge blue">Normale</span>{% else %}<span class="isi-badge gray">Basse</span>{% endif %}</td>
+                <td style="white-space:nowrap;font-size:13px;">{% if p.is_overdue %}<span class="isi-badge red">{{ p.end_date|date:"d/m/Y" }}</span>{% else %}{{ p.end_date|date:"d/m/Y"|default:"—" }}{% endif %}</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:60px;height:5px;background:#e2e8f0;border-radius:3px;"><div style="width:{{ p.progress_percentage }}%;height:5px;background:var(--accent);border-radius:3px;max-width:100%;"></div></div>
+                    <span style="font-size:12px;font-weight:600;">{{ p.progress_percentage }}%</span>
+                  </div>
+                </td>
+                <td>{% if p.status == 'in_progress' %}<span class="isi-badge blue"><i class="bi bi-circle-fill" style="font-size:7px;"></i> En cours</span>{% elif p.status == 'completed' %}<span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Terminé</span>{% elif p.status == 'on_hold' %}<span class="isi-badge amber"><i class="bi bi-circle-fill" style="font-size:7px;"></i> En pause</span>{% else %}<span class="isi-badge red"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Annulé</span>{% endif %}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6"><div class="text-center" style="padding:40px;"><p style="color:#64748b;margin:0;">Aucun projet trouvé.</p></div></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+const projStatusData = [{% for s in by_status %}{ status: "{{ s.status }}", count: {{ s.count }} },{% endfor %}];
+const statusLabels = { in_progress: 'En cours', completed: 'Terminé', on_hold: 'En pause', cancelled: 'Annulé' };
+const statusColors = { in_progress: '#3b82f6', completed: '#10b981', on_hold: '#f59e0b', cancelled: '#ef4444' };
+if (projStatusData.length) {
+  new Chart(document.getElementById('chartProjStatus'), {
+    type: 'doughnut',
+    data: { labels: projStatusData.map(d => statusLabels[d.status] || d.status), datasets: [{ data: projStatusData.map(d => d.count), backgroundColor: projStatusData.map(d => statusColors[d.status] || '#94a3b8'), borderWidth: 0, hoverOffset: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { family: 'Barlow', size: 11 }, padding: 10, boxWidth: 12 } } } }
+  });
+}
+</script>
+{% endblock %}

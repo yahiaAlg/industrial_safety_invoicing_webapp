@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Équipements{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Équipements{% endblock %}
+
+{% block topbar_actions %}
+{% if request.user.profile.is_admin %}
+<a href="{% url 'resources:equipment_analytics' %}" class="topbar-btn">
+  <i class="bi bi-graph-up"></i> Analytiques
+</a>
+<a href="{% url 'resources:equipment_create' %}" class="topbar-btn primary">
+  <i class="bi bi-plus-lg"></i> Nouvel équipement
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Équipements</h1>
+      <p>Inventaire et suivi des équipements de l'institut</p>
+    </div>
+  </div>
+
+  {% if request.user.profile.is_admin %}
+  <!-- ── KPI row ────────────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-tools"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ equipment_active_count|default:"0" }}</div>
+            <div class="stat-label">Actifs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon red" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ maintenance_due_count|default:"0" }}</div>
+            <div class="stat-label">Maintenance due</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon blue" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-hourglass-split"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ idle_count|default:"0" }}</div>
+            <div class="stat-label">Inactifs +90j</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-currency-exchange"></i>
+          </div>
+          <div>
+            <div class="stat-value" style="font-size:18px;">{{ total_value|floatformat:0|default:"0" }}</div>
+            <div class="stat-label">Valeur totale (DA)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Filter bar ─────────────────────────────────────────── -->
+  {% if request.user.profile.is_admin %}
+  <div class="isi-card mb-4">
+    <div class="isi-card-body" style="padding:16px 24px;">
+      <form method="get" novalidate>
+        <div class="row g-3 align-items-end">
+          <div class="col-lg-4 col-md-6">
+            <label class="form-label">Recherche</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-search"></i>
+              <input type="text" name="q" class="form-control"
+                     value="{{ request.GET.q|default:'' }}"
+                     placeholder="Nom, catégorie, numéro de série…">
+            </div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label">Statut</label>
+            <select name="status" class="form-select">
+              <option value="">Tous</option>
+              <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Actif</option>
+              <option value="maintenance" {% if request.GET.status == 'maintenance' %}selected{% endif %}>En maintenance</option>
+              <option value="reserved" {% if request.GET.status == 'reserved' %}selected{% endif %}>Réservé</option>
+              <option value="for_sale" {% if request.GET.status == 'for_sale' %}selected{% endif %}>À vendre</option>
+            </select>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label">État</label>
+            <select name="condition" class="form-select">
+              <option value="">Tous</option>
+              <option value="good" {% if request.GET.condition == 'good' %}selected{% endif %}>Bon état</option>
+              <option value="needs_review" {% if request.GET.condition == 'needs_review' %}selected{% endif %}>À réviser</option>
+              <option value="out_of_service" {% if request.GET.condition == 'out_of_service' %}selected{% endif %}>Hors service</option>
+            </select>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber flex-grow-1">
+                <i class="bi bi-funnel-fill"></i> Filtrer
+              </button>
+              <a href="{% url 'resources:equipment_list' %}" class="btn btn-ghost" title="Réinitialiser">
+                <i class="bi bi-x-lg"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Main table card ───────────────────────────────────────── -->
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-tools"></i></div>
+      <h3>Inventaire des équipements
+        {% if equipment_list %}
+        <span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">
+          — {{ equipment_list|length }} équipement{{ equipment_list|length|pluralize }}
+        </span>
+        {% endif %}
+      </h3>
+    </div>
+
+    {% if equipment_list %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Équipement</th>
+            <th>Catégorie</th>
+            <th>État</th>
+            <th>Statut</th>
+            {% if request.user.profile.is_admin %}
+            <th>Valeur actuelle</th>
+            <th>Maintenance</th>
+            {% endif %}
+            <th>Emplacement</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for eq in equipment_list %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:9px;
+                            background:rgba(245,158,11,.12);color:#d97706;
+                            display:flex;align-items:center;justify-content:center;
+                            font-size:17px;flex-shrink:0;">
+                  <i class="bi bi-tools"></i>
+                </div>
+                <div>
+                  <a href="{% url 'resources:equipment_detail' eq.pk %}"
+                     style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                    {{ eq.name }}
+                  </a>
+                  {% if eq.is_maintenance_due %}
+                  <span class="isi-badge red ms-1" style="font-size:10px;padding:2px 6px;">
+                    <i class="bi bi-wrench"></i> Maintenance
+                  </span>
+                  {% endif %}
+                  {% if eq.is_idle %}
+                  <span class="isi-badge gray ms-1" style="font-size:10px;padding:2px 6px;">
+                    <i class="bi bi-hourglass"></i> Inactif
+                  </span>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td><span style="color:var(--text-muted);font-size:13px;">{{ eq.category }}</span></td>
+            <td>
+              {% if eq.condition == 'good' %}
+                <span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Bon état</span>
+              {% elif eq.condition == 'needs_review' %}
+                <span class="isi-badge amber"><i class="bi bi-exclamation-circle-fill" style="font-size:9px;"></i> À réviser</span>
+              {% else %}
+                <span class="isi-badge red"><i class="bi bi-x-circle-fill" style="font-size:9px;"></i> Hors service</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if eq.status == 'active' %}
+                <span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Actif</span>
+              {% elif eq.status == 'maintenance' %}
+                <span class="isi-badge amber"><i class="bi bi-wrench" style="font-size:9px;"></i> Maintenance</span>
+              {% elif eq.status == 'reserved' %}
+                <span class="isi-badge blue"><i class="bi bi-bookmark-fill" style="font-size:9px;"></i> Réservé</span>
+              {% else %}
+                <span class="isi-badge gray"><i class="bi bi-tag-fill" style="font-size:9px;"></i> À vendre</span>
+              {% endif %}
+            </td>
+            {% if request.user.profile.is_admin %}
+            <td>
+              <span style="font-weight:500;font-size:13px;">{{ eq.current_value|floatformat:0 }}
+                <span style="font-size:11px;color:var(--text-muted);">DA</span>
+              </span>
+            </td>
+            <td>
+              <span style="font-size:12px;color:{% if eq.is_maintenance_due %}var(--danger){% else %}var(--text-muted){% endif %};">
+                {{ eq.next_maintenance_due|date:"d/m/Y" }}
+              </span>
+            </td>
+            {% endif %}
+            <td><span style="color:var(--text-muted);font-size:13px;">{{ eq.location|default:"—" }}</span></td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                <a href="{% url 'resources:equipment_detail' eq.pk %}"
+                   class="btn btn-ghost btn-sm" title="Voir">
+                  <i class="bi bi-eye-fill"></i>
+                </a>
+                {% if request.user.profile.is_admin %}
+                <a href="{% url 'resources:equipment_edit' eq.pk %}"
+                   class="btn btn-ghost btn-sm" title="Modifier">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;"><i class="bi bi-tools"></i></div>
+      <p style="color:var(--text-muted);font-size:15px;margin:0 0 16px;">Aucun équipement enregistré.</p>
+      {% if request.user.profile.is_admin %}
+      <a href="{% url 'resources:equipment_create' %}" class="btn btn-amber">
+        <i class="bi bi-plus-lg"></i> Ajouter le premier équipement
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

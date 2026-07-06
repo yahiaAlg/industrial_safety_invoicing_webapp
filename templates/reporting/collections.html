@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Encaissements{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:dashboard' %}" style="color:var(--text-muted);text-decoration:none;">Rapports</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Encaissements{% endblock %}
+{% block extra_head %}<style>
+.fade-up,.fade-up-delay-1,.fade-up-delay-2{opacity:1!important;animation-fill-mode:forwards!important;}
+</style>{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Rapport d'encaissements</h1><p>Paiements reçus pour la période</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4">
+      <div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:20px;">
+        <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-cash-coin"></i></div>
+        <div><div class="stat-value">{{ grand_total|floatformat:0 }} DA</div><div class="stat-label">Total encaissé</div></div>
+      </div></div>
+    </div>
+    <div class="col-lg-8">
+      <div class="isi-card"><div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-pie-chart-fill"></i></div><h3>Par mode de paiement</h3></div>
+        <div style="overflow-x:auto;"><table class="isi-table">
+          <thead><tr><th>Mode</th><th style="text-align:right;">Transactions</th><th style="text-align:right;">Total</th></tr></thead>
+          <tbody>{% for m in by_method %}<tr><td style="font-weight:600;">{{ m.payment_method|default:"—" }}</td><td style="text-align:right;">{{ m.count }}</td><td style="text-align:right;font-weight:600;">{{ m.total|floatformat:0 }} DA</td></tr>{% empty %}<tr><td colspan="3" style="text-align:center;color:#64748b;padding:20px;">Aucune donnée</td></tr>{% endfor %}</tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+  <div class="isi-card fade-up-delay-1">
+    <div class="isi-card-header"><div class="card-icon blue"><i class="bi bi-receipt-cutoff"></i></div><h3>Liste des paiements</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>Date</th><th>Facture</th><th>Client</th><th>Méthode</th><th style="text-align:right;">Montant</th></tr></thead>
+        <tbody>
+          {% for p in payments %}
+          <tr>
+            <td style="white-space:nowrap;">{{ p.date|date:"d/m/Y" }}</td>
+            <td><a href="{% url 'financial:invoice_detail' p.invoice.pk %}" style="font-weight:600;color:var(--accent);text-decoration:none;">{{ p.invoice.reference }}</a></td>
+            <td style="color:#64748b;">{{ p.invoice.client.name }}</td>
+            <td>{{ p.get_payment_method_display|default:"—" }}</td>
+            <td style="text-align:right;font-weight:600;color:#10b981;">{{ p.amount|floatformat:0 }} DA</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5"><div class="text-center" style="padding:40px;"><div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-cash"></i></div><p style="color:#64748b;margin:0;">Aucun paiement trouvé.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

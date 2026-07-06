@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}{% if trainer %}Modifier {{ trainer.first_name }} {{ trainer.last_name }}{% else %}Nouveau formateur{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:trainer_list' %}" style="color:var(--text-muted);text-decoration:none;">Formateurs</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{% if trainer %}Modifier{% else %}Nouveau formateur{% endif %}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{% if trainer %}Modifier le formateur{% else %}Nouveau formateur{% endif %}</h1>
+      <p>{% if trainer %}Mise à jour des informations de {{ trainer.first_name }} {{ trainer.last_name }}{% else %}Enregistrer un nouveau formateur{% endif %}</p>
+    </div>
+  </div>
+
+  {# enctype required for CV file upload #}
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    <div class="row g-4">
+
+      <!-- ── Main form ──────────────────────────────────────── -->
+      <div class="col-lg-8">
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-person-fill-check"></i></div>
+            <h3>Informations du formateur</h3>
+          </div>
+          <div class="isi-card-body">
+
+            <!-- Identité -->
+            <div class="form-section-title">Identité</div>
+            <div class="row g-3 mb-3">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.first_name.id_for_label }}">Prénom</label>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.first_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.last_name.id_for_label }}">Nom</label>
+                {{ form.last_name }}
+                {% if form.last_name.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.last_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-8">
+                <label class="form-label" for="{{ form.specialty.id_for_label }}">Spécialité</label>
+                {{ form.specialty }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Ex. Sécurité incendie, ATEX, Ergonomie, SST…</div>
+                {% if form.specialty.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.specialty.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.trainer_type.id_for_label }}">Type de formateur</label>
+                {{ form.trainer_type }}
+                {% if form.trainer_type.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.trainer_type.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- Contact -->
+            <div class="form-section-title">Contact</div>
+            <div class="row g-3 mb-3">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.phone.id_for_label }}">Téléphone</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-telephone-fill"></i>
+                  {{ form.phone }}
+                </div>
+                {% if form.phone.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.phone.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-envelope-fill"></i>
+                  {{ form.email }}
+                </div>
+                {% if form.email.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.email.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- Tarification -->
+            <div class="form-section-title">Tarification</div>
+            <div class="row g-3 mb-3">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.daily_rate.id_for_label }}">Tarif journalier (DA)</label>
+                {{ form.daily_rate }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">{{ form.daily_rate.help_text }}</div>
+                {% if form.daily_rate.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.daily_rate.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6" id="monthly-rate-field">
+                <label class="form-label" for="{{ form.monthly_rate.id_for_label }}">Tarif mensuel (DA)</label>
+                {{ form.monthly_rate }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">{{ form.monthly_rate.help_text }}</div>
+                {% if form.monthly_rate.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.monthly_rate.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- Fiscal — external trainers only (shown/hidden via JS) -->
+            <div id="fiscal-section">
+              <div class="form-section-title d-flex align-items-center gap-2">
+                Informations fiscales
+                <span class="isi-badge purple" style="font-size:11px;">Externe uniquement</span>
+              </div>
+              <div style="font-size:12px;color:#94a3b8;margin-bottom:12px;">
+                <i class="bi bi-info-circle"></i>
+                Retenue IRG 10% applicable aux prestataires externes. NIF et RIB requis pour les ordres de virement.
+              </div>
+              <div class="row g-3 mb-3">
+                <div class="col-sm-6">
+                  <label class="form-label" for="{{ form.nif.id_for_label }}">NIF</label>
+                  {{ form.nif }}
+                  <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">{{ form.nif.help_text }}</div>
+                  {% if form.nif.errors %}
+                    <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.nif.errors|join:", " }}</div>
+                  {% endif %}
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label" for="{{ form.rib.id_for_label }}">RIB</label>
+                  {{ form.rib }}
+                  <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">{{ form.rib.help_text }}</div>
+                  {% if form.rib.errors %}
+                    <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.rib.errors|join:", " }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- Certifications -->
+            <div class="form-section-title">Certifications et habilitations</div>
+            <div class="row g-3 mb-3">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.certifications.id_for_label }}">Certifications</label>
+                {{ form.certifications }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Ex. NEBOSH, IOSH, Habilitation électrique, ATEX…</div>
+                {% if form.certifications.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.certifications.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- CV -->
+            <div class="form-section-title">Curriculum Vitae</div>
+            <div class="row g-3 mb-3">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.cv.id_for_label }}">Fichier CV</label>
+                {% if trainer and trainer.cv %}
+                  <div style="margin-bottom:8px;font-size:13px;">
+                    <i class="bi bi-file-earmark-person-fill" style="color:var(--accent);"></i>
+                    CV actuel :
+                    <a href="{{ trainer.cv.url }}" target="_blank" style="color:var(--accent);">
+                      Télécharger
+                    </a>
+                    — remplacez ci-dessous pour mettre à jour.
+                  </div>
+                {% endif %}
+                {{ form.cv }}
+                {% if form.cv.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.cv.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- Notes -->
+            <div class="form-section-title">Notes</div>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.notes.id_for_label }}">Notes internes</label>
+                {{ form.notes }}
+              </div>
+            </div>
+
+          </div><!-- /.isi-card-body -->
+
+          <!-- Save bar -->
+          <div style="padding:16px 24px;border-top:1px solid var(--card-border);">
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i> {% if trainer %}Enregistrer les modifications{% else %}Créer le formateur{% endif %}
+              </button>
+              <a href="{% if trainer %}{% url 'resources:trainer_detail' trainer.pk %}{% else %}{% url 'resources:trainer_list' %}{% endif %}"
+                 class="btn btn-ghost">
+                <i class="bi bi-x-lg"></i> Annuler
+              </a>
+            </div>
+          </div>
+        </div>
+      </div><!-- /col-lg-8 -->
+
+      <!-- ── Sidebar ──────────────────────────────────────── -->
+      <div class="col-lg-4">
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-toggle-on"></i></div>
+            <h3>Statut</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="form-check" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+              {{ form.is_active }}
+              <label class="form-check-label" for="{{ form.is_active.id_for_label }}"
+                     style="cursor:pointer;font-size:14px;font-weight:500;">
+                Formateur actif
+              </label>
+            </div>
+            <div style="font-size:11.5px;color:#94a3b8;margin-top:8px;">
+              Décocher pour désactiver sans supprimer le formateur.
+            </div>
+          </div>
+        </div>
+
+        <!-- Type reminder card -->
+        <div class="isi-card mb-4" id="type-hint-card">
+          <div class="isi-card-header">
+            <div class="card-icon amber" id="type-hint-icon"><i class="bi bi-person-workspace"></i></div>
+            <h3 id="type-hint-title">Type de formateur</h3>
+          </div>
+          <div class="isi-card-body">
+            <div id="hint-external" style="font-size:12.5px;color:var(--text-muted);line-height:1.6;">
+              <strong style="color:var(--text-primary);">Externe (prestataire)</strong><br>
+              Paiement par ordre de virement.<br>
+              Retenue IRG <strong>10%</strong> applicable.<br>
+              NIF et RIB obligatoires pour la comptabilité.
+            </div>
+            <div id="hint-internal" style="font-size:12.5px;color:var(--text-muted);line-height:1.6;display:none;">
+              <strong style="color:var(--text-primary);">Interne (salarié)</strong><br>
+              Paiement via la paie mensuelle.<br>
+              IRG <strong>0%</strong> sur les ordres de virement.<br>
+              Le tarif mensuel est utilisé pour le suivi budgétaire.
+            </div>
+          </div>
+        </div>
+
+        {% if trainer %}
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon purple"><i class="bi bi-info-circle-fill"></i></div>
+            <h3>Informations</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="stat-label mb-1">Créé le</div>
+            <div style="font-size:13.5px;font-weight:500;margin-bottom:12px;">{{ trainer.created_at|date:"d/m/Y" }}</div>
+            <div class="stat-label mb-1">Modifié le</div>
+            <div style="font-size:13.5px;font-weight:500;">{{ trainer.updated_at|date:"d/m/Y" }}</div>
+          </div>
+        </div>
+        {% endif %}
+      </div><!-- /col-lg-4 -->
+
+    </div><!-- /row -->
+  </form>
+</div>
+
+<script>
+(function () {
+  var typeSelect = document.getElementById("id_trainer_type");
+  var fiscalSection = document.getElementById("fiscal-section");
+  var hintExternal = document.getElementById("hint-external");
+  var hintInternal = document.getElementById("hint-internal");
+
+  function toggle(val) {
+    var isExternal = (val === "external");
+    fiscalSection.style.display = isExternal ? "" : "none";
+    hintExternal.style.display  = isExternal ? "" : "none";
+    hintInternal.style.display  = isExternal ? "none" : "";
+  }
+
+  if (typeSelect) {
+    // Apply on load
+    toggle(typeSelect.value);
+    // Apply on change
+    typeSelect.addEventListener("change", function () {
+      toggle(this.value);
+    });
+  }
+})();
+</script>
+{% endblock %}

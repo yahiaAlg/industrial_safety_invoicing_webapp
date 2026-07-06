@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Rapport d'utilisation{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:equipment_list' %}" style="color:var(--text-muted);text-decoration:none;">Équipements</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:equipment_analytics' %}" style="color:var(--text-muted);text-decoration:none;">Analytiques</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Taux d'utilisation{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Rapport d'utilisation</h1>
+      <p>Analyse du taux d'utilisation par équipement</p>
+    </div>
+  </div>
+
+  <!-- ── Navigation tabs ───────────────────────────────────────── -->
+  <div class="isi-card mb-4" style="padding:0;overflow:hidden;">
+    <div style="display:flex;border-bottom:1px solid var(--card-border);">
+      <a href="{% url 'resources:equipment_analytics' %}"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;
+                display:flex;align-items:center;gap:8px;
+                border-bottom:2px solid transparent;color:var(--text-muted);">
+        <i class="bi bi-grid-1x2-fill"></i> Vue d'ensemble
+      </a>
+      <a href="{% url 'resources:utilization_report' %}"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;
+                display:flex;align-items:center;gap:8px;
+                border-bottom:2px solid var(--accent);color:var(--accent);">
+        <i class="bi bi-bar-chart-fill"></i> Taux d'utilisation
+      </a>
+      <a href="{% url 'resources:idle_equipment_report' %}"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;
+                display:flex;align-items:center;gap:8px;
+                border-bottom:2px solid transparent;color:var(--text-muted);">
+        <i class="bi bi-hourglass-split"></i> Inactifs
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Chart ─────────────────────────────────────────────────── -->
+  {% if equipment_usage_data %}
+  <div class="isi-card mb-4">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-bar-chart-fill"></i></div>
+      <h3>Utilisations par équipement</h3>
+    </div>
+    <div class="isi-card-body" style="padding:24px;">
+      <canvas id="utilizationChart" style="max-height:320px;"></canvas>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Detailed table ─────────────────────────────────────────── -->
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon blue"><i class="bi bi-table"></i></div>
+      <h3>Détail par équipement</h3>
+    </div>
+
+    {% if equipment_usage_data %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Équipement</th>
+            <th>Catégorie</th>
+            <th>Utilisations</th>
+            <th>Heures totales</th>
+            <th>Dernière utilisation</th>
+            <th>Coût / usage</th>
+            <th>Statut</th>
+            <th style="text-align:right;">Détail</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for eq in equipment_usage_data %}
+          <tr>
+            <td>
+              <a href="{% url 'resources:equipment_detail' eq.pk %}"
+                 style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                {{ eq.name }}
+              </a>
+            </td>
+            <td><span style="color:var(--text-muted);font-size:13px;">{{ eq.category }}</span></td>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-weight:600;">{{ eq.usage_count }}</span>
+                <div style="flex:1;height:6px;background:#f1f5f9;border-radius:3px;max-width:80px;">
+                  <div style="height:100%;border-radius:3px;background:var(--accent);
+                              width:{% widthratio eq.usage_count max_usage_count 100 %}%;"></div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">{{ eq.total_usage_hours }}h</span>
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">
+                {% if eq.last_used_date %}{{ eq.last_used_date|date:"d/m/Y" }}
+                  {% if eq.days_since_last_use %}
+                    <span style="color:#94a3b8;font-size:11px;">({{ eq.days_since_last_use }}j)</span>
+                  {% endif %}
+                {% else %}—{% endif %}
+              </span>
+            </td>
+            <td>
+              {% if eq.usage_count > 0 %}
+              <span style="font-weight:500;font-size:13px;">{{ eq.cost_per_use|floatformat:0 }}
+                <span style="font-size:11px;color:var(--text-muted);">DA</span>
+              </span>
+              {% else %}
+              <span style="color:var(--text-muted);font-size:13px;">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if eq.is_idle %}
+                <span class="isi-badge gray"><i class="bi bi-hourglass"></i> Inactif</span>
+              {% elif eq.usage_count > 0 %}
+                <span class="isi-badge green"><i class="bi bi-check-circle-fill" style="font-size:9px;"></i> Actif</span>
+              {% else %}
+                <span class="isi-badge blue">Nouveau</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;">
+                <a href="{% url 'resources:equipment_detail' eq.pk %}" class="btn btn-ghost btn-sm">
+                  <i class="bi bi-eye-fill"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;"><i class="bi bi-bar-chart"></i></div>
+      <p style="color:var(--text-muted);font-size:15px;margin:0;">Aucune donnée d'utilisation disponible.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if equipment_usage_data %}
+<script>
+  Chart.defaults.font = { family: "'Barlow', sans-serif", size: 12 };
+  Chart.defaults.color = '#64748b';
+
+  const ctx = document.getElementById('utilizationChart');
+  if (ctx) {
+    const labels = [{% for eq in equipment_usage_data %}"{{ eq.name|truncatechars:20 }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+    const usages = [{% for eq in equipment_usage_data %}{{ eq.usage_count }}{% if not forloop.last %},{% endif %}{% endfor %}];
+    const hours  = [{% for eq in equipment_usage_data %}{{ eq.total_usage_hours }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Utilisations',
+            data: usages,
+            backgroundColor: 'rgba(245,158,11,.2)',
+            borderColor: '#f59e0b',
+            borderWidth: 2,
+            borderRadius: 5,
+            yAxisID: 'y',
+          },
+          {
+            label: 'Heures totales',
+            data: hours,
+            backgroundColor: 'rgba(59,130,246,.15)',
+            borderColor: '#3b82f6',
+            borderWidth: 2,
+            borderRadius: 5,
+            yAxisID: 'y1',
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top' } },
+        scales: {
+          y: {
+            type: 'linear', position: 'left', beginAtZero: true,
+            grid: { color: 'rgba(0,0,0,.05)' },
+            title: { display: true, text: 'Nb utilisations' },
+            ticks: { precision: 0 }
+          },
+          y1: {
+            type: 'linear', position: 'right', beginAtZero: true,
+            grid: { drawOnChartArea: false },
+            title: { display: true, text: 'Heures' },
+          },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+</script>
+{% endif %}
+{% endblock %}

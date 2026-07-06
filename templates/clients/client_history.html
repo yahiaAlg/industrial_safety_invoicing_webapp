@@ -1,0 +1,398 @@
+{% extends "base.html" %}
+
+{% block title %}Historique — {{ client.name }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'clients:client_list' %}" style="color:var(--text-muted);text-decoration:none;">Clients</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'clients:client_detail' client.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ client.name }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Historique{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'clients:client_edit' client.pk %}" class="topbar-btn">
+  <i class="bi bi-pencil-fill"></i> Modifier
+</a>
+<a href="{% url 'clients:client_detail' client.pk %}" class="topbar-btn primary">
+  <i class="bi bi-person-fill"></i> Fiche client
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Historique — {{ client.name }}</h1>
+      <p>
+        Factures finalisées, formations et projets
+        {% if client.is_tva_exempt %}
+          <span class="isi-badge gray ms-2" style="font-size:11px;vertical-align:middle;">
+            <i class="bi bi-shield-check-fill"></i> Exonéré TVA
+          </span>
+        {% endif %}
+      </p>
+    </div>
+    <a href="{% url 'clients:client_detail' client.pk %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour à la fiche
+    </a>
+  </div>
+
+  <!-- ── KPI summary ─────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-receipt-cutoff"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ invoices|length }}</div>
+            <div class="stat-label">Factures finalisées</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-mortarboard-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ sessions|length }}</div>
+            <div class="stat-label">Sessions</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon blue" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-diagram-3-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ projects|length }}</div>
+            <div class="stat-label">Projets</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon {% if client.has_outstanding_balance %}red{% else %}green{% endif %}"
+               style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-{% if client.has_outstanding_balance %}exclamation-triangle-fill{% else %}check-circle-fill{% endif %}"></i>
+          </div>
+          <div>
+            <div class="stat-value" style="font-size:16px;
+                 color:{% if client.has_outstanding_balance %}var(--danger){% else %}var(--success){% endif %};">
+              {{ client.outstanding_balance|floatformat:0 }} <span style="font-size:11px;font-weight:400;">DA</span>
+            </div>
+            <div class="stat-label">Solde dû</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav tabs -->
+  <div class="isi-card mb-4" style="padding:0;overflow:hidden;">
+    <div style="display:flex;border-bottom:1px solid var(--card-border);">
+      <a href="#invoices" data-tab="invoices"
+         class="tab-link"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;
+                display:flex;align-items:center;gap:8px;cursor:pointer;
+                border-bottom:2px solid var(--accent);color:var(--accent);">
+        <i class="bi bi-receipt-cutoff"></i> Factures
+        <span style="background:var(--accent);color:#0f172a;font-size:10px;font-weight:700;
+                     padding:1px 6px;border-radius:20px;">{{ invoices|length }}</span>
+      </a>
+      <a href="#sessions" data-tab="sessions"
+         class="tab-link"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;
+                display:flex;align-items:center;gap:8px;cursor:pointer;
+                border-bottom:2px solid transparent;color:var(--text-muted);">
+        <i class="bi bi-mortarboard-fill"></i> Sessions
+        <span style="background:#f1f5f9;color:#475569;font-size:10px;font-weight:700;
+                     padding:1px 6px;border-radius:20px;">{{ sessions|length }}</span>
+      </a>
+      <a href="#projects" data-tab="projects"
+         class="tab-link"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;
+                display:flex;align-items:center;gap:8px;cursor:pointer;
+                border-bottom:2px solid transparent;color:var(--text-muted);">
+        <i class="bi bi-diagram-3-fill"></i> Projets d'étude
+        <span style="background:#f1f5f9;color:#475569;font-size:10px;font-weight:700;
+                     padding:1px 6px;border-radius:20px;">{{ projects|length }}</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Invoices tab (FINALE phase only) ───────────────── -->
+  <div id="tab-invoices" class="tab-content">
+    <div class="isi-card">
+      <div class="isi-card-header">
+        <div class="card-icon green"><i class="bi bi-receipt-cutoff"></i></div>
+        <h3>Factures finalisées</h3>
+      </div>
+      {% if invoices %}
+      <div style="overflow-x:auto;">
+        <table class="isi-table">
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Montant HT</th>
+              <th>Montant TTC</th>
+              <th>Statut</th>
+              <th style="text-align:right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for invoice in invoices %}
+            <tr>
+              <td>
+                <span style="font-family:monospace;font-size:13px;font-weight:600;
+                             background:#f8fafc;padding:3px 8px;border-radius:5px;">
+                  {{ invoice.reference }}
+                </span>
+              </td>
+              <!-- v3: field is invoice_date, not date -->
+              <td><span style="color:var(--text-muted);font-size:13px;">{{ invoice.invoice_date|date:"d/m/Y" }}</span></td>
+              <td>
+                {% if invoice.invoice_type == 'formation' %}
+                  <span class="isi-badge amber"><i class="bi bi-mortarboard-fill"></i> Formation</span>
+                {% else %}
+                  <span class="isi-badge blue"><i class="bi bi-diagram-3-fill"></i> Étude</span>
+                {% endif %}
+              </td>
+              <td style="font-weight:500;">{{ invoice.amount_ht|floatformat:2 }} DA</td>
+              <td style="font-weight:600;">{{ invoice.amount_ttc|floatformat:2 }} DA</td>
+              <td>
+                {% if invoice.status == 'paid' %}
+                  <span class="isi-badge green"><i class="bi bi-check-circle-fill"></i> Payée</span>
+                {% elif invoice.status == 'partially_paid' %}
+                  <span class="isi-badge amber"><i class="bi bi-clock-fill"></i> Partielle</span>
+                {% elif invoice.status == 'voided' %}
+                  <span class="isi-badge gray"><i class="bi bi-slash-circle-fill"></i> Annulée</span>
+                {% elif invoice.status == 'credit_note' %}
+                  <span class="isi-badge blue"><i class="bi bi-arrow-return-left"></i> Avoir émis</span>
+                {% else %}
+                  <span class="isi-badge red"><i class="bi bi-exclamation-circle-fill"></i> Non payée</span>
+                {% endif %}
+              </td>
+              <td>
+                <div style="display:flex;justify-content:flex-end;">
+                  <a href="{% url 'financial:invoice_detail' invoice.pk %}"
+                     class="btn btn-ghost btn-sm">
+                    <i class="bi bi-eye-fill"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="isi-card-body text-center" style="padding:48px 24px;">
+        <div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-receipt"></i></div>
+        <p style="color:var(--text-muted);font-size:14px;margin:0;">Aucune facture finalisée pour ce client.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Sessions tab ───────────────────────────────────── -->
+  <div id="tab-sessions" class="tab-content" style="display:none;">
+    <div class="isi-card">
+      <div class="isi-card-header">
+        <div class="card-icon amber"><i class="bi bi-mortarboard-fill"></i></div>
+        <h3>Sessions de formation</h3>
+      </div>
+      {% if sessions %}
+      <div style="overflow-x:auto;">
+        <table class="isi-table">
+          <thead>
+            <tr>
+              <th>Formation</th>
+              <th>Date début</th>
+              <th>Date fin</th>
+              <th>Formateur</th>
+              <th>Participants</th>
+              <th>Statut</th>
+              <th style="text-align:right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for session in sessions %}
+            <tr>
+              <td>
+                <div style="font-weight:600;color:var(--text-primary);">{{ session.formation.title }}</div>
+              </td>
+              <td><span style="color:var(--text-muted);font-size:13px;">{{ session.date_start|date:"d/m/Y" }}</span></td>
+              <td><span style="color:var(--text-muted);font-size:13px;">{{ session.date_end|date:"d/m/Y"|default:"—" }}</span></td>
+              <td><span style="color:var(--text-muted);font-size:13px;">{{ session.trainer.full_name|default:"—" }}</span></td>
+              <td>
+                <span style="font-weight:500;">{{ session.participants.count }} / {{ session.capacity }}</span>
+              </td>
+              <td>
+                {% if session.status == 'completed' %}
+                  <span class="isi-badge green"><i class="bi bi-check-circle-fill"></i> Terminée</span>
+                {% elif session.status == 'in_progress' %}
+                  <span class="isi-badge blue"><i class="bi bi-play-circle-fill"></i> En cours</span>
+                {% elif session.status == 'planned' %}
+                  <span class="isi-badge amber"><i class="bi bi-clock-fill"></i> Planifiée</span>
+                {% else %}
+                  <span class="isi-badge gray"><i class="bi bi-x-circle-fill"></i> Annulée</span>
+                {% endif %}
+              </td>
+              <td>
+                <div style="display:flex;justify-content:flex-end;">
+                  <a href="{% url 'formations:session_detail' session.pk %}"
+                     class="btn btn-ghost btn-sm">
+                    <i class="bi bi-eye-fill"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="isi-card-body text-center" style="padding:48px 24px;">
+        <div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-mortarboard"></i></div>
+        <p style="color:var(--text-muted);font-size:14px;margin:0;">Aucune session de formation pour ce client.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Projects tab ────────────────────────────────────── -->
+  <div id="tab-projects" class="tab-content" style="display:none;">
+    <div class="isi-card">
+      <div class="isi-card-header">
+        <div class="card-icon blue"><i class="bi bi-diagram-3-fill"></i></div>
+        <h3>Projets d'étude</h3>
+      </div>
+      {% if projects %}
+      <div style="overflow-x:auto;">
+        <table class="isi-table">
+          <thead>
+            <tr>
+              <th>Projet</th>
+              <th>Référence</th>
+              <th>Début</th>
+              <th>Fin prévue</th>
+              <th>Budget</th>
+              <th>Avancement</th>
+              <th>Statut</th>
+              <th style="text-align:right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for project in projects %}
+            <tr>
+              <td>
+                <div style="font-weight:600;color:var(--text-primary);">{{ project.title }}</div>
+                {% if project.project_type %}
+                <div style="font-size:11.5px;color:var(--text-muted);">{{ project.project_type }}</div>
+                {% endif %}
+              </td>
+              <td>
+                {% if project.reference %}
+                <span style="font-family:monospace;font-size:12px;background:#f8fafc;
+                             padding:2px 6px;border-radius:4px;">{{ project.reference }}</span>
+                {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+              </td>
+              <td><span style="color:var(--text-muted);font-size:13px;">{{ project.start_date|date:"d/m/Y" }}</span></td>
+              <td>
+                <span style="color:{% if project.is_overdue %}var(--danger){% else %}var(--text-muted){% endif %};font-size:13px;">
+                  {{ project.end_date|date:"d/m/Y"|default:"—" }}
+                  {% if project.is_overdue %}<i class="bi bi-exclamation-triangle-fill" style="font-size:11px;"></i>{% endif %}
+                </span>
+              </td>
+              <td style="font-weight:500;">{{ project.budget|floatformat:0 }} DA</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px;min-width:100px;">
+                  <div style="flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                    <div style="height:100%;width:{{ project.progress_percentage }}%;
+                                background:{% if project.progress_percentage == 100 %}var(--success){% elif project.progress_percentage >= 50 %}#3b82f6{% else %}var(--accent){% endif %};
+                                border-radius:3px;transition:width .3s;"></div>
+                  </div>
+                  <span style="font-size:12px;font-weight:600;color:var(--text-muted);white-space:nowrap;">
+                    {{ project.progress_percentage }}%
+                  </span>
+                </div>
+              </td>
+              <td>
+                {% if project.status == 'completed' %}
+                  <span class="isi-badge green"><i class="bi bi-check-circle-fill"></i> Terminé</span>
+                {% elif project.status == 'in_progress' %}
+                  <span class="isi-badge blue"><i class="bi bi-play-circle-fill"></i> En cours</span>
+                {% elif project.status == 'on_hold' %}
+                  <span class="isi-badge amber"><i class="bi bi-pause-circle-fill"></i> En pause</span>
+                {% else %}
+                  <span class="isi-badge gray"><i class="bi bi-x-circle-fill"></i> Annulé</span>
+                {% endif %}
+              </td>
+              <td>
+                <div style="display:flex;justify-content:flex-end;">
+                  <a href="{% url 'etudes:project_detail' project.pk %}"
+                     class="btn btn-ghost btn-sm">
+                    <i class="bi bi-eye-fill"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="isi-card-body text-center" style="padding:48px 24px;">
+        <div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-diagram-3"></i></div>
+        <p style="color:var(--text-muted);font-size:14px;margin:0;">Aucun projet d'étude pour ce client.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const tabs = document.querySelectorAll('.tab-link');
+  const contents = document.querySelectorAll('.tab-content');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = tab.dataset.tab;
+
+      tabs.forEach(t => {
+        t.style.borderBottomColor = 'transparent';
+        t.style.color = 'var(--text-muted)';
+        const badge = t.querySelector('span');
+        if (badge) { badge.style.background = '#f1f5f9'; badge.style.color = '#475569'; }
+      });
+      tab.style.borderBottomColor = 'var(--accent)';
+      tab.style.color = 'var(--accent)';
+      const activeBadge = tab.querySelector('span');
+      if (activeBadge) { activeBadge.style.background = 'var(--accent)'; activeBadge.style.color = '#0f172a'; }
+
+      contents.forEach(c => c.style.display = 'none');
+      document.getElementById('tab-' + target).style.display = 'block';
+    });
+  });
+</script>
+{% endblock %}

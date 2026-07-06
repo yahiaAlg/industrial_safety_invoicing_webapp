@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Catégories de dépenses{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:expense_list' %}" style="color:var(--text-muted);text-decoration:none;">Dépenses</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Catégories{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'financial:expense_category_create' %}" class="topbar-btn primary">
+  <i class="bi bi-plus-lg"></i> Nouvelle catégorie
+</a>
+<a href="{% url 'financial:expense_list' %}" class="topbar-btn">
+  <i class="bi bi-credit-card-fill"></i> Dépenses
+</a>
+<a href="{% url 'financial:expense_report' %}" class="topbar-btn">
+  <i class="bi bi-bar-chart-fill"></i> Rapport
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Catégories de dépenses</h1>
+      <p>Organisez vos dépenses par catégorie pour le reporting</p>
+    </div>
+  </div>
+
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-tags-fill"></i></div>
+      <h3>
+        Liste des catégories
+        {% if categories %}
+        <span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">
+          — {{ categories|length }} catégorie{{ categories|length|pluralize }}
+        </span>
+        {% endif %}
+      </h3>
+    </div>
+
+    {% if categories %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Catégorie</th>
+            <th>Description</th>
+            <th>Type</th>
+            <th style="text-align:right;">Dépenses (mois)</th>
+            <th style="text-align:right;">Total (mois, DA)</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cat in categories %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <!-- Color swatch -->
+                <div style="width:14px;height:14px;border-radius:4px;
+                            background:{{ cat.color|default:'#94a3b8' }};
+                            flex-shrink:0;border:1px solid rgba(0,0,0,.08);"></div>
+                <span style="font-weight:600;color:var(--text-primary);">{{ cat.name }}</span>
+              </div>
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">
+                {{ cat.description|default:"—"|truncatechars:60 }}
+              </span>
+            </td>
+            <td>
+              {% if cat.is_direct_cost %}
+                <span class="isi-badge green">
+                  <i class="bi bi-arrow-down-circle-fill"></i> Coût direct
+                </span>
+              {% else %}
+                <span class="isi-badge gray">
+                  <i class="bi bi-building-fill"></i> Frais généraux
+                </span>
+              {% endif %}
+            </td>
+            <td style="text-align:right;">
+              <span style="font-weight:600;color:var(--text-muted);font-size:13px;">
+                {{ cat.expense_count_month|default:"0" }}
+              </span>
+            </td>
+            <td style="text-align:right;">
+              <span style="font-weight:700;font-family:var(--font-head);font-size:14px;">
+                {{ cat.expense_total_month|default:"0"|floatformat:0 }}
+              </span>
+              <span style="font-size:11px;color:var(--text-muted);"> DA</span>
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;gap:4px;">
+                <a href="{% url 'financial:expense_category_edit' cat.pk %}"
+                   class="btn btn-ghost btn-sm" title="Modifier">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;">
+        <i class="bi bi-tags"></i>
+      </div>
+      <p style="color:var(--text-muted);font-size:15px;margin:0 0 16px;">
+        Aucune catégorie définie. Créez-en une pour organiser vos dépenses.
+      </p>
+      <a href="{% url 'financial:expense_category_create' %}" class="btn btn-amber">
+        <i class="bi bi-plus-lg"></i> Créer la première catégorie
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Info block about category types -->
+  {% if categories %}
+  <div class="isi-card mt-4">
+    <div class="isi-card-header">
+      <div class="card-icon blue"><i class="bi bi-info-circle-fill"></i></div>
+      <h3>À propos des types de catégories</h3>
+    </div>
+    <div class="isi-card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div style="padding:14px 16px;background:rgba(16,185,129,.08);border-radius:8px;
+                      border:1px solid rgba(16,185,129,.15);">
+            <div style="font-weight:700;font-size:13px;color:#065f46;margin-bottom:6px;">
+              <i class="bi bi-arrow-down-circle-fill"></i> Coût direct
+            </div>
+            <p style="font-size:12.5px;color:#047857;margin:0;line-height:1.6;">
+              Dépenses imputables à une session ou un projet spécifique.
+              Elles entrent dans le calcul de marge par activité.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div style="padding:14px 16px;background:#f8fafc;border-radius:8px;
+                      border:1px solid var(--card-border);">
+            <div style="font-weight:700;font-size:13px;color:#334155;margin-bottom:6px;">
+              <i class="bi bi-building-fill"></i> Frais généraux
+            </div>
+            <p style="font-size:12.5px;color:#475569;margin:0;line-height:1.6;">
+              Charges non imputables à une activité précise (loyer, électricité, abonnements…).
+              Elles pèsent sur la marge globale de l'institut.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

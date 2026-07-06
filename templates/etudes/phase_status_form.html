@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Statut de la phase — {{ phase.name }}{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'etudes:project_list' %}" style="color:var(--text-muted);text-decoration:none;">Études</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'etudes:project_detail' project.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ project.title|truncatechars:30 }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Statut de phase{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Mettre à jour la phase</h1>
+      <p>{{ phase.name }} — <span style="color:var(--text-muted);">{{ project.title }}</span></p>
+    </div>
+    <a href="{% url 'etudes:project_detail' project.pk %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+
+      <!-- Current phase summary -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-body" style="padding:18px 24px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:40px;height:40px;border-radius:10px;
+                        background:{% if phase.status == 'completed' %}rgba(16,185,129,.12){% elif phase.status == 'in_progress' %}rgba(59,130,246,.12){% elif phase.status == 'blocked' %}rgba(239,68,68,.12){% else %}#f1f5f9{% endif %};
+                        color:{% if phase.status == 'completed' %}var(--success){% elif phase.status == 'in_progress' %}#3b82f6{% elif phase.status == 'blocked' %}var(--danger){% else %}var(--text-muted){% endif %};
+                        display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">
+              <i class="bi bi-layers-fill"></i>
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:15px;">{{ phase.name }}</div>
+              <div style="font-size:13px;color:var(--text-muted);">
+                Phase {{ phase.order }}
+                {% if phase.due_date %} · Échéance : {{ phase.due_date|date:"d/m/Y" }}{% endif %}
+              </div>
+            </div>
+            <div style="margin-left:auto;">
+              {% if phase.status == 'completed' %}
+                <span class="isi-badge green"><i class="bi bi-check-circle-fill"></i> Terminée</span>
+              {% elif phase.status == 'in_progress' %}
+                <span class="isi-badge blue"><i class="bi bi-play-circle-fill"></i> En cours</span>
+              {% elif phase.status == 'blocked' %}
+                <span class="isi-badge red"><i class="bi bi-x-octagon-fill"></i> Bloquée</span>
+              {% else %}
+                <span class="isi-badge gray"><i class="bi bi-clock"></i> En attente</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-arrow-repeat"></i></div>
+          <h3>Nouveau statut</h3>
+        </div>
+        <div class="isi-card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-4">
+              <label class="form-label">Transition vers *</label>
+              {% if form.status.field.choices %}
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                {% for val, label in form.status.field.choices %}
+                <label style="display:flex;align-items:center;gap:10px;padding:12px 16px;
+                              border:1.5px solid var(--card-border);border-radius:9px;cursor:pointer;
+                              transition:border-color .15s;"
+                       onmouseover="this.style.borderColor='var(--accent)'"
+                       onmouseout="if(!document.querySelector('#status_{{ val }}').checked) this.style.borderColor='var(--card-border)'">
+                  <input type="radio" name="status" id="status_{{ val }}" value="{{ val }}"
+                         {% if form.status.value == val %}checked{% endif %}
+                         style="accent-color:var(--accent);width:16px;height:16px;"
+                         onchange="document.querySelectorAll('.status-choice-label').forEach(l=>l.style.borderColor='var(--card-border)');this.closest('label').style.borderColor='var(--accent)';"
+                         class="status-radio">
+                  <div>
+                    <div style="font-weight:600;font-size:13.5px;">
+                      {% if val == 'in_progress' %}<i class="bi bi-play-circle-fill" style="color:#3b82f6;"></i> En cours
+                      {% elif val == 'completed' %}<i class="bi bi-check-circle-fill" style="color:var(--success);"></i> Terminée
+                      {% elif val == 'blocked' %}<i class="bi bi-x-octagon-fill" style="color:var(--danger);"></i> Bloquée
+                      {% elif val == 'pending' %}<i class="bi bi-clock" style="color:var(--text-muted);"></i> En attente
+                      {% endif %}
+                    </div>
+                  </div>
+                </label>
+                {% endfor %}
+              </div>
+              {% if form.status.errors %}
+              <div class="invalid-feedback d-block mt-2">{{ form.status.errors|join:", " }}</div>
+              {% endif %}
+              {% else %}
+              <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>Aucune transition disponible depuis le statut actuel de cette phase.</div>
+              </div>
+              {% endif %}
+            </div>
+
+            <div id="completion-fields" style="display:none;">
+              <div class="section-divider"></div>
+              <div class="row g-3 mb-4">
+                <div class="col-sm-6">
+                  <label class="form-label" for="{{ form.completion_date.id_for_label }}">Date d'achèvement *</label>
+                  <div class="input-icon-wrap">
+                    <i class="bi bi-calendar-event-fill"></i>
+                    <input type="date" name="{{ form.completion_date.html_name }}"
+                           id="{{ form.completion_date.id_for_label }}"
+                           class="form-control {% if form.completion_date.errors %}is-invalid{% endif %}"
+                           value="{{ form.completion_date.value|default:'' }}">
+                  </div>
+                  {% if form.completion_date.errors %}
+                  <div class="invalid-feedback d-block">{{ form.completion_date.errors|join:", " }}</div>
+                  {% endif %}
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label" for="{{ form.actual_hours.id_for_label }}">Heures réelles</label>
+                  <input type="number" name="{{ form.actual_hours.html_name }}"
+                         id="{{ form.actual_hours.id_for_label }}"
+                         class="form-control" value="{{ form.actual_hours.value|default:'' }}"
+                         min="0" step="0.5" placeholder="0.0">
+                </div>
+              </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-4">
+              <i class="bi bi-exclamation-circle-fill"></i>
+              <div>{{ form.non_field_errors|join:"<br>" }}</div>
+            </div>
+            {% endif %}
+
+            {% if form.status.field.choices %}
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i> Mettre à jour
+              </button>
+              <a href="{% url 'etudes:project_detail' project.pk %}" class="btn btn-ghost">Annuler</a>
+            </div>
+            {% else %}
+            <a href="{% url 'etudes:project_detail' project.pk %}" class="btn btn-ghost">
+              <i class="bi bi-arrow-left"></i> Retour au projet
+            </a>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const radios = document.querySelectorAll('.status-radio');
+  const completionFields = document.getElementById('completion-fields');
+
+  function toggleCompletion() {
+    const checked = document.querySelector('.status-radio:checked');
+    completionFields.style.display = (checked && checked.value === 'completed') ? 'block' : 'none';
+  }
+
+  radios.forEach(r => r.addEventListener('change', toggleCompletion));
+  toggleCompletion();
+
+  // Highlight selected radio label on load
+  radios.forEach(r => {
+    if (r.checked) r.closest('label').style.borderColor = 'var(--accent)';
+  });
+</script>
+{% endblock %}

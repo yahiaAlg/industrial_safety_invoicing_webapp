@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}{% if booking %}Modifier la réservation{% else %}Nouvelle réservation{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:equipment_list' %}" style="color:var(--text-muted);text-decoration:none;">Équipements</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:equipment_detail' equipment.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ equipment.name }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{% if booking %}Modifier{% else %}Nouvelle réservation{% endif %}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{% if booking %}Modifier la réservation{% else %}Réserver l'équipement{% endif %}</h1>
+      <p>{{ equipment.name }} — {{ equipment.category }}</p>
+    </div>
+  </div>
+
+  <div class="row g-4 justify-content-center">
+    <div class="col-lg-7">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon green"><i class="bi bi-calendar-check-fill"></i></div>
+            <h3>Détails de la réservation</h3>
+          </div>
+          <div class="isi-card-body">
+
+            <div class="form-section-title">Assignation</div>
+            <div class="row g-3 mb-3">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.reserved_for_session.id_for_label }}">Session de formation</label>
+                {{ form.reserved_for_session }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Laissez vide si la réservation est pour un projet.</div>
+              </div>
+              <div class="col-12">
+                <div style="text-align:center;padding:4px 0;">
+                  <span style="font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">— OU —</span>
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="{{ form.reserved_for_project.id_for_label }}">Projet d'étude</label>
+                {{ form.reserved_for_project }}
+              </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="text-danger" style="font-size:12.5px;margin-bottom:12px;padding:8px 12px;
+                background:rgba(239,68,68,.08);border-radius:6px;border:1px solid rgba(239,68,68,.2);">
+              <i class="bi bi-exclamation-circle-fill"></i> {{ form.non_field_errors|join:", " }}
+            </div>
+            {% endif %}
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title">Période de réservation</div>
+            <div class="row g-3 mb-3">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.date_from.id_for_label }}">Du *</label>
+                {{ form.date_from }}
+                {% if form.date_from.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.date_from.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.date_to.id_for_label }}">Au *</label>
+                {{ form.date_to }}
+                {% if form.date_to.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.date_to.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title">Notes</div>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.notes.id_for_label }}">Notes</label>
+                {{ form.notes }}
+              </div>
+            </div>
+
+          </div>
+
+          <div style="padding:16px 24px;border-top:1px solid var(--card-border);">
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i> {% if booking %}Enregistrer{% else %}Créer la réservation{% endif %}
+              </button>
+              <a href="{% url 'resources:equipment_detail' equipment.pk %}" class="btn btn-ghost">
+                <i class="bi bi-x-lg"></i> Annuler
+              </a>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Sidebar info -->
+    <div class="col-lg-4">
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-tools"></i></div>
+          <h3>{{ equipment.name }}</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="stat-label mb-1">Catégorie</div>
+              <div style="font-size:13.5px;font-weight:500;">{{ equipment.category }}</div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Statut actuel</div>
+              <div style="margin-top:4px;">
+                {% if equipment.status == 'active' %}
+                  <span class="isi-badge green">Actif</span>
+                {% elif equipment.status == 'maintenance' %}
+                  <span class="isi-badge amber">En maintenance</span>
+                {% elif equipment.status == 'reserved' %}
+                  <span class="isi-badge blue">Réservé</span>
+                {% else %}
+                  <span class="isi-badge gray">À vendre</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Emplacement</div>
+              <div style="font-size:13.5px;font-weight:500;">{{ equipment.location|default:"—" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-info-circle-fill"></i></div>
+          <h3>Note</h3>
+        </div>
+        <div class="isi-card-body">
+          <p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0;">
+            Les conflits de réservation sont vérifiés automatiquement. Si l'équipement est déjà réservé sur la période sélectionnée, le système affichera une erreur.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

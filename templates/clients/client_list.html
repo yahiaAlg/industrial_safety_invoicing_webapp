@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Clients{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Clients{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'clients:client_create' %}" class="topbar-btn primary">
+  <i class="bi bi-plus-lg"></i> Nouveau client
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Clients</h1>
+      <p>Gérez vos entreprises, startups, auto-entrepreneurs et particuliers</p>
+    </div>
+  </div>
+
+  <!-- ── Filter bar ─────────────────────────────────────────── -->
+  <div class="isi-card mb-4">
+    <div class="isi-card-body" style="padding:16px 24px;">
+      <form method="get" id="filter-form" novalidate>
+        <div class="row g-3 align-items-end">
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">Recherche</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-search"></i>
+              <input type="text" name="q" id="id_q"
+                     class="form-control"
+                     value="{{ filter_form.q.value|default:'' }}"
+                     placeholder="Nom, ville, RC, NIF…">
+            </div>
+          </div>
+
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label">Type</label>
+            <select name="client_type" class="form-select">
+              {% for val, label in filter_form.client_type.field.choices %}
+              <option value="{{ val }}" {% if filter_form.client_type.value == val %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label">TVA</label>
+            <select name="is_tva_exempt" class="form-select">
+              {% for val, label in filter_form.is_tva_exempt.field.choices %}
+              <option value="{{ val }}" {% if filter_form.is_tva_exempt.value == val %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label">Solde</label>
+            <select name="has_balance" class="form-select">
+              {% for val, label in filter_form.has_balance.field.choices %}
+              <option value="{{ val }}" {% if filter_form.has_balance.value == val %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-lg-1 col-md-3 col-sm-6">
+            <label class="form-label">Statut</label>
+            <select name="is_active" class="form-select">
+              {% for val, label in filter_form.is_active.field.choices %}
+              <option value="{{ val }}" {% if filter_form.is_active.value == val %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber flex-grow-1">
+                <i class="bi bi-funnel-fill"></i> Filtrer
+              </button>
+              <a href="{% url 'clients:client_list' %}" class="btn btn-ghost" title="Réinitialiser">
+                <i class="bi bi-x-lg"></i>
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Results card ───────────────────────────────────────── -->
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-building-fill"></i></div>
+      <h3>
+        Liste des clients
+        {% if page_obj.paginator.count %}
+        <span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">
+          — {{ page_obj.paginator.count }} résultat{{ page_obj.paginator.count|pluralize }}
+        </span>
+        {% endif %}
+      </h3>
+    </div>
+
+    {% if page_obj.object_list %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Type</th>
+            <th>Ville</th>
+            <th>Secteur</th>
+            <th>Contact principal</th>
+            <th>Téléphone</th>
+            <th>Statut</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for client in page_obj.object_list %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <!-- Avatar colour by type -->
+                <div style="width:36px;height:36px;border-radius:9px;
+                            {% if client.client_type == 'entreprise' or client.client_type == 'startup' %}
+                              background:rgba(245,158,11,.12);color:#d97706;
+                            {% elif client.client_type == 'auto_entrepreneur' %}
+                              background:rgba(124,58,237,.12);color:#7c3aed;
+                            {% else %}
+                              background:rgba(59,130,246,.12);color:#3b82f6;
+                            {% endif %}
+                            display:flex;align-items:center;justify-content:center;
+                            font-family:var(--font-head);font-size:15px;font-weight:700;flex-shrink:0;">
+                  {{ client.name|slice:":1"|upper }}
+                </div>
+                <div>
+                  <a href="{% url 'clients:client_detail' client.pk %}"
+                     style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                    {{ client.name }}
+                  </a>
+                  {% if client.has_outstanding_balance %}
+                    <span class="isi-badge red ms-1" style="font-size:10px;padding:2px 6px;">
+                      <i class="bi bi-exclamation-circle-fill"></i> Impayé
+                    </span>
+                  {% endif %}
+                  {% if not client.is_invoice_ready %}
+                    <span class="isi-badge gray ms-1" style="font-size:10px;padding:2px 6px;"
+                          title="Profil incomplet pour facturation">
+                      <i class="bi bi-exclamation-triangle-fill"></i>
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if client.client_type == 'entreprise' %}
+                <span class="isi-badge amber"><i class="bi bi-building-fill"></i> Entreprise</span>
+              {% elif client.client_type == 'startup' %}
+                <span class="isi-badge purple"><i class="bi bi-rocket-takeoff-fill"></i> Startup</span>
+              {% elif client.client_type == 'auto_entrepreneur' %}
+                <span class="isi-badge violet"><i class="bi bi-person-badge-fill"></i> Auto-Ent.</span>
+              {% else %}
+                <span class="isi-badge blue"><i class="bi bi-person-fill"></i> Particulier</span>
+              {% endif %}
+              {% if client.is_tva_exempt %}
+                <span class="isi-badge gray ms-1" style="font-size:10px;padding:2px 6px;">TVA exon.</span>
+              {% endif %}
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">
+                {{ client.city|default:"—" }}
+              </span>
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">
+                {{ client.activity_sector|default:"—"|truncatechars:30 }}
+              </span>
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">
+                {{ client.contact_name|default:"—" }}
+              </span>
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">
+                {{ client.phone|default:"—" }}
+              </span>
+            </td>
+            <td>
+              {% if client.is_active %}
+                <span class="isi-badge green">
+                  <i class="bi bi-circle-fill" style="font-size:7px;"></i> Actif
+                </span>
+              {% else %}
+                <span class="isi-badge gray">
+                  <i class="bi bi-circle-fill" style="font-size:7px;"></i> Inactif
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                <a href="{% url 'clients:client_detail' client.pk %}"
+                   class="btn btn-ghost btn-sm" title="Voir le détail">
+                  <i class="bi bi-eye-fill"></i>
+                </a>
+                <a href="{% url 'clients:client_edit' client.pk %}"
+                   class="btn btn-ghost btn-sm" title="Modifier">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+                {% if request.user.profile.is_admin %}
+                <a href="{% url 'clients:client_history' client.pk %}"
+                   class="btn btn-ghost btn-sm" title="Historique">
+                  <i class="bi bi-clock-history"></i>
+                </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div style="padding:16px 24px;border-top:1px solid var(--card-border);
+                display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="font-size:13px;color:var(--text-muted);">
+        Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+        — {{ page_obj.paginator.count }} client{{ page_obj.paginator.count|pluralize }}
+      </div>
+      <div style="display:flex;gap:4px;">
+        {% if page_obj.has_previous %}
+        <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}"
+           class="btn btn-ghost btn-sm">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+          <button class="btn btn-amber btn-sm" disabled>{{ num }}</button>
+          {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+          <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}"
+             class="btn btn-ghost btn-sm">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}"
+           class="btn btn-ghost btn-sm">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;">
+        <i class="bi bi-building"></i>
+      </div>
+      {% if filter_form.q.value or filter_form.client_type.value or filter_form.is_active.value or filter_form.is_tva_exempt.value %}
+        <p style="color:var(--text-muted);font-size:15px;margin:0 0 16px;">
+          Aucun client ne correspond à vos critères de recherche.
+        </p>
+        <a href="{% url 'clients:client_list' %}" class="btn btn-ghost">
+          <i class="bi bi-x-lg"></i> Réinitialiser les filtres
+        </a>
+      {% else %}
+        <p style="color:var(--text-muted);font-size:15px;margin:0 0 16px;">
+          Aucun client enregistré pour le moment.
+        </p>
+        <a href="{% url 'clients:client_create' %}" class="btn btn-amber">
+          <i class="bi bi-plus-lg"></i> Créer le premier client
+        </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,602 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} client{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'clients:client_list' %}" style="color:var(--text-muted);text-decoration:none;">Clients</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% if client %}
+<a href="{% url 'clients:client_detail' client.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ client.name }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endif %}
+{% endblock %}
+{% block breadcrumb_active %}{{ action }}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ action }}{% if action == "Modifier" %} — {{ client.name }}{% endif %}</h1>
+      <p>{% if client %}Modifiez les informations du client{% else %}Enregistrez un nouveau client dans le système{% endif %}</p>
+    </div>
+    <a href="{% if client %}{% url 'clients:client_detail' client.pk %}{% else %}{% url 'clients:client_list' %}{% endif %}"
+       class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <form method="post" novalidate id="client-form">
+    {% csrf_token %}
+
+    <div class="row g-4">
+
+      <!-- ── Main column ──────────────────────────────────── -->
+      <div class="col-lg-8">
+
+        <!-- Identification -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-building-fill"></i></div>
+            <h3>Identification</h3>
+          </div>
+          <div class="isi-card-body">
+
+            <div class="form-section-title">Informations générales</div>
+            <div class="row g-3 mb-4">
+              <div class="col-sm-8">
+                <label class="form-label" for="{{ form.name.id_for_label }}">Nom *</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-building-fill"></i>
+                  <input type="text" name="{{ form.name.html_name }}" id="{{ form.name.id_for_label }}"
+                         class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                         value="{{ form.name.value|default:'' }}" required>
+                </div>
+                {% if form.name.errors %}
+                <div class="invalid-feedback d-block">{{ form.name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.client_type.id_for_label }}">Type *</label>
+                <select name="{{ form.client_type.html_name }}" id="{{ form.client_type.id_for_label }}"
+                        class="form-select {% if form.client_type.errors %}is-invalid{% endif %}">
+                  {% for val, label in form.client_type.field.choices %}
+                  <option value="{{ val }}" {% if form.client_type.value == val %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                {% if form.client_type.errors %}
+                <div class="invalid-feedback d-block">{{ form.client_type.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="{{ form.activity_sector.id_for_label }}">Secteur d'activité</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-briefcase-fill"></i>
+                  <input type="text" name="{{ form.activity_sector.html_name }}"
+                         id="{{ form.activity_sector.id_for_label }}"
+                         class="form-control {% if form.activity_sector.errors %}is-invalid{% endif %}"
+                         value="{{ form.activity_sector.value|default:'' }}"
+                         placeholder="Ex. Industrie pétrolière, BTP, Agroalimentaire…">
+                </div>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="form-section-title">Coordonnées</div>
+            <div class="row g-3 mb-4">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.address.id_for_label }}">Adresse</label>
+                <textarea name="{{ form.address.html_name }}" id="{{ form.address.id_for_label }}"
+                          class="form-control {% if form.address.errors %}is-invalid{% endif %}"
+                          rows="2" placeholder="Rue, numéro, quartier…">{{ form.address.value|default:'' }}</textarea>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.postal_code.id_for_label }}">Code postal</label>
+                <input type="text" name="{{ form.postal_code.html_name }}" id="{{ form.postal_code.id_for_label }}"
+                       class="form-control" value="{{ form.postal_code.value|default:'' }}">
+              </div>
+              <div class="col-sm-8">
+                <label class="form-label" for="{{ form.city.id_for_label }}">Ville</label>
+                <input type="text" name="{{ form.city.html_name }}" id="{{ form.city.id_for_label }}"
+                       class="form-control" value="{{ form.city.value|default:'' }}">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.phone.id_for_label }}">Téléphone</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-telephone-fill"></i>
+                  <input type="text" name="{{ form.phone.html_name }}" id="{{ form.phone.id_for_label }}"
+                         class="form-control {% if form.phone.errors %}is-invalid{% endif %}"
+                         value="{{ form.phone.value|default:'' }}">
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-envelope-fill"></i>
+                  <input type="email" name="{{ form.email.html_name }}" id="{{ form.email.id_for_label }}"
+                         class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                         value="{{ form.email.value|default:'' }}">
+                </div>
+                {% if form.email.errors %}
+                <div class="invalid-feedback d-block">{{ form.email.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-8">
+                <label class="form-label" for="{{ form.website.id_for_label }}">Site web</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-globe"></i>
+                  <input type="url" name="{{ form.website.html_name }}" id="{{ form.website.id_for_label }}"
+                         class="form-control" value="{{ form.website.value|default:'' }}"
+                         placeholder="https://…">
+                </div>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.rib.id_for_label }}">RIB bancaire</label>
+                <input type="text" name="{{ form.rib.html_name }}" id="{{ form.rib.id_for_label }}"
+                       class="form-control" value="{{ form.rib.value|default:'' }}"
+                       placeholder="Ex. 002 00100 …">
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Contact principal -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-person-fill"></i></div>
+            <h3>Contact principal</h3>
+          </div>
+          <div class="isi-card-body">
+            <div style="font-size:12.5px;color:var(--text-muted);margin-bottom:16px;">
+              <i class="bi bi-info-circle" style="color:var(--accent);"></i>
+              Pour gérer plusieurs contacts, utilisez la section <strong>Contacts</strong> depuis la fiche client.
+            </div>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.contact_name.id_for_label }}">Nom du contact</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-person"></i>
+                  <input type="text" name="{{ form.contact_name.html_name }}" id="{{ form.contact_name.id_for_label }}"
+                         class="form-control" value="{{ form.contact_name.value|default:'' }}">
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.contact_phone.id_for_label }}">Tél. contact</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-telephone-fill"></i>
+                  <input type="text" name="{{ form.contact_phone.html_name }}" id="{{ form.contact_phone.id_for_label }}"
+                         class="form-control" value="{{ form.contact_phone.value|default:'' }}">
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.contact_email.id_for_label }}">Email contact</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-envelope-fill"></i>
+                  <input type="email" name="{{ form.contact_email.html_name }}" id="{{ form.contact_email.id_for_label }}"
+                         class="form-control" value="{{ form.contact_email.value|default:'' }}">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Fiscal section: Entreprise / Startup ──────────── -->
+        <div class="isi-card mb-4" id="fiscal-entreprise">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-file-earmark-text-fill"></i></div>
+            <h3>Identification légale &amp; fiscale</h3>
+          </div>
+          <div class="isi-card-body">
+            <div style="font-size:12.5px;color:var(--text-muted);margin-bottom:16px;">
+              <i class="bi bi-info-circle" style="color:var(--accent);"></i>
+              Applicable aux clients <strong>Entreprise</strong> et <strong>Startup</strong>.
+              Ces champs sont requis pour la finalisation des factures.
+            </div>
+            <div class="row g-3">
+
+              <!-- ── Forme juridique — FK select + add-new link ── -->
+              <div class="col-sm-4">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;">
+                  <label class="form-label mb-0" for="{{ form.forme_juridique.id_for_label }}">
+                    Forme juridique
+                  </label>
+                  <a href="{% url 'clients:forme_juridique_create' %}"
+                     target="_blank"
+                     title="Ajouter une nouvelle forme juridique"
+                     style="font-size:11.5px;color:var(--accent);text-decoration:none;
+                            display:flex;align-items:center;gap:3px;white-space:nowrap;">
+                    <i class="bi bi-plus-circle-fill" style="font-size:12px;"></i>
+                    Nouvelle forme
+                  </a>
+                </div>
+                <select name="{{ form.forme_juridique.html_name }}"
+                        id="{{ form.forme_juridique.id_for_label }}"
+                        class="form-select {% if form.forme_juridique.errors %}is-invalid{% endif %}">
+                  <option value="">— Sélectionner —</option>
+                  {% for choice_val, choice_label in form.forme_juridique.field.choices %}
+                    {% if choice_val %}
+                    <option value="{{ choice_val }}"
+                      {% if form.forme_juridique.value|stringformat:"s" == choice_val|stringformat:"s" %}selected{% endif %}>
+                      {{ choice_label }}
+                    </option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+                {% if form.forme_juridique.errors %}
+                <div class="invalid-feedback d-block">{{ form.forme_juridique.errors|join:", " }}</div>
+                {% endif %}
+                <div style="font-size:11.5px;color:var(--text-muted);margin-top:5px;line-height:1.4;">
+                  Pas dans la liste ?
+                  <a href="{% url 'clients:forme_juridique_create' %}" target="_blank"
+                     style="color:var(--accent);text-decoration:none;">
+                    Créer « Autre » ou une entrée personnalisée
+                  </a>
+                  puis rafraîchissez la page.
+                </div>
+              </div>
+              <!-- ── / Forme juridique ──────────────────────── -->
+
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.rc.id_for_label }}">N° RC</label>
+                <input type="text" name="{{ form.rc.html_name }}" id="{{ form.rc.id_for_label }}"
+                       class="form-control {% if form.rc.errors %}is-invalid{% endif %}"
+                       value="{{ form.rc.value|default:'' }}"
+                       placeholder="Ex. 16/00-1234567B19">
+                {% if form.rc.errors %}
+                <div class="invalid-feedback d-block">{{ form.rc.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.nif.id_for_label }}">NIF</label>
+                <input type="text" name="{{ form.nif.html_name }}" id="{{ form.nif.id_for_label }}"
+                       class="form-control {% if form.nif.errors %}is-invalid{% endif %}"
+                       value="{{ form.nif.value|default:'' }}" placeholder="15 chiffres">
+                {% if form.nif.errors %}
+                <div class="invalid-feedback d-block">{{ form.nif.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.nis.id_for_label }}">NIS</label>
+                <input type="text" name="{{ form.nis.html_name }}" id="{{ form.nis.id_for_label }}"
+                       class="form-control" value="{{ form.nis.value|default:'' }}" placeholder="15 chiffres">
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.article_imposition.id_for_label }}">Article d'imposition</label>
+                <input type="text" name="{{ form.article_imposition.html_name }}"
+                      id="{{ form.article_imposition.id_for_label }}"
+                      class="form-control" value="{{ form.article_imposition.value|default:'' }}">
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.tin.id_for_label }}">TIN</label>
+                <input type="text" name="{{ form.tin.html_name }}" id="{{ form.tin.id_for_label }}"
+                       class="form-control {% if form.tin.errors %}is-invalid{% endif %}"
+                       value="{{ form.tin.value|default:'' }}" placeholder="Ex. 123456789012345">
+                {% if form.tin.errors %}
+                <div class="invalid-feedback d-block">{{ form.tin.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Startup-specific fields -->
+            <div id="startup-extra" style="display:none;">
+              <div class="section-divider mt-4 mb-3"></div>
+              <div class="form-section-title">Label Startup</div>
+              <div class="row g-3">
+                <div class="col-sm-6">
+                  <label class="form-label" for="{{ form.label_startup_number.id_for_label }}">N° Label Startup (ANIE)</label>
+                  <input type="text" name="{{ form.label_startup_number.html_name }}"
+                         id="{{ form.label_startup_number.id_for_label }}"
+                         class="form-control" value="{{ form.label_startup_number.value|default:'' }}"
+                         placeholder="Ex. ANIE-2023-ST-04521">
+                </div>
+                <div class="col-sm-3">
+                  <label class="form-label" for="{{ form.label_startup_date.id_for_label }}">Date du label</label>
+                  <input type="date" name="{{ form.label_startup_date.html_name }}"
+                         id="{{ form.label_startup_date.id_for_label }}"
+                         class="form-control" value="{{ form.label_startup_date.value|date:'Y-m-d'|default:'' }}">
+                </div>
+                <div class="col-sm-3">
+                  <label class="form-label" for="{{ form.programme_accompagnement.id_for_label }}">Programme</label>
+                  <input type="text" name="{{ form.programme_accompagnement.html_name }}"
+                         id="{{ form.programme_accompagnement.id_for_label }}"
+                         class="form-control" value="{{ form.programme_accompagnement.value|default:'' }}"
+                         placeholder="Ex. NEXUS, Riyada…">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Fiscal section: Auto-entrepreneur ─────────────── -->
+        <div class="isi-card mb-4" id="fiscal-ae">
+          <div class="isi-card-header">
+            <div class="card-icon violet"><i class="bi bi-person-badge-fill"></i></div>
+            <h3>Identification — Auto-entrepreneur</h3>
+          </div>
+          <div class="isi-card-body">
+            <div style="font-size:12.5px;color:var(--text-muted);margin-bottom:16px;">
+              <i class="bi bi-info-circle" style="color:var(--accent);"></i>
+              Régime IFU — exonéré de TVA.
+            </div>
+            <div class="row g-3">
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.nif.id_for_label }}_ae">NIF</label>
+                <input type="text" name="{{ form.nif.html_name }}" id="{{ form.nif.id_for_label }}_ae"
+                       class="form-control" value="{{ form.nif.value|default:'' }}" placeholder="15 chiffres">
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.article_imposition.id_for_label }}_ae">Article d'imposition</label>
+                <input type="text" name="{{ form.article_imposition.html_name }}"
+                       id="{{ form.article_imposition.id_for_label }}_ae"
+                       class="form-control" value="{{ form.article_imposition.value|default:'' }}">
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.carte_auto_entrepreneur.id_for_label }}">Carte AE</label>
+                <input type="text" name="{{ form.carte_auto_entrepreneur.html_name }}"
+                       id="{{ form.carte_auto_entrepreneur.id_for_label }}"
+                       class="form-control" value="{{ form.carte_auto_entrepreneur.value|default:'' }}"
+                       placeholder="Ex. AE-2023-19-00587">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Fiscal section: Particulier ───────────────────── -->
+        <div class="isi-card mb-4" id="fiscal-particulier">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-person-vcard-fill"></i></div>
+            <h3>Identification — Particulier</h3>
+          </div>
+          <div class="isi-card-body">
+            <div style="font-size:12.5px;color:var(--text-muted);margin-bottom:16px;">
+              <i class="bi bi-info-circle" style="color:var(--accent);"></i>
+              Particulier — exonéré de TVA.
+            </div>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.nin.id_for_label }}">
+                  NIN — Numéro d'identification national
+                  <span class="text-muted" style="font-size:11px;">(18 chiffres)</span>
+                </label>
+                <input type="text" name="{{ form.nin.html_name }}" id="{{ form.nin.id_for_label }}"
+                       class="form-control {% if form.nin.errors %}is-invalid{% endif %}"
+                       value="{{ form.nin.value|default:'' }}"
+                       maxlength="18" placeholder="Ex. 198506160160042">
+                {% if form.nin.errors %}
+                <div class="invalid-feedback d-block">{{ form.nin.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon purple"><i class="bi bi-sticky-fill"></i></div>
+            <h3>Notes</h3>
+          </div>
+          <div class="isi-card-body">
+            <textarea name="{{ form.notes.html_name }}" id="{{ form.notes.id_for_label }}"
+                      class="form-control" rows="4"
+                      placeholder="Informations complémentaires, contexte, remarques…">{{ form.notes.value|default:'' }}</textarea>
+          </div>
+        </div>
+
+        <!-- Non-field errors -->
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger mb-4">
+          <i class="bi bi-exclamation-circle-fill"></i>
+          <div>{{ form.non_field_errors|join:"<br>" }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Submit row -->
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-amber">
+            <i class="bi bi-check-lg"></i>
+            {% if client %}Enregistrer les modifications{% else %}Créer le client{% endif %}
+          </button>
+          <a href="{% if client %}{% url 'clients:client_detail' client.pk %}{% else %}{% url 'clients:client_list' %}{% endif %}"
+             class="btn btn-ghost">Annuler</a>
+        </div>
+
+      </div><!-- /col-lg-8 -->
+
+      <!-- ── Side column ──────────────────────────────────── -->
+      <div class="col-lg-4">
+
+        <!-- Statut -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon green"><i class="bi bi-toggle-on"></i></div>
+            <h3>Statut</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="form-check form-switch" style="padding-left:0;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <input class="form-check-input" type="checkbox"
+                       name="{{ form.is_active.html_name }}"
+                       id="{{ form.is_active.id_for_label }}"
+                       {% if form.is_active.value %}checked{% endif %}
+                       style="width:40px;height:22px;">
+                <label class="form-check-label" for="{{ form.is_active.id_for_label }}"
+                       style="font-weight:500;font-size:14px;">
+                  Client actif
+                </label>
+              </div>
+              <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;line-height:1.5;">
+                Un client inactif n'apparaît plus dans les listes de sélection.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TVA override (shown for entreprise/startup only) -->
+        <div class="isi-card mb-4" id="tva-card">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-percent"></i></div>
+            <h3>Régime TVA</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="form-check form-switch" style="padding-left:0;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <input class="form-check-input" type="checkbox"
+                       name="{{ form.is_tva_exempt.html_name }}"
+                       id="{{ form.is_tva_exempt.id_for_label }}"
+                       {% if form.is_tva_exempt.value %}checked{% endif %}
+                       style="width:40px;height:22px;">
+                <label class="form-check-label" for="{{ form.is_tva_exempt.id_for_label }}"
+                       style="font-weight:500;font-size:14px;">
+                  Exonéré de TVA
+                </label>
+              </div>
+              <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;line-height:1.5;">
+                Pour les particuliers et auto-entrepreneurs, l'exonération est automatique.
+                Ce paramètre est une dérogation manuelle pour les entreprises.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formes juridiques quick-reference -->
+        <div class="isi-card mb-4" id="forme-juridique-ref" style="display:none;">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-bank2"></i></div>
+            <h3>Formes juridiques</h3>
+          </div>
+          <div class="isi-card-body" style="padding-bottom:4px;">
+            <div style="display:flex;flex-direction:column;gap:0;">
+              <div style="padding:7px 0;border-bottom:1px solid var(--border-light);display:flex;gap:10px;align-items:baseline;">
+                <span style="font-weight:700;font-size:12px;min-width:44px;color:#92400e;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.22);border-radius:5px;padding:1px 6px;text-align:center;">SPA</span>
+                <span style="font-size:12px;color:var(--text-muted);">Société par Actions</span>
+              </div>
+              <div style="padding:7px 0;border-bottom:1px solid var(--border-light);display:flex;gap:10px;align-items:baseline;">
+                <span style="font-weight:700;font-size:12px;min-width:44px;color:#92400e;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.22);border-radius:5px;padding:1px 6px;text-align:center;">SARL</span>
+                <span style="font-size:12px;color:var(--text-muted);">Société à Responsabilité Limitée</span>
+              </div>
+              <div style="padding:7px 0;border-bottom:1px solid var(--border-light);display:flex;gap:10px;align-items:baseline;">
+                <span style="font-weight:700;font-size:12px;min-width:44px;color:#92400e;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.22);border-radius:5px;padding:1px 6px;text-align:center;">EURL</span>
+                <span style="font-size:12px;color:var(--text-muted);">Entreprise Unipersonnelle à Resp. Limitée</span>
+              </div>
+              <div style="padding:7px 0;border-bottom:1px solid var(--border-light);display:flex;gap:10px;align-items:baseline;">
+                <span style="font-weight:700;font-size:12px;min-width:44px;color:#92400e;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.22);border-radius:5px;padding:1px 6px;text-align:center;">GIE</span>
+                <span style="font-size:12px;color:var(--text-muted);">Groupement d'Intérêt Économique</span>
+              </div>
+              <div style="padding:7px 0;border-bottom:1px solid var(--border-light);display:flex;gap:10px;align-items:baseline;">
+                <span style="font-weight:700;font-size:12px;min-width:44px;color:#92400e;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.22);border-radius:5px;padding:1px 6px;text-align:center;">SNC</span>
+                <span style="font-size:12px;color:var(--text-muted);">Société en Nom Collectif</span>
+              </div>
+            </div>
+            <div style="padding-top:10px;">
+              <a href="{% url 'clients:forme_juridique_list' %}" target="_blank"
+                 style="font-size:12px;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:5px;">
+                <i class="bi bi-box-arrow-up-right" style="font-size:11px;"></i>
+                Gérer toutes les formes juridiques
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Type helper -->
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-question-circle-fill"></i></div>
+            <h3>Types de clients</h3>
+          </div>
+          <div class="isi-card-body">
+
+            <div class="mb-2 p-3" style="background:rgba(245,158,11,.08);border-radius:8px;">
+              <div style="font-weight:600;font-size:13px;color:#92400e;margin-bottom:4px;">
+                <i class="bi bi-building-fill"></i> Entreprise
+              </div>
+              <p style="font-size:12px;color:#78350f;margin:0;line-height:1.5;">
+                Société (SPA, SARL…). RC, NIF, NIS, AI requis. TVA 19 %.
+              </p>
+            </div>
+
+            <div class="mb-2 p-3" style="background:rgba(124,58,237,.08);border-radius:8px;">
+              <div style="font-weight:600;font-size:13px;color:#5b21b6;margin-bottom:4px;">
+                <i class="bi bi-rocket-takeoff-fill"></i> Startup
+              </div>
+              <p style="font-size:12px;color:#4c1d95;margin:0;line-height:1.5;">
+                Idem Entreprise + N° label ANIE. TVA 19 %.
+              </p>
+            </div>
+
+            <div class="mb-2 p-3" style="background:rgba(109,40,217,.08);border-radius:8px;">
+              <div style="font-weight:600;font-size:13px;color:#6d28d9;margin-bottom:4px;">
+                <i class="bi bi-person-badge-fill"></i> Auto-entrepreneur
+              </div>
+              <p style="font-size:12px;color:#5b21b6;margin:0;line-height:1.5;">
+                Régime IFU. NIF + carte AE. Exonéré TVA.
+              </p>
+            </div>
+
+            <div class="p-3" style="background:rgba(59,130,246,.08);border-radius:8px;">
+              <div style="font-weight:600;font-size:13px;color:#1e40af;margin-bottom:4px;">
+                <i class="bi bi-person-fill"></i> Particulier
+              </div>
+              <p style="font-size:12px;color:#1e3a8a;margin:0;line-height:1.5;">
+                Individu. NIN (18 chiffres) requis. Exonéré TVA.
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+      </div><!-- /col-lg-4 -->
+    </div><!-- /row -->
+  </form>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const typeSelect      = document.getElementById('{{ form.client_type.id_for_label }}');
+  const cardEntreprise  = document.getElementById('fiscal-entreprise');
+  const cardAE          = document.getElementById('fiscal-ae');
+  const cardParticulier = document.getElementById('fiscal-particulier');
+  const startupExtra    = document.getElementById('startup-extra');
+  const tvaCard         = document.getElementById('tva-card');
+  const fjRefCard       = document.getElementById('forme-juridique-ref');
+
+  function setInputsDisabled(card, disabled) {
+    card.querySelectorAll('input, select, textarea').forEach(el => {
+      el.disabled = disabled;
+    });
+  }
+
+  function syncFields() {
+    const v            = typeSelect ? typeSelect.value : '';
+    const isCompany    = v === 'entreprise' || v === 'startup';
+    const isAE         = v === 'auto_entrepreneur';
+    const isParticular = v === 'particulier';
+
+    cardEntreprise.style.display  = isCompany    ? '' : 'none';
+    cardAE.style.display          = isAE         ? '' : 'none';
+    cardParticulier.style.display = isParticular ? '' : 'none';
+    startupExtra.style.display    = v === 'startup' ? '' : 'none';
+    fjRefCard.style.display       = isCompany    ? '' : 'none';
+
+    // Disable hidden cards' inputs so they are NOT submitted
+    setInputsDisabled(cardEntreprise,  !isCompany);
+    setInputsDisabled(cardAE,          !isAE);
+    setInputsDisabled(cardParticulier, !isParticular);
+    // startup-extra lives inside cardEntreprise — re-enable/disable those inputs
+    startupExtra.querySelectorAll('input').forEach(el => {
+      el.disabled = v !== 'startup';
+    });
+
+    // TVA override only makes sense for companies (AE/particulier are auto-exempt)
+    tvaCard.style.display = isCompany ? '' : 'none';
+  }
+
+  typeSelect?.addEventListener('change', syncFields);
+  syncFields();
+</script>
+{% endblock %}

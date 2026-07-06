@@ -1,0 +1,627 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block breadcrumb_active %}{{ title }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'core:formation_info' %}" class="topbar-btn {% if request.resolver_match.url_name == 'formation_info' %}primary{% endif %}">
+  <i class="bi bi-mortarboard-fill"></i> Formations
+</a>
+<a href="{% url 'core:bureau_info' %}" class="topbar-btn {% if request.resolver_match.url_name == 'bureau_info' %}primary{% endif %}">
+  <i class="bi bi-diagram-3-fill"></i> Bureau d'Étude
+</a>
+<a href="{% url 'core:institute_info' %}" class="topbar-btn {% if request.resolver_match.url_name == 'institute_info' %}primary{% endif %}">
+  <i class="bi bi-building-fill"></i> Institut
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ title }}</h1>
+      <p>Paramètres généraux de l'institut</p>
+    </div>
+  </div>
+
+  <!-- Settings nav tabs -->
+  <div class="isi-card mb-4" style="padding:0;overflow:hidden;">
+    <div style="display:flex;border-bottom:1px solid var(--card-border);">
+      <a href="{% url 'core:institute_info' %}"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:8px;border-bottom:2px solid {% if request.resolver_match.url_name == 'institute_info' %}var(--accent){% else %}transparent{% endif %};color:{% if request.resolver_match.url_name == 'institute_info' %}var(--accent){% else %}var(--text-muted){% endif %};">
+        <i class="bi bi-building-fill"></i> Institut
+      </a>
+      <a href="{% url 'core:formation_info' %}"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:8px;border-bottom:2px solid {% if request.resolver_match.url_name == 'formation_info' %}var(--accent){% else %}transparent{% endif %};color:{% if request.resolver_match.url_name == 'formation_info' %}var(--accent){% else %}var(--text-muted){% endif %};">
+        <i class="bi bi-mortarboard-fill"></i> Centre de Formation
+      </a>
+      <a href="{% url 'core:bureau_info' %}"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:8px;border-bottom:2px solid {% if request.resolver_match.url_name == 'bureau_info' %}var(--accent){% else %}transparent{% endif %};color:{% if request.resolver_match.url_name == 'bureau_info' %}var(--accent){% else %}var(--text-muted){% endif %};">
+        <i class="bi bi-diagram-3-fill"></i> Bureau d'Étude
+      </a>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate id="settings-form">
+    {% csrf_token %}
+
+    {% if request.resolver_match.url_name == 'institute_info' %}
+    <!-- ═══ INSTITUTE INFO ═══ -->
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <!-- General Info -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-info-circle-fill"></i></div>
+            <h3>Informations générales</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-sm-8">
+                <label class="form-label">Nom de l'institut *</label>
+                {% with field=form.name %}
+                <input type="text" name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+                       class="form-control {% if field.errors %}is-invalid{% endif %}"
+                       value="{{ field.value|default:'' }}" required>
+                {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors|join:", " }}</div>{% endif %}
+                {% endwith %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">Abréviation</label>
+                {% with field=form.abbreviation %}
+                <input type="text" name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+                       class="form-control {% if field.errors %}is-invalid{% endif %}"
+                       value="{{ field.value|default:'' }}">
+                {% endwith %}
+              </div>
+              <div class="col-12">
+                <label class="form-label">Adresse *</label>
+                {% with field=form.address %}
+                <textarea name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+                          class="form-control {% if field.errors %}is-invalid{% endif %}" rows="2">{{ field.value|default:'' }}</textarea>
+                {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors|join:", " }}</div>{% endif %}
+                {% endwith %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">Code postal</label>
+                {% with field=form.postal_code %}
+                <input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">
+                {% endwith %}
+              </div>
+              <div class="col-sm-8">
+                <label class="form-label">Ville *</label>
+                {% with field=form.city %}
+                <input type="text" name="{{ field.html_name }}" class="form-control {% if field.errors %}is-invalid{% endif %}" value="{{ field.value|default:'' }}">
+                {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors|join:", " }}</div>{% endif %}
+                {% endwith %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Téléphone *</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-telephone-fill"></i>
+                  {% with field=form.phone %}
+                  <input type="text" name="{{ field.html_name }}" class="form-control {% if field.errors %}is-invalid{% endif %}" value="{{ field.value|default:'' }}">
+                  {% endwith %}
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Email *</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-envelope-fill"></i>
+                  {% with field=form.email %}
+                  <input type="email" name="{{ field.html_name }}" class="form-control {% if field.errors %}is-invalid{% endif %}" value="{{ field.value|default:'' }}">
+                  {% endwith %}
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Site web</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-globe"></i>
+                  {% with field=form.website %}
+                  <input type="url" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">
+                  {% endwith %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Registration numbers -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-file-earmark-text-fill"></i></div>
+            <h3>Numéros d'identification</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-sm-4">
+                <label class="form-label">Numéro RC</label>
+                {% with field=form.rc %}
+                <input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">
+                {% endwith %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">NIF</label>
+                {% with field=form.nif %}
+                <input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">
+                {% endwith %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">NIS</label>
+                {% with field=form.nis %}
+                <input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">
+                {% endwith %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bank details -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon green"><i class="bi bi-bank2"></i></div>
+            <h3>Coordonnées bancaires</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">Banque</label>
+                {% with field=form.bank_name %}
+                <input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">
+                {% endwith %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Numéro de compte</label>
+                {% with field=form.bank_account %}
+                <input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">
+                {% endwith %}
+              </div>
+              <div class="col-12">
+                <label class="form-label">RIB</label>
+                {% with field=form.bank_rib %}
+                <input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">
+                {% endwith %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Invoice footer -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon purple"><i class="bi bi-receipt-cutoff"></i></div>
+            <h3>Pied de page des factures</h3>
+          </div>
+          <div class="isi-card-body">
+            <label class="form-label">Texte pied de page</label>
+            {% with field=form.invoice_footer_text %}
+            <textarea name="{{ field.html_name }}" class="form-control" rows="3"
+                      placeholder="Ex: Toute facture non payée dans les 30 jours sera majorée de 1,5% par mois de retard.">{{ field.value|default:'' }}</textarea>
+            {% endwith %}
+            <div style="font-size:12px;color:#94a3b8;margin-top:6px;">
+              <i class="bi bi-info-circle"></i> Ce texte apparaîtra en bas de toutes vos factures.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Branding -->
+      <div class="col-lg-4">
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-image-fill"></i></div>
+            <h3>Identité visuelle</h3>
+          </div>
+          <div class="isi-card-body">
+            <!-- Logo preview -->
+            {% if form.instance.logo %}
+            <div style="text-align:center;margin-bottom:16px;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);">
+              <img src="{{ form.instance.logo.url }}" alt="Logo actuel"
+                   style="max-height:80px;max-width:100%;object-fit:contain;">
+            </div>
+            {% endif %}
+            <label class="form-label">Logo de l'institut</label>
+            {% with field=form.logo %}
+            <input type="file" name="{{ field.html_name }}" class="form-control mb-3" accept="image/*">
+            {% endwith %}
+
+            <div class="section-divider"></div>
+            <div class="form-section-title mt-0">Directeur</div>
+
+            <label class="form-label">Nom du directeur</label>
+            {% with field=form.director_name %}
+            <input type="text" name="{{ field.html_name }}" class="form-control mb-3" value="{{ field.value|default:'' }}">
+            {% endwith %}
+
+            <label class="form-label">Titre</label>
+            {% with field=form.director_title %}
+            <input type="text" name="{{ field.html_name }}" class="form-control mb-3" value="{{ field.value|default:'' }}">
+            {% endwith %}
+
+            {% if form.instance.director_signature %}
+            <div style="text-align:center;margin-bottom:10px;padding:10px;background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);">
+              <img src="{{ form.instance.director_signature.url }}" alt="Signature"
+                   style="max-height:60px;max-width:100%;object-fit:contain;">
+            </div>
+            {% endif %}
+            <label class="form-label">Signature (image)</label>
+            {% with field=form.director_signature %}
+            <input type="file" name="{{ field.html_name }}" class="form-control" accept="image/*">
+            {% endwith %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% elif request.resolver_match.url_name == 'formation_info' %}
+    <!-- ═══ FORMATION INFO ═══ -->
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-mortarboard-fill"></i></div>
+            <h3>Centre de Formation</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">Nom du centre</label>
+                {% with field=form.name %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+              <div class="col-12">
+                <label class="form-label">Description</label>
+                {% with field=form.description %}<textarea name="{{ field.html_name }}" class="form-control" rows="3">{{ field.value|default:'' }}</textarea>{% endwith %}
+              </div>
+              <div class="col-12">
+                <label class="form-label">Adresse spécifique</label>
+                {% with field=form.address %}<textarea name="{{ field.html_name }}" class="form-control" rows="2">{{ field.value|default:'' }}</textarea>{% endwith %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Téléphone</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-telephone-fill"></i>
+                  {% with field=form.phone %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Email</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-envelope-fill"></i>
+                  {% with field=form.email %}<input type="email" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Invoicing -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon green"><i class="bi bi-receipt-cutoff"></i></div>
+            <h3>Facturation & TVA</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-sm-4">
+                <label class="form-label">Préfixe des factures</label>
+                {% with field=form.invoice_prefix %}
+                <input type="text" name="{{ field.html_name }}" class="form-control {% if field.errors %}is-invalid{% endif %}"
+                       value="{{ field.value|default:'' }}" placeholder="F" maxlength="10" style="text-transform:uppercase;">
+                {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors|join:", " }}</div>{% endif %}
+                {% endwith %}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Ex: F → F-2026-001</div>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">Taux de TVA</label>
+                {% with field=form.tva_rate %}
+                <input type="number" name="{{ field.html_name }}" class="form-control {% if field.errors %}is-invalid{% endif %}"
+                       value="{{ field.value|default:'0.19' }}" step="0.01" min="0" max="1">
+                {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors|join:", " }}</div>{% endif %}
+                {% endwith %}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">0.19 = 19%</div>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">TVA applicable</label>
+                <div style="padding-top:8px;">
+                  {% with field=form.tva_applicable %}
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+                           {% if field.value %}checked{% endif %}>
+                    <label class="form-check-label" for="{{ field.id_for_label }}">Activer</label>
+                  </div>
+                  {% endwith %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Numéros d'identification -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-file-earmark-text-fill"></i></div>
+            <h3>Numéros d’identification</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-sm-4">
+                <label class="form-label">Numéro RC</label>
+                {% with field=form.rc %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">NIF</label>
+                {% with field=form.nif %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">NIS</label>
+                {% with field=form.nis %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Article d’imposition (ART.I)</label>
+                {% with field=form.article_imposition %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">N° Agrément</label>
+                {% with field=form.agrement_number %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}" placeholder="Ex. AGR/FORM/2019/0042">{% endwith %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coordonnées bancaires -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon green"><i class="bi bi-bank2"></i></div>
+            <h3>Coordonnées bancaires</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">Banque</label>
+                {% with field=form.bank_name %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Numéro de compte</label>
+                {% with field=form.bank_account %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+              <div class="col-12">
+                <label class="form-label">RIB</label>
+                {% with field=form.bank_rib %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attestations -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-award-fill"></i></div>
+            <h3>Attestations</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">Validité (années)</label>
+                {% with field=form.attestation_validity_years %}
+                <input type="number" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'5' }}" min="1" max="20">
+                {% endwith %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Présence minimale (%)</label>
+                {% with field=form.min_attendance_percent %}
+                <input type="number" name="{{ field.html_name }}" class="form-control {% if field.errors %}is-invalid{% endif %}"
+                       value="{{ field.value|default:'80' }}" min="0" max="100">
+                {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors|join:", " }}</div>{% endif %}
+                {% endwith %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Director -->
+      <div class="col-lg-4">
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon purple"><i class="bi bi-person-badge-fill"></i></div>
+            <h3>Directeur de la formation</h3>
+          </div>
+          <div class="isi-card-body">
+            <label class="form-label">Nom</label>
+            {% with field=form.director_name %}<input type="text" name="{{ field.html_name }}" class="form-control mb-3" value="{{ field.value|default:'' }}">{% endwith %}
+
+            <label class="form-label">Titre</label>
+            {% with field=form.director_title %}<input type="text" name="{{ field.html_name }}" class="form-control mb-3" value="{{ field.value|default:'' }}">{% endwith %}
+
+            {% if form.instance.director_signature %}
+            <div style="text-align:center;margin-bottom:10px;padding:10px;background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);">
+              <img src="{{ form.instance.director_signature.url }}" alt="Signature"
+                   style="max-height:60px;max-width:100%;object-fit:contain;">
+            </div>
+            {% endif %}
+            <label class="form-label">Signature (image)</label>
+            {% with field=form.director_signature %}<input type="file" name="{{ field.html_name }}" class="form-control" accept="image/*">{% endwith %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% elif request.resolver_match.url_name == 'bureau_info' %}
+    <!-- ═══ BUREAU D'ÉTUDE INFO ═══ -->
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-diagram-3-fill"></i></div>
+            <h3>Bureau d'Étude</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">Nom du bureau</label>
+                {% with field=form.name %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+              <div class="col-12">
+                <label class="form-label">Description</label>
+                {% with field=form.description %}<textarea name="{{ field.html_name }}" class="form-control" rows="3">{{ field.value|default:'' }}</textarea>{% endwith %}
+              </div>
+              <div class="col-12">
+                <label class="form-label">Adresse spécifique</label>
+                {% with field=form.address %}<textarea name="{{ field.html_name }}" class="form-control" rows="2">{{ field.value|default:'' }}</textarea>{% endwith %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Téléphone</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-telephone-fill"></i>
+                  {% with field=form.phone %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Email</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-envelope-fill"></i>
+                  {% with field=form.email %}<input type="email" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Invoicing -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon green"><i class="bi bi-receipt-cutoff"></i></div>
+            <h3>Facturation & TVA</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-sm-4">
+                <label class="form-label">Préfixe des factures</label>
+                {% with field=form.invoice_prefix %}
+                <input type="text" name="{{ field.html_name }}" class="form-control {% if field.errors %}is-invalid{% endif %}"
+                       value="{{ field.value|default:'' }}" placeholder="E" maxlength="10" style="text-transform:uppercase;">
+                {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors|join:", " }}</div>{% endif %}
+                {% endwith %}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Ex: E → E-2026-001</div>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">Taux de TVA</label>
+                {% with field=form.tva_rate %}
+                <input type="number" name="{{ field.html_name }}" class="form-control {% if field.errors %}is-invalid{% endif %}"
+                       value="{{ field.value|default:'0.19' }}" step="0.01" min="0" max="1">
+                {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors|join:", " }}</div>{% endif %}
+                {% endwith %}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">0.19 = 19%</div>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">TVA applicable</label>
+                <div style="padding-top:8px;">
+                  {% with field=form.tva_applicable %}
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+                           {% if field.value %}checked{% endif %}>
+                    <label class="form-check-label" for="{{ field.id_for_label }}">Activer</label>
+                  </div>
+                  {% endwith %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Numéros d'identification -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-file-earmark-text-fill"></i></div>
+            <h3>Numéros d’identification</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-sm-4">
+                <label class="form-label">Numéro RC</label>
+                {% with field=form.rc %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">NIF</label>
+                {% with field=form.nif %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">NIS</label>
+                {% with field=form.nis %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+              <div class="col-12">
+                <label class="form-label">Article d’imposition (ART.I)</label>
+                {% with field=form.article_imposition %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coordonnées bancaires -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon green"><i class="bi bi-bank2"></i></div>
+            <h3>Coordonnées bancaires</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">Banque</label>
+                {% with field=form.bank_name %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Numéro de compte</label>
+                {% with field=form.bank_account %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+              <div class="col-12">
+                <label class="form-label">RIB</label>
+                {% with field=form.bank_rib %}<input type="text" name="{{ field.html_name }}" class="form-control" value="{{ field.value|default:'' }}">{% endwith %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /col-lg-8 -->
+
+      <!-- Right: Chief Engineer -->
+      <div class="col-lg-4">
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-person-badge-fill"></i></div>
+            <h3>Ingénieur en chef</h3>
+          </div>
+          <div class="isi-card-body">
+            <label class="form-label">Nom</label>
+            {% with field=form.chief_engineer_name %}<input type="text" name="{{ field.html_name }}" class="form-control mb-3" value="{{ field.value|default:'' }}">{% endwith %}
+
+            <label class="form-label">Titre</label>
+            {% with field=form.chief_engineer_title %}<input type="text" name="{{ field.html_name }}" class="form-control mb-3" value="{{ field.value|default:'' }}">{% endwith %}
+
+            {% if form.instance.chief_engineer_signature %}
+            <div style="text-align:center;margin-bottom:10px;padding:10px;background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);">
+              <img src="{{ form.instance.chief_engineer_signature.url }}" alt="Signature"
+                   style="max-height:60px;max-width:100%;object-fit:contain;">
+            </div>
+            {% endif %}
+            <label class="form-label">Signature (image)</label>
+            {% with field=form.chief_engineer_signature %}<input type="file" name="{{ field.html_name }}" class="form-control" accept="image/*">{% endwith %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Save bar -->
+    <div style="position:sticky;bottom:0;background:#fff;border-top:1px solid var(--card-border);padding:14px 0;margin-top:8px;z-index:100;">
+      <div class="d-flex gap-2 align-items-center">
+        <button type="submit" class="btn btn-amber">
+          <i class="bi bi-check-lg"></i> Enregistrer les modifications
+        </button>
+        <span style="font-size:13px;color:#94a3b8;">
+          <i class="bi bi-info-circle"></i> Les modifications sont appliquées immédiatement.
+        </span>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

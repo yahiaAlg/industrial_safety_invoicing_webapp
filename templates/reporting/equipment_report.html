@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Rapport équipements{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:dashboard' %}" style="color:var(--text-muted);text-decoration:none;">Rapports</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Équipements{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'reporting:equipment_roi_report' %}" class="topbar-btn"><i class="bi bi-graph-up-arrow"></i> ROI</a>
+<a href="{% url 'reporting:maintenance_cost_report' %}" class="topbar-btn"><i class="bi bi-wrench-adjustable-fill"></i> Maintenance</a>
+{% endblock %}
+{% block extra_head %}<style>
+.fade-up,.fade-up-delay-1,.fade-up-delay-2{opacity:1!important;animation-fill-mode:forwards!important;}
+</style>{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Rapport équipements</h1><p>Utilisation, maintenance et statut du parc matériel</p></div></div>
+  {% if maintenance_due %}
+  <div class="alert alert-warning mb-4"><i class="bi bi-exclamation-triangle-fill"></i><div><strong>{{ maintenance_due|length }} équipement(s)</strong> nécessitent une maintenance.</div></div>
+  {% endif %}
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4">
+      <div class="isi-card">
+        <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-pie-chart-fill"></i></div><h3>Répartition statut</h3></div>
+        <div class="isi-card-body"><div style="position:relative;height:200px;"><canvas id="chartEqStatus"></canvas></div></div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      {% if maintenance_due %}
+      <div class="isi-card mb-3">
+        <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-wrench-adjustable-fill"></i></div><h3>Maintenance due</h3></div>
+        <div style="overflow-x:auto;"><table class="isi-table">
+          <thead><tr><th>Équipement</th><th>Catégorie</th><th>Prochaine maintenance</th><th>État</th></tr></thead>
+          <tbody>{% for e in maintenance_due %}<tr>
+            <td style="font-weight:600;">{{ e.name|truncatechars:28 }}</td>
+            <td><span class="isi-badge gray">{{ e.category|truncatechars:18 }}</span></td>
+            <td><span class="isi-badge red"><i class="bi bi-wrench-adjustable-fill"></i> {{ e.next_maintenance_due|date:"d/m/Y" }}</span></td>
+            <td>{% if e.condition == 'good' %}<span class="isi-badge green">Bon état</span>{% elif e.condition == 'needs_review' %}<span class="isi-badge amber">À réviser</span>{% else %}<span class="isi-badge red">Hors service</span>{% endif %}</td>
+          </tr>{% empty %}<tr><td colspan="4" style="text-align:center;padding:20px;color:#64748b;">Aucune maintenance due.</td></tr>{% endfor %}</tbody>
+        </table></div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="isi-card">
+    <div class="isi-card-header"><div class="card-icon blue"><i class="bi bi-tools"></i></div><h3>Inventaire complet</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>Équipement</th><th>Catégorie</th><th>Statut</th><th>Utilisations</th><th style="text-align:right;">Heures tot.</th><th style="text-align:right;">Coût achat</th></tr></thead>
+        <tbody>
+          {% for e in equipment_list %}
+          <tr>
+            <td><a href="{% url 'resources:equipment_detail' e.pk %}" style="font-weight:600;color:var(--text-primary);text-decoration:none;">{{ e.name|truncatechars:26 }}</a>{% if e.serial_number %}<div style="font-size:11.5px;color:#94a3b8;font-family:monospace;">{{ e.serial_number }}</div>{% endif %}</td>
+            <td><span class="isi-badge gray">{{ e.category|truncatechars:16 }}</span></td>
+            <td>{% if e.status == 'active' %}<span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Actif</span>{% elif e.status == 'maintenance' %}<span class="isi-badge amber"><i class="bi bi-wrench-adjustable-fill"></i> Maint.</span>{% elif e.status == 'reserved' %}<span class="isi-badge blue">Réservé</span>{% else %}<span class="isi-badge red">À vendre</span>{% endif %}</td>
+            <td style="text-align:center;">{{ e.usage_count_ann|default:0 }}</td>
+            <td style="text-align:right;">{{ e.total_hours_ann|default:0|floatformat:1 }} h</td>
+            <td style="text-align:right;font-weight:600;">{{ e.purchase_cost|floatformat:0 }} DA</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6"><div class="text-center" style="padding:40px;"><div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-tools"></i></div><p style="color:#64748b;margin:0;">Aucun équipement.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+fetch("{% url 'reporting:chart_equipment_status' %}")
+  .then(r => r.json())
+  .then(({ data }) => {
+    const sLabels = { active: 'Actif', maintenance: 'Maintenance', reserved: 'Réservé', for_sale: 'À vendre' };
+    const sColors = { active: '#10b981', maintenance: '#f59e0b', reserved: '#3b82f6', for_sale: '#ef4444' };
+    new Chart(document.getElementById('chartEqStatus'), {
+      type: 'doughnut',
+      data: { labels: data.map(d => sLabels[d.status] || d.status), datasets: [{ data: data.map(d => d.count), backgroundColor: data.map(d => sColors[d.status] || '#94a3b8'), borderWidth: 0, hoverOffset: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { family: 'Barlow', size: 11 }, padding: 8, boxWidth: 12 } } } }
+    });
+  });
+</script>
+{% endblock %}

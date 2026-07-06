@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Synthèse des revenus{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:dashboard' %}" style="color:var(--text-muted);text-decoration:none;">Rapports</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Synthèse des revenus{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'reporting:export_invoices_csv' %}?date_from={{ date_from }}&date_to={{ date_to }}" class="topbar-btn primary">
+  <i class="bi bi-download"></i> Exporter CSV
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Synthèse des revenus</h1>
+      <p>Analyse financière consolidée pour la période sélectionnée</p>
+    </div>
+  </div>
+
+  <!-- Date filter -->
+  <div class="isi-card mb-4">
+    <div class="isi-card-body" style="padding:16px 24px;">
+      <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label class="form-label mb-0">Du</label>
+          <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label class="form-label mb-0">Au</label>
+          <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;">
+        </div>
+        <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-receipt-cutoff"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ summary.invoiced_ht|default:0|floatformat:0 }} DA</div>
+            <div class="stat-label">Facturé HT</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-cash-coin"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ summary.collected|default:0|floatformat:0 }} DA</div>
+            <div class="stat-label">Encaissé</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon blue" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-percent"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ summary.tva_total|default:0|floatformat:0 }} DA</div>
+            <div class="stat-label">TVA collectée</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon red" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-clock-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ summary.outstanding|default:0|floatformat:0 }} DA</div>
+            <div class="stat-label">Restant dû</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Business line breakdown -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-mortarboard-fill"></i></div>
+          <h3>Formations</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="stat-label mb-1">Facturé HT</div>
+              <div style="font-size:20px;font-family:var(--font-head);font-weight:700;">{{ summary_formation.invoiced_ht|default:0|floatformat:0 }} DA</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Encaissé</div>
+              <div style="font-size:20px;font-family:var(--font-head);font-weight:700;color:#10b981;">{{ summary_formation.collected|default:0|floatformat:0 }} DA</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">TVA</div>
+              <div style="font-weight:600;">{{ summary_formation.tva_total|default:0|floatformat:0 }} DA</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Restant dû</div>
+              <div style="font-weight:600;color:#ef4444;">{{ summary_formation.outstanding|default:0|floatformat:0 }} DA</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-diagram-3-fill"></i></div>
+          <h3>Études / Consulting</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="stat-label mb-1">Facturé HT</div>
+              <div style="font-size:20px;font-family:var(--font-head);font-weight:700;">{{ summary_etude.invoiced_ht|default:0|floatformat:0 }} DA</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Encaissé</div>
+              <div style="font-size:20px;font-family:var(--font-head);font-weight:700;color:#10b981;">{{ summary_etude.collected|default:0|floatformat:0 }} DA</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">TVA</div>
+              <div style="font-weight:600;">{{ summary_etude.tva_total|default:0|floatformat:0 }} DA</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Restant dû</div>
+              <div style="font-weight:600;color:#ef4444;">{{ summary_etude.outstanding|default:0|floatformat:0 }} DA</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly table -->
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon purple"><i class="bi bi-bar-chart-fill"></i></div>
+      <h3>Évolution mensuelle</h3>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Mois</th>
+            <th style="text-align:right;">Formations HT</th>
+            <th style="text-align:right;">Études HT</th>
+            <th style="text-align:right;">Total HT</th>
+            <th style="text-align:right;">TVA</th>
+            <th style="text-align:right;">TTC</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in monthly %}
+          <tr>
+            <td style="font-weight:600;">{{ m.month }}</td>
+            <td style="text-align:right;">{{ m.formation_ht|default:0|floatformat:0 }} DA</td>
+            <td style="text-align:right;">{{ m.etude_ht|default:0|floatformat:0 }} DA</td>
+            <td style="text-align:right;font-weight:600;">{{ m.total_ht|default:0|floatformat:0 }} DA</td>
+            <td style="text-align:right;color:#64748b;">{{ m.tva|default:0|floatformat:0 }} DA</td>
+            <td style="text-align:right;font-weight:600;">{{ m.total_ttc|default:0|floatformat:0 }} DA</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6">
+              <div class="text-center" style="padding:40px 24px;">
+                <div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-bar-chart"></i></div>
+                <p style="color:#64748b;margin:0;">Aucune donnée pour cette période.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

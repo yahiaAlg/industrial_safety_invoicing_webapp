@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Livraison projets{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:project_overview_report' %}" style="color:var(--text-muted);text-decoration:none;">Projets</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Livraison{% endblock %}
+{% block extra_head %}<style>
+.fade-up,.fade-up-delay-1,.fade-up-delay-2{opacity:1!important;animation-fill-mode:forwards!important;}
+</style>{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Livraison des projets</h1><p>Analyse des délais et respect des échéances</p></div></div>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-check-circle-fill"></i></div>
+      <div><div class="stat-value">{{ on_time_rate }}%</div><div class="stat-label">Taux de ponctualité</div></div>
+    </div></div></div>
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon blue" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-briefcase-fill"></i></div>
+      <div><div class="stat-value">{{ on_time|length }}</div><div class="stat-label">Livrés à temps</div></div>
+    </div></div></div>
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon red" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-exclamation-circle-fill"></i></div>
+      <div><div class="stat-value">{{ late|length }}</div><div class="stat-label">Livrés en retard</div></div>
+    </div></div></div>
+  </div>
+  {% if late %}
+  <div class="isi-card mb-4 fade-up-delay-1">
+    <div class="isi-card-header"><div class="card-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div><h3>Projets livrés en retard</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>Projet</th><th>Client</th><th>Échéance</th><th>Livraison</th><th style="text-align:right;">Retard</th></tr></thead>
+        <tbody>{% for p in late %}<tr>
+          <td><a href="{% url 'formations:project_detail' p.pk %}" style="font-weight:600;color:var(--text-primary);text-decoration:none;">{{ p.title|truncatechars:28 }}</a></td>
+          <td style="color:#64748b;font-size:13px;">{{ p.client.name|truncatechars:22 }}</td>
+          <td>{{ p.deadline|date:"d/m/Y" }}</td>
+          <td>{{ p.delivery_date|date:"d/m/Y" }}</td>
+          <td style="text-align:right;"><span class="isi-badge red">+{{ p.days_late }} j</span></td>
+        </tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+  <div class="isi-card fade-up-delay-2">
+    <div class="isi-card-header"><div class="card-icon green"><i class="bi bi-check2-all"></i></div><h3>Projets livrés à temps</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>Projet</th><th>Client</th><th>Échéance</th><th>Livraison</th><th style="text-align:right;">Avance</th></tr></thead>
+        <tbody>{% for p in on_time %}<tr>
+          <td><a href="{% url 'formations:project_detail' p.pk %}" style="font-weight:600;color:var(--text-primary);text-decoration:none;">{{ p.title|truncatechars:28 }}</a></td>
+          <td style="color:#64748b;font-size:13px;">{{ p.client.name|truncatechars:22 }}</td>
+          <td>{{ p.deadline|date:"d/m/Y" }}</td>
+          <td>{{ p.delivery_date|date:"d/m/Y" }}</td>
+          <td style="text-align:right;"><span class="isi-badge green">{% if p.days_early > 0 %}+{{ p.days_early }} j{% else %}J{% endif %}</span></td>
+        </tr>{% empty %}<tr><td colspan="5" style="text-align:center;padding:20px;color:#64748b;">Aucun projet livré à temps.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

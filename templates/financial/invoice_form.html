@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} — Facture{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:invoice_list' %}" style="color:var(--text-muted);text-decoration:none;">Factures</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ action }}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ action }}{% if invoice %} — {{ invoice.reference|default:invoice.proforma_reference }}{% endif %}</h1>
+      <p>{% if invoice %}Modification de la facture {{ invoice.reference|default:invoice.proforma_reference }}{% else %}Création d'une nouvelle facture proforma{% endif %}</p>
+    </div>
+    <a href="{% if invoice %}{% url 'financial:invoice_detail' invoice.pk %}{% else %}{% url 'financial:invoice_list' %}{% endif %}"
+       class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <!-- Context banners -->
+  {% if source_session %}
+  <div class="isi-card mb-4" style="border-left:3px solid var(--accent);">
+    <div class="isi-card-body" style="padding:14px 20px;display:flex;align-items:center;gap:12px;">
+      <i class="bi bi-info-circle-fill" style="color:var(--accent);font-size:18px;flex-shrink:0;"></i>
+      <span style="font-size:13.5px;">
+        Facture pré-remplie depuis la session <strong>{{ source_session }}</strong> —
+        {{ source_session.attended_count }} participant(s) à {{ source_session.effective_price|floatformat:2 }} DA.
+      </span>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if source_project %}
+  <div class="isi-card mb-4" style="border-left:3px solid var(--accent);">
+    <div class="isi-card-body" style="padding:14px 20px;display:flex;align-items:center;gap:12px;">
+      <i class="bi bi-info-circle-fill" style="color:var(--accent);font-size:18px;flex-shrink:0;"></i>
+      <span style="font-size:13.5px;">
+        Facture pré-remplie depuis le projet <strong>{{ source_project.title }}</strong> —
+        budget {{ source_project.budget|floatformat:2 }} DA.
+      </span>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Locked warning for finale invoices -->
+  {% if invoice and invoice.phase == 'finale' %}
+  <div class="alert alert-warning mb-4">
+    <i class="bi bi-lock-fill"></i>
+    <div>
+      <strong>Facture finalisée</strong> — Les lignes de facturation et les montants ne peuvent plus être modifiés.
+      Seuls les champs administratifs (notes, échéance, pied de page) sont éditables.
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="row g-4">
+
+      <!-- ────────── Main form column ────────── -->
+      <div class="col-lg-8">
+
+        <!-- Identification -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-receipt-cutoff"></i></div>
+            <h3>Identification</h3>
+          </div>
+          <div class="isi-card-body">
+
+            <div class="row g-3 mb-4">
+
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.invoice_type.id_for_label }}">Type de facture *</label>
+                {{ form.invoice_type }}
+                {% if form.invoice_type.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.invoice_type.errors|join:", " }}</div>
+                {% endif %}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  <i class="bi bi-info-circle" style="color:var(--accent);"></i>
+                  TVA auto-ajustée : 9% pour Formation, 19% pour Étude.
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.client.id_for_label }}">Client *</label>
+                {{ form.client }}
+                {% if form.client.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.client.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.page_ref.id_for_label }}">Réf. interne (en-tête)</label>
+                {{ form.page_ref }}
+                {% if form.page_ref.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.page_ref.errors|join:", " }}</div>
+                {% endif %}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  Ex. GSCOM — affiché en haut à droite du document imprimé.
+                </div>
+              </div>
+
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="form-section-title">Dates</div>
+            <div class="row g-3 mb-4">
+
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.invoice_date.id_for_label }}">Date de facturation *</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-calendar-fill"></i>
+                  {{ form.invoice_date }}
+                </div>
+                {% if form.invoice_date.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.invoice_date.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              {% if not invoice or invoice.phase == 'proforma' %}
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.validity_date.id_for_label }}">Validité proforma</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-clock"></i>
+                  {{ form.validity_date }}
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Défaut : 30 jours après émission.</div>
+                {% if form.validity_date.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.validity_date.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              {% endif %}
+
+              {% if invoice and invoice.phase == 'finale' %}
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.due_date.id_for_label }}">Date d'échéance</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-calendar-check-fill"></i>
+                  {{ form.due_date }}
+                </div>
+                {% if form.due_date.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.due_date.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              {% endif %}
+
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.tva_rate.id_for_label }}">Taux TVA *</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-percent"></i>
+                  {{ form.tva_rate }}
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  0.09 = 9% / 0.19 = 19% / 0 = Exonéré.
+                </div>
+                {% if form.tva_rate.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.tva_rate.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+            </div>
+
+
+          </div>
+        </div>
+
+        <!-- Notes & footer -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon purple"><i class="bi bi-sticky-fill"></i></div>
+            <h3>Notes &amp; pied de page</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.notes.id_for_label }}">Notes internes</label>
+                {{ form.notes }}
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="{{ form.footer_text.id_for_label }}">Pied de page (personnalisé)</label>
+                {{ form.footer_text }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  Si vide, le texte par défaut de l'institut sera utilisé.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Non-field errors -->
+        {% if form.non_field_errors %}
+        <div class="isi-card mb-4" style="border-left:3px solid var(--danger);">
+          <div class="isi-card-body" style="padding:14px 20px;">
+            {% for error in form.non_field_errors %}
+            <div style="color:var(--danger);font-size:13.5px;display:flex;gap:8px;align-items:flex-start;">
+              <i class="bi bi-exclamation-circle-fill" style="margin-top:2px;flex-shrink:0;"></i>
+              {{ error }}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Submit -->
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-amber">
+            <i class="bi bi-check-lg"></i>
+            {% if invoice %}Enregistrer les modifications{% else %}Créer la proforma{% endif %}
+          </button>
+          <a href="{% if invoice %}{% url 'financial:invoice_detail' invoice.pk %}{% else %}{% url 'financial:invoice_list' %}{% endif %}"
+             class="btn btn-ghost">
+            <i class="bi bi-x-lg"></i> Annuler
+          </a>
+        </div>
+
+      </div><!-- /col-lg-8 -->
+
+      <!-- ────────── Side panel ────────── -->
+      <div class="col-lg-4">
+
+        {% if invoice %}
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon green"><i class="bi bi-bar-chart-fill"></i></div>
+            <h3>Résumé actuel</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-6">
+                <div class="stat-label mb-1">Total TTC</div>
+                <div class="stat-value" style="font-size:20px;">{{ invoice.amount_ttc|floatformat:0 }}</div>
+                <div style="font-size:11px;color:var(--text-muted);">DA</div>
+              </div>
+              <div class="col-6">
+                <div class="stat-label mb-1">
+                  {% if invoice.phase == 'finale' %}Solde dû{% else %}Phase{% endif %}
+                </div>
+                {% if invoice.phase == 'finale' %}
+                <div class="stat-value" style="font-size:20px;
+                  color:{% if invoice.amount_remaining > 0 %}var(--danger){% else %}var(--success){% endif %};">
+                  {{ invoice.amount_remaining|floatformat:0 }}
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);">DA</div>
+                {% else %}
+                <span class="isi-badge gray" style="margin-top:4px;"><i class="bi bi-file-earmark-text"></i> Proforma</span>
+                {% endif %}
+              </div>
+              <div class="col-12">
+                <div class="stat-label mb-1">Statut</div>
+                <div style="margin-top:4px;">
+                  {% include "financial/partials/_invoice_status_badge.html" with invoice=invoice %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Help card -->
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-info-circle-fill"></i></div>
+            <h3>Aide</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="mb-3 p-3" style="background:rgba(59,130,246,.08);border-radius:8px;">
+              <div style="font-weight:600;font-size:13px;color:#1e40af;margin-bottom:4px;">
+                <i class="bi bi-list-ol"></i> Workflow
+              </div>
+              <p style="font-size:12px;color:#1e3a8a;margin:0;line-height:1.6;">
+                1 — Créer la proforma<br>
+                2 — Envoyer au client &amp; attendre le BC<br>
+                3 — Enregistrer le N° Bon de Commande<br>
+                4 — Finaliser → facture définitive<br>
+                5 — Enregistrer les paiements
+              </p>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);margin:0;line-height:1.5;">
+              <i class="bi bi-hash" style="color:var(--accent);"></i>
+              Les numéros de proforma et de facture finale sont générés automatiquement.
+            </p>
+            <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
+              <a href="{% url 'financial:invoice_sequence_list' %}"
+                 style="font-size:12px;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:6px;">
+                <i class="bi bi-sliders"></i>
+                Modifier les compteurs de numérotation
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /col-lg-4 -->
+    </div>
+  </form>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Default invoice_date to today if empty
+  const dateInput = document.getElementById('id_invoice_date');
+  if (dateInput && !dateInput.value) {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm   = String(today.getMonth() + 1).padStart(2, '0');
+    const dd   = String(today.getDate()).padStart(2, '0');
+    dateInput.value = `${yyyy}-${mm}-${dd}`;
+  }
+
+  // Auto-suggest TVA rate based on invoice_type selection
+  const typeSelect = document.getElementById('id_invoice_type');
+  const tvaInput   = document.getElementById('id_tva_rate');
+  if (typeSelect && tvaInput) {
+    typeSelect.addEventListener('change', function () {
+      const current = parseFloat(tvaInput.value);
+      if (this.value === 'formation') {
+        if (current === 0.19 || current === 0) tvaInput.value = '0.09';
+      } else if (this.value === 'etude') {
+        if (current === 0.09 || current === 0) tvaInput.value = '0.19';
+      }
+    });
+  }
+</script>
+{% endblock %}

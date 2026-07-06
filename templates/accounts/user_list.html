@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Utilisateurs{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Gestion des utilisateurs{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'accounts:user_create' %}" class="topbar-btn primary">
+  <i class="bi bi-person-fill-add"></i> Nouvel utilisateur
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Utilisateurs</h1>
+      <p>Gérez les comptes et droits d'accès</p>
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ users|length }}</div>
+            <div class="stat-label">Total utilisateurs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-person-fill-check"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ users|length }}</div>
+            <div class="stat-label">Comptes actifs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon blue" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-shield-fill-check"></i>
+          </div>
+          <div>
+            <div class="stat-value">
+              {% with admin_count=0 %}
+              {% for u in users %}{% if u.profile.is_admin %}{% with admin_count=admin_count|add:1 %}{% endwith %}{% endif %}{% endfor %}
+              {{ users|dictsort:"profile.role"|dictsortreversed:"profile.role"|length }}
+              {% endwith %}
+            </div>
+            <div class="stat-label">Administrateurs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users table -->
+  <div class="isi-card fade-up fade-up-delay-1">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-people-fill"></i></div>
+      <h3>Liste des utilisateurs</h3>
+    </div>
+
+    {% if users %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Utilisateur</th>
+            <th>Rôle</th>
+            <th>Email</th>
+            <th>Téléphone</th>
+            <th>Dernière connexion</th>
+            <th>Statut</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div class="user-avatar {% if u.profile.is_admin %}amber{% else %}blue{% endif %}"
+                     style="background:{% if u.profile.is_admin %}rgba(245,158,11,.15){% else %}rgba(59,130,246,.15){% endif %};color:{% if u.profile.is_admin %}#d97706{% else %}#2563eb{% endif %};">
+                  {{ u.first_name|slice:":1"|upper|default:u.username|slice:":1"|upper }}
+                </div>
+                <div>
+                  <div style="font-weight:600;color:#0f172a;">
+                    {{ u.get_full_name|default:u.username }}
+                    {% if u == request.user %}
+                      <span class="isi-badge gray ms-1" style="font-size:10px;padding:2px 6px;">Moi</span>
+                    {% endif %}
+                  </div>
+                  <div style="font-size:12px;color:#64748b;">@{{ u.username }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if u.profile.is_admin %}
+                <span class="isi-badge amber"><i class="bi bi-shield-fill-check"></i> Administrateur</span>
+              {% else %}
+                <span class="isi-badge blue"><i class="bi bi-person-fill"></i> Réceptionniste</span>
+              {% endif %}
+            </td>
+            <td>
+              <span style="color:#64748b;font-size:13px;">{{ u.email|default:"—" }}</span>
+            </td>
+            <td>
+              <span style="color:#64748b;font-size:13px;">
+                {% if u.profile.phone %}{{ u.profile.phone }}{% else %}—{% endif %}
+              </span>
+            </td>
+            <td>
+              <span style="color:#64748b;font-size:13px;">
+                {% if u.last_login %}
+                  {{ u.last_login|date:"d/m/Y H:i" }}
+                {% else %}
+                  <span style="color:#cbd5e1;">Jamais</span>
+                {% endif %}
+              </span>
+            </td>
+            <td>
+              {% if u.profile.is_active %}
+                <span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Actif</span>
+              {% else %}
+                <span class="isi-badge red"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Inactif</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                <a href="{% url 'accounts:user_edit' u.pk %}" class="btn btn-ghost btn-sm" title="Modifier">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+                <a href="{% url 'accounts:user_reset_password' u.pk %}" class="btn btn-ghost btn-sm" title="Réinitialiser mot de passe">
+                  <i class="bi bi-key-fill"></i>
+                </a>
+                {% if u != request.user %}
+                <form method="post" action="{% url 'accounts:user_toggle_active' u.pk %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm {% if u.profile.is_active %}btn-danger-soft{% else %}btn-ghost{% endif %}"
+                          title="{% if u.profile.is_active %}Désactiver{% else %}Activer{% endif %}"
+                          onclick="return confirm('{% if u.profile.is_active %}Désactiver ce compte ?{% else %}Activer ce compte ?{% endif %}')">
+                    <i class="bi bi-{% if u.profile.is_active %}slash-circle-fill{% else %}check-circle-fill{% endif %}"></i>
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:48px;color:#e2e8f0;margin-bottom:16px;"><i class="bi bi-people"></i></div>
+      <p style="color:#64748b;font-size:15px;margin:0;">Aucun utilisateur trouvé.</p>
+      <a href="{% url 'accounts:user_create' %}" class="btn btn-amber mt-3">
+        <i class="bi bi-person-fill-add"></i> Créer le premier utilisateur
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

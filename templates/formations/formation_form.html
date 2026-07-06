@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'formations:formation_list' %}" style="color:var(--text-muted);text-decoration:none;">Catalogue</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ action }}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ action }}</h1>
+      <p>{% if formation %}Modifier les informations de la formation{% else %}Créer une nouvelle formation au catalogue{% endif %}</p>
+    </div>
+    <a href="{% if formation %}{% url 'formations:formation_detail' formation.pk %}{% else %}{% url 'formations:formation_list' %}{% endif %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if client_pk %}<input type="hidden" name="client" value="{{ client_pk }}">{% endif %}
+    <div class="row g-4">
+
+      <!-- Main form -->
+      <div class="col-lg-8">
+
+        <!-- Identification -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-mortarboard-fill"></i></div>
+            <h3>Identification</h3>
+          </div>
+          <div class="isi-card-body">
+
+            <div class="row g-3 mb-4">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.title.id_for_label }}">Titre <span style="color:var(--danger);">*</span></label>
+                <input type="text" name="{{ form.title.html_name }}" id="{{ form.title.id_for_label }}"
+                       class="form-control {% if form.title.errors %}is-invalid{% endif %}"
+                       value="{{ form.title.value|default:'' }}"
+                       placeholder="Ex. Formation SST — Sauveteur Secouriste du Travail">
+                {% if form.title.errors %}
+                <div class="invalid-feedback d-block">{{ form.title.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.code.id_for_label }}">Code spécialité</label>
+                <input type="text" name="{{ form.code.html_name }}" id="{{ form.code.id_for_label }}"
+                       class="form-control {% if form.code.errors %}is-invalid{% endif %}"
+                       value="{{ form.code.value|default:'' }}"
+                       placeholder="Ex. BTP0701"
+                       style="font-family:var(--font-mono,monospace);letter-spacing:.5px;"
+                       maxlength="20">
+                {% if form.code.errors %}
+                <div class="invalid-feedback d-block">{{ form.code.errors|join:", " }}</div>
+                {% endif %}
+                <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">Code officiel 2019</div>
+              </div>
+              <div class="col-md-5">
+                <label class="form-label" for="{{ form.category.id_for_label }}">Catégorie</label>
+                <select name="{{ form.category.html_name }}" id="{{ form.category.id_for_label }}"
+                        class="form-select {% if form.category.errors %}is-invalid{% endif %}">
+                  <option value="">— Sélectionner —</option>
+                  {% for val, label in form.category.field.choices %}
+                  {% if val %}
+                  <option value="{{ val }}" {% if form.category.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                  {% endif %}
+                  {% endfor %}
+                </select>
+                {% if form.category.errors %}
+                <div class="invalid-feedback d-block">{{ form.category.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="form-section-title">Description</div>
+
+            <div class="row g-3 mb-4">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.description.id_for_label }}">Description générale</label>
+                <textarea name="{{ form.description.html_name }}" id="{{ form.description.id_for_label }}"
+                          class="form-control" rows="3"
+                          placeholder="Présentation synthétique de la formation…">{{ form.description.value|default:'' }}</textarea>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="{{ form.objectives.id_for_label }}">Objectifs pédagogiques</label>
+                <textarea name="{{ form.objectives.html_name }}" id="{{ form.objectives.id_for_label }}"
+                          class="form-control" rows="3"
+                          placeholder="À l'issue de cette formation, le participant sera capable de…">{{ form.objectives.value|default:'' }}</textarea>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.target_audience.id_for_label }}">Public cible</label>
+                <textarea name="{{ form.target_audience.html_name }}" id="{{ form.target_audience.id_for_label }}"
+                          class="form-control" rows="2"
+                          placeholder="Responsables HSE, opérateurs, encadrement…">{{ form.target_audience.value|default:'' }}</textarea>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.prerequisites.id_for_label }}">Prérequis</label>
+                <textarea name="{{ form.prerequisites.html_name }}" id="{{ form.prerequisites.id_for_label }}"
+                          class="form-control" rows="2"
+                          placeholder="Aucun prérequis particulier…">{{ form.prerequisites.value|default:'' }}</textarea>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Durée & capacité -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-clock-fill"></i></div>
+            <h3>Durée et capacité</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-sm-6 col-md-3">
+                <label class="form-label" for="{{ form.duration_days.id_for_label }}">Durée (jours)</label>
+                <input type="number" name="{{ form.duration_days.html_name }}" id="{{ form.duration_days.id_for_label }}"
+                       class="form-control {% if form.duration_days.errors %}is-invalid{% endif %}"
+                       value="{{ form.duration_days.value|default:'' }}" min="1" step="0.5">
+                {% if form.duration_days.errors %}
+                <div class="invalid-feedback d-block">{{ form.duration_days.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <label class="form-label" for="{{ form.duration_hours.id_for_label }}">Durée (heures)</label>
+                <input type="number" name="{{ form.duration_hours.html_name }}" id="{{ form.duration_hours.id_for_label }}"
+                       class="form-control {% if form.duration_hours.errors %}is-invalid{% endif %}"
+                       value="{{ form.duration_hours.value|default:'' }}" min="1" step="0.5">
+                {% if form.duration_hours.errors %}
+                <div class="invalid-feedback d-block">{{ form.duration_hours.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <label class="form-label" for="{{ form.min_participants.id_for_label }}">Min. participants</label>
+                <input type="number" name="{{ form.min_participants.html_name }}" id="{{ form.min_participants.id_for_label }}"
+                       class="form-control {% if form.min_participants.errors %}is-invalid{% endif %}"
+                       value="{{ form.min_participants.value|default:'' }}" min="1">
+                {% if form.min_participants.errors %}
+                <div class="invalid-feedback d-block">{{ form.min_participants.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <label class="form-label" for="{{ form.max_participants.id_for_label }}">Max. participants</label>
+                <input type="number" name="{{ form.max_participants.html_name }}" id="{{ form.max_participants.id_for_label }}"
+                       class="form-control {% if form.max_participants.errors %}is-invalid{% endif %}"
+                       value="{{ form.max_participants.value|default:'' }}" min="1">
+                {% if form.max_participants.errors %}
+                <div class="invalid-feedback d-block">{{ form.max_participants.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              {% if formation %}
+              <div class="col-12" id="notif-capacity-wrap" style="display:none;">
+                <div style="display:flex;align-items:flex-start;gap:10px;border-radius:8px;padding:10px 14px;font-size:12.5px;line-height:1.5;background:#fffbeb;border:1px solid #fcd34d;">
+                  <i class="bi bi-exclamation-triangle-fill" style="flex-shrink:0;margin-top:2px;color:#F59E0B;"></i>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+                    <div style="font-weight:600;color:#92400e;" id="notif-capacity-text"></div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                      <button type="button" id="btn-capacity-autofix"
+                              style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#F59E0B;background:none;border:1px solid #F59E0B;border-radius:5px;padding:3px 10px;cursor:pointer;">
+                        <i class="bi bi-magic"></i> Ajuster automatiquement
+                      </button>
+                      <span style="font-size:12px;color:var(--text-muted);">ou modifiez manuellement.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Accréditation -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon purple"><i class="bi bi-patch-check-fill"></i></div>
+            <h3>Accréditation</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.accreditation_body.id_for_label }}">Organisme d'accréditation</label>
+                <input type="text" name="{{ form.accreditation_body.html_name }}" id="{{ form.accreditation_body.id_for_label }}"
+                       class="form-control"
+                       value="{{ form.accreditation_body.value|default:'' }}"
+                       placeholder="Ex. INRS, OPPBTP, organisme agréé…">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.accreditation_reference.id_for_label }}">Référence d'accréditation</label>
+                <input type="text" name="{{ form.accreditation_reference.html_name }}" id="{{ form.accreditation_reference.id_for_label }}"
+                       class="form-control"
+                       value="{{ form.accreditation_reference.value|default:'' }}"
+                       placeholder="Numéro ou code de référence">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger mb-4">
+          <i class="bi bi-exclamation-circle-fill"></i>
+          <div>{{ form.non_field_errors|join:"<br>" }}</div>
+        </div>
+        {% endif %}
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-amber">
+            <i class="bi bi-check-lg"></i>
+            {% if formation %}Enregistrer les modifications{% else %}Créer la formation{% endif %}
+          </button>
+          <a href="{% if formation %}{% url 'formations:formation_detail' formation.pk %}{% else %}{% url 'formations:formation_list' %}{% endif %}"
+             class="btn btn-ghost">Annuler</a>
+        </div>
+
+      </div>
+
+      <!-- Sidebar: pricing & status -->
+      <div class="col-lg-4">
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon green"><i class="bi bi-currency-exchange"></i></div>
+            <h3>Tarification</h3>
+          </div>
+          <div class="isi-card-body">
+            <label class="form-label" for="{{ form.base_price.id_for_label }}">
+              Prix de base (DA) <span style="color:var(--danger);">*</span>
+            </label>
+            <input type="number" name="{{ form.base_price.html_name }}" id="{{ form.base_price.id_for_label }}"
+                   class="form-control {% if form.base_price.errors %}is-invalid{% endif %}"
+                   value="{{ form.base_price.value|default:'' }}" min="0" step="100"
+                   placeholder="0">
+            {% if form.base_price.errors %}
+            <div class="invalid-feedback d-block">{{ form.base_price.errors|join:", " }}</div>
+            {% endif %}
+            <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+              Prix par session. Le prix par participant est ajusté à la création de la session.
+            </div>
+          </div>
+        </div>
+
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon gray" style="background:#f1f5f9;color:#475569;"><i class="bi bi-toggle-on"></i></div>
+            <h3>Statut</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="p-3" style="background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);">
+              <div class="form-check form-switch" style="padding-left:0;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <input class="form-check-input" type="checkbox"
+                         name="{{ form.is_active.html_name }}" id="{{ form.is_active.id_for_label }}"
+                         {% if form.is_active.value %}checked{% endif %}
+                         style="width:40px;height:22px;">
+                  <label class="form-check-label" for="{{ form.is_active.id_for_label }}"
+                         style="font-weight:600;font-size:14px;">Formation active</label>
+                </div>
+                <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;line-height:1.5;">
+                  Une formation inactive n'apparaît plus dans les sélecteurs de sessions.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </form>
+
+</div>
+{% endblock %}
+
+{% if formation %}
+<script>
+(function () {
+  const SESSION_CAPS = {{ session_capacity_conflicts_json|default:"[]"|safe }};
+  const inpMax = document.getElementById('{{ form.max_participants.id_for_label }}');
+  const notif  = document.getElementById('notif-capacity-wrap');
+  const txt    = document.getElementById('notif-capacity-text');
+  const btnFix = document.getElementById('btn-capacity-autofix');
+  if (!inpMax || !notif) return;
+
+  function check() {
+    const newMax = parseInt(inpMax.value, 10);
+    if (isNaN(newMax)) { notif.style.display = 'none'; return; }
+    const conflicts = SESSION_CAPS.filter(s => s.capacity > newMax);
+    if (!conflicts.length) { notif.style.display = 'none'; return; }
+    const maxCap = Math.max(...conflicts.map(s => s.capacity));
+    const dates  = conflicts.map(s => s.date).join(', ');
+    txt.textContent =
+      `${conflicts.length} session(s) active(s) ont une capacité de ${maxCap} participants, ` +
+      `supérieure au maximum saisi (${newMax}). Sessions concernées : ${dates}.`;
+    btnFix.dataset.max = maxCap;
+    notif.style.display = 'block';
+  }
+
+  inpMax.addEventListener('input', check);
+  btnFix.addEventListener('click', () => {
+    const v = parseInt(btnFix.dataset.max, 10);
+    if (!isNaN(v)) { inpMax.value = v; check(); }
+  });
+  check();
+})();
+</script>
+{% endif %}

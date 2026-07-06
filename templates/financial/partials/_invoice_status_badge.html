@@ -1,0 +1,23 @@
+{# financial/partials/_invoice_status_badge.html #}
+{# Usage: {% include "financial/partials/_invoice_status_badge.html" with invoice=invoice %} #}
+{% if invoice.phase == 'proforma' %}
+  {% if invoice.status == 'draft' %}
+    <span class="isi-badge gray"><i class="bi bi-pencil"></i> Brouillon</span>
+  {% elif invoice.status == 'sent' %}
+    <span class="isi-badge blue"><i class="bi bi-send-fill"></i> Envoyée</span>
+  {% endif %}
+{% else %}
+  {% if invoice.status == 'paid' %}
+    <span class="isi-badge green"><i class="bi bi-check-circle-fill"></i> Payée</span>
+  {% elif invoice.status == 'partially_paid' %}
+    <span class="isi-badge amber"><i class="bi bi-circle-half"></i> Part. payée</span>
+  {% elif invoice.status == 'unpaid' %}
+    <span class="isi-badge red"><i class="bi bi-clock-fill"></i> Impayée</span>
+  {% elif invoice.status == 'voided' %}
+    <span class="isi-badge gray"><i class="bi bi-slash-circle-fill"></i> Annulée</span>
+  {% elif invoice.status == 'credit_note' %}
+    <span class="isi-badge gray"><i class="bi bi-arrow-return-left"></i> Avoir émis</span>
+  {% else %}
+    <span class="isi-badge gray">{{ invoice.get_status_display }}</span>
+  {% endif %}
+{% endif %}

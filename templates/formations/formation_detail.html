@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}{{ formation.title }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'formations:formation_list' %}" style="color:var(--text-muted);text-decoration:none;">Catalogue</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ formation.title|truncatechars:40 }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'formations:formation_edit' formation.pk %}" class="topbar-btn">
+  <i class="bi bi-pencil-fill"></i> Modifier
+</a>
+<a href="{% url 'formations:session_create' %}?formation={{ formation.pk }}" class="topbar-btn primary">
+  <i class="bi bi-plus-lg"></i> Nouvelle session
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ formation.title }}</h1>
+      <p>
+        {% if formation.code %}
+          <span style="font-family:var(--font-mono,monospace);font-size:12px;font-weight:700;
+                       background:var(--accent-soft);color:var(--accent);
+                       border-radius:5px;padding:2px 8px;letter-spacing:.4px;margin-right:6px;">
+            {{ formation.code }}
+          </span>
+        {% endif %}
+        {% if formation.category %}<span class="isi-badge blue me-2">{% if formation.category.code %}{{ formation.category.code }} · {% endif %}{{ formation.category.name }}</span>{% endif %}
+        {% if formation.is_active %}
+          <span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Active</span>
+        {% else %}
+          <span class="isi-badge gray"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Inactive</span>
+        {% endif %}
+      </p>
+    </div>
+    <a href="{% url 'formations:formation_list' %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour au catalogue
+    </a>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Left: Identity card -->
+    <div class="col-lg-4">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-mortarboard-fill"></i></div>
+          <h3>Fiche formation</h3>
+        </div>
+        <div class="isi-card-body">
+
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div>
+              <div class="stat-label" style="margin-bottom:4px;">Prix de base</div>
+              <div class="stat-value">{{ formation.base_price|floatformat:0 }} <span style="font-size:16px;">DA</span></div>
+            </div>
+
+            <div class="section-divider" style="margin:4px 0;"></div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div>
+                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.7px;font-weight:600;margin-bottom:3px;">Durée</div>
+                <div style="font-weight:600;">
+                  {% if formation.duration_days %}{{ formation.duration_days }}j{% endif %}
+                  {% if formation.duration_hours %} / {{ formation.duration_hours }}h{% endif %}
+                  {% if not formation.duration_days and not formation.duration_hours %}—{% endif %}
+                </div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.7px;font-weight:600;margin-bottom:3px;">Capacité</div>
+                <div style="font-weight:600;">{{ formation.min_participants }}–{{ formation.max_participants }}
+                  {% if capacity_conflicts %}<i class="bi bi-exclamation-triangle-fill" style="color:#F59E0B;font-size:13px;margin-left:4px;"></i>{% endif %}
+                </div>
+              </div>
+            </div>
+
+            {% if capacity_conflicts %}
+            <div class="section-divider" style="margin:4px 0;"></div>
+            <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 12px;font-size:12px;">
+              <div style="font-weight:700;color:#92400e;margin-bottom:6px;">
+                <i class="bi bi-exclamation-triangle-fill" style="color:#F59E0B;"></i> Conflit de capacité
+              </div>
+              <div style="color:#92400e;margin-bottom:8px;">
+                {{ capacity_conflicts|length }} session(s) ont une capacité de <strong>{{ max_session_capacity }}</strong> participants,
+                supérieure au maximum actuel de <strong>{{ formation.max_participants }}</strong>.
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">
+                {% for c in capacity_conflicts %}
+                <div style="font-size:11.5px;color:#78350f;">
+                  <i class="bi bi-calendar3-fill" style="color:#F59E0B;"></i>
+                  Session du {{ c.date }} — {{ c.capacity }} participants
+                </div>
+                {% endfor %}
+              </div>
+              <form method="post" action="{% url 'formations:formation_sync_capacities' formation.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit"
+                        onclick="return confirm('Ramener la capacité de toutes les sessions à {{ formation.max_participants }} participants ?')"
+                        style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#F59E0B;background:none;border:1px solid #F59E0B;border-radius:5px;padding:3px 10px;cursor:pointer;">
+                  <i class="bi bi-arrow-down-circle-fill"></i> Aligner les sessions (→ {{ formation.max_participants }})
+                </button>
+              </form>
+            </div>
+            {% endif %}
+
+            {% if formation.accreditation_body %}
+            <div class="section-divider" style="margin:4px 0;"></div>
+            <div>
+              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.7px;font-weight:600;margin-bottom:3px;">Accréditation</div>
+              <div style="font-weight:600;">{{ formation.accreditation_body }}</div>
+              {% if formation.accreditation_reference %}
+              <div style="font-size:12px;color:var(--text-muted);">Réf. {{ formation.accreditation_reference }}</div>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="section-divider" style="margin:4px 0;"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div>
+                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.7px;font-weight:600;margin-bottom:3px;">Sessions total</div>
+                <div style="font-weight:600;">{{ formation.sessions.count }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-divider"></div>
+
+          <div class="d-flex flex-column gap-2">
+            <a href="{% url 'formations:formation_edit' formation.pk %}" class="btn btn-amber">
+              <i class="bi bi-pencil-fill"></i> Modifier
+            </a>
+            <form method="post" action="{% url 'formations:formation_deactivate' formation.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost w-100"
+                      onclick="return confirm('{% if formation.is_active %}Désactiver cette formation ?{% else %}Réactiver cette formation ?{% endif %}')">
+                {% if formation.is_active %}
+                  <i class="bi bi-slash-circle-fill"></i> Désactiver
+                {% else %}
+                  <i class="bi bi-check-circle-fill"></i> Réactiver
+                {% endif %}
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Details -->
+    <div class="col-lg-8">
+
+      <!-- Description & Objectives -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-file-earmark-text-fill"></i></div>
+          <h3>Description et objectifs</h3>
+        </div>
+        <div class="isi-card-body">
+          {% if formation.description %}
+          <div class="form-section-title">Description</div>
+          <p style="color:var(--text-primary);">{{ formation.description|linebreaksbr }}</p>
+          {% endif %}
+
+          {% if formation.objectives %}
+          <div class="section-divider"></div>
+          <div class="form-section-title">Objectifs pédagogiques</div>
+          <p style="color:var(--text-primary);">{{ formation.objectives|linebreaksbr }}</p>
+          {% endif %}
+
+          {% if formation.target_audience %}
+          <div class="section-divider"></div>
+          <div class="form-section-title">Public cible</div>
+          <p style="color:var(--text-primary);">{{ formation.target_audience|linebreaksbr }}</p>
+          {% endif %}
+
+          {% if formation.prerequisites %}
+          <div class="section-divider"></div>
+          <div class="form-section-title">Prérequis</div>
+          <p style="color:var(--text-primary);">{{ formation.prerequisites|linebreaksbr }}</p>
+          {% endif %}
+
+          {% if not formation.description and not formation.objectives and not formation.target_audience and not formation.prerequisites %}
+          <p style="color:var(--text-muted);font-style:italic;">Aucune description renseignée.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Recent Sessions -->
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon green"><i class="bi bi-calendar3-fill"></i></div>
+          <h3>Sessions récentes</h3>
+          <a href="{% url 'formations:session_create' %}?formation={{ formation.pk }}" class="btn btn-amber btn-sm ms-auto">
+            <i class="bi bi-plus-lg"></i> Planifier
+          </a>
+        </div>
+
+        {% if duration_reached %}
+        <div style="padding:10px 20px 0;">
+          <div style="display:flex;align-items:flex-start;gap:10px;border-radius:8px;padding:10px 14px;font-size:12.5px;background:#fffbeb;border:1px solid #fcd34d;">
+            <i class="bi bi-hourglass-bottom" style="flex-shrink:0;margin-top:2px;color:#F59E0B;"></i>
+            <div>
+              <strong style="color:#92400e;">Durée totale atteinte —</strong>
+              <span style="color:#92400e;"> {{ used_days }}j planifié(s) sur {{ formation.duration_days }}j prévus. Les nouvelles sessions dépasseront la durée définie.</span>
+              <a href="{% url 'formations:formation_edit' formation.pk %}" style="margin-left:6px;font-size:12px;font-weight:600;color:#F59E0B;text-decoration:none;">
+                <i class="bi bi-pencil-fill"></i> Modifier la durée
+              </a>
+            </div>
+          </div>
+        </div>
+        {% elif used_days and formation.duration_days %}
+        <div style="padding:10px 20px 0;">
+          <div style="font-size:12px;color:var(--text-muted);padding:6px 10px;background:#f8fafc;border-radius:6px;border:1px solid var(--card-border);">
+            <i class="bi bi-clock-history" style="color:var(--accent);"></i>
+            <strong>{{ used_days }}j</strong> utilisé(s) sur <strong>{{ formation.duration_days }}j</strong> —
+            il reste <strong>{{ remaining_days }}j</strong> disponibles.
+          </div>
+        </div>
+        {% endif %}
+
+        {% if sessions %}
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Client</th>
+                <th>Formateur</th>
+                <th>Participants</th>
+                <th>Statut</th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for session in sessions %}
+              <tr>
+                <td>
+                  <span style="font-weight:600;">{{ session.date_start|date:"d/m/Y" }}</span>
+                  {% if session.date_end != session.date_start %}
+                  <span style="color:var(--text-muted);font-size:12px;"> → {{ session.date_end|date:"d/m/Y" }}</span>
+                  {% endif %}
+                </td>
+                <td><span style="color:var(--text-muted);font-size:13px;">{{ session.client.name|default:"—" }}</span></td>
+                <td>
+                  <span style="color:var(--text-muted);font-size:13px;">
+                    {% if session.trainer %}{{ session.trainer.first_name }} {{ session.trainer.last_name }}{% else %}—{% endif %}
+                  </span>
+                </td>
+                <td>
+                  <span style="font-size:13px;">{{ session.participant_count }} / {{ session.capacity }}</span>
+                </td>
+                <td>
+                  {% if session.status == 'planned' %}
+                    <span class="isi-badge blue"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Planifiée</span>
+                  {% elif session.status == 'in_progress' %}
+                    <span class="isi-badge amber"><i class="bi bi-circle-fill" style="font-size:7px;"></i> En cours</span>
+                  {% elif session.status == 'completed' %}
+                    <span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Terminée</span>
+                  {% elif session.status == 'cancelled' %}
+                    <span class="isi-badge red"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Annulée</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div style="display:flex;justify-content:flex-end;gap:6px;">
+                    <a href="{% url 'formations:session_detail' session.pk %}" class="btn btn-ghost btn-sm">
+                      <i class="bi bi-eye-fill"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:12px 24px;border-top:1px solid var(--card-border);">
+          <a href="{% url 'formations:session_list' %}?formation={{ formation.pk }}" style="font-size:13px;color:var(--accent);text-decoration:none;">
+            Voir toutes les sessions <i class="bi bi-arrow-right"></i>
+          </a>
+        </div>
+        {% else %}
+        <div class="isi-card-body text-center" style="padding:40px 24px;">
+          <div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-calendar3"></i></div>
+          <p style="color:var(--text-muted);font-size:14px;margin:0 0 16px;">Aucune session planifiée pour cette formation.</p>
+          <a href="{% url 'formations:session_create' %}?formation={{ formation.pk }}" class="btn btn-amber btn-sm">
+            <i class="bi bi-plus-lg"></i> Planifier une session
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

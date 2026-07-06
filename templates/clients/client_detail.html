@@ -1,0 +1,594 @@
+{% extends "base.html" %}
+
+{% block title %}{{ client.name }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'clients:client_list' %}" style="color:var(--text-muted);text-decoration:none;">Clients</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ client.name }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'clients:client_edit' client.pk %}" class="topbar-btn primary">
+  <i class="bi bi-pencil-fill"></i> Modifier
+</a>
+{% if request.user.profile.is_admin %}
+<a href="{% url 'clients:client_history' client.pk %}" class="topbar-btn">
+  <i class="bi bi-clock-history"></i> Historique
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ client.name }}</h1>
+      <p>
+        {% if client.client_type == 'entreprise' %}Entreprise
+        {% elif client.client_type == 'startup' %}Startup
+        {% elif client.client_type == 'auto_entrepreneur' %}Auto-entrepreneur
+        {% else %}Particulier
+        {% endif %}
+        {% if client.city %} — {{ client.city }}{% endif %}
+      </p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      {% if not client.is_active %}
+      <span class="isi-badge gray" style="font-size:13px;padding:6px 14px;">
+        <i class="bi bi-slash-circle-fill"></i> Compte inactif
+      </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Completeness warning ────────────────────────────────── -->
+  {% if missing_fields %}
+  <div class="alert alert-warning mb-4" style="display:flex;align-items:flex-start;gap:12px;">
+    <i class="bi bi-exclamation-triangle-fill" style="font-size:18px;flex-shrink:0;margin-top:2px;"></i>
+    <div>
+      <strong>Profil incomplet — ce client ne peut pas encore être facturé.</strong>
+      <div style="font-size:13px;margin-top:4px;color:var(--text-muted);">
+        Champs manquants :
+        {% for f in missing_fields %}
+          <span style="font-family:monospace;background:#fef3c7;padding:1px 6px;border-radius:4px;margin:0 2px;">{{ f }}</span>
+        {% endfor %}
+      </div>
+      <a href="{% url 'clients:client_edit' client.pk %}" class="btn btn-sm btn-amber mt-2">
+        <i class="bi bi-pencil-fill"></i> Compléter le profil
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+
+    <!-- ── Left column: identity card ─────────────────────── -->
+    <div class="col-lg-4">
+
+      <!-- Identity card -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-body" style="padding:28px 24px;text-align:center;">
+          <div style="width:72px;height:72px;border-radius:18px;
+                      {% if client.client_type == 'entreprise' or client.client_type == 'startup' %}
+                        background:rgba(245,158,11,.12);color:#d97706;
+                      {% elif client.client_type == 'auto_entrepreneur' %}
+                        background:rgba(124,58,237,.12);color:#7c3aed;
+                      {% else %}
+                        background:rgba(59,130,246,.12);color:#3b82f6;
+                      {% endif %}
+                      display:flex;align-items:center;justify-content:center;
+                      font-family:var(--font-head);font-size:30px;font-weight:700;
+                      margin:0 auto 16px;">
+            {{ client.name|slice:":1"|upper }}
+          </div>
+          <h2 style="font-family:var(--font-head);font-size:20px;font-weight:700;
+                     margin:0 0 8px;color:var(--text-primary);">
+            {{ client.name }}
+          </h2>
+          <div style="margin-bottom:12px;">
+            {% if client.client_type == 'entreprise' %}
+              <span class="isi-badge amber"><i class="bi bi-building-fill"></i> Entreprise</span>
+            {% elif client.client_type == 'startup' %}
+              <span class="isi-badge purple"><i class="bi bi-rocket-takeoff-fill"></i> Startup</span>
+            {% elif client.client_type == 'auto_entrepreneur' %}
+              <span class="isi-badge violet"><i class="bi bi-person-badge-fill"></i> Auto-entrepreneur</span>
+            {% else %}
+              <span class="isi-badge blue"><i class="bi bi-person-fill"></i> Particulier</span>
+            {% endif %}
+            {% if client.is_active %}
+              <span class="isi-badge green ms-1"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Actif</span>
+            {% else %}
+              <span class="isi-badge gray ms-1"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Inactif</span>
+            {% endif %}
+          </div>
+
+          <!-- TVA status pill -->
+          <div style="margin-bottom:10px;">
+            {% if client.is_tva_exempt %}
+              <span class="isi-badge gray" style="font-size:12px;">
+                <i class="bi bi-shield-check-fill"></i> Exonéré TVA
+              </span>
+            {% else %}
+              <span class="isi-badge green" style="font-size:12px;">
+                <i class="bi bi-percent"></i> Assujetti TVA
+              </span>
+            {% endif %}
+            {% if client.is_invoice_ready %}
+              <span class="isi-badge green ms-1" style="font-size:12px;" title="Profil complet — facturation possible">
+                <i class="bi bi-check-circle-fill"></i> Facturable
+              </span>
+            {% else %}
+              <span class="isi-badge red ms-1" style="font-size:12px;" title="Profil incomplet">
+                <i class="bi bi-exclamation-circle-fill"></i> Incomplet
+              </span>
+            {% endif %}
+          </div>
+
+          {% if client.activity_sector %}
+          <div style="font-size:13px;color:var(--text-muted);">
+            <i class="bi bi-briefcase-fill" style="color:var(--accent);"></i>
+            {{ client.activity_sector }}
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="section-divider" style="margin:0;"></div>
+
+        <!-- Quick actions -->
+        <div class="isi-card-body" style="padding:16px 24px;">
+          <div class="d-flex flex-column gap-2">
+            <a href="{% url 'clients:client_edit' client.pk %}" class="btn btn-amber">
+              <i class="bi bi-pencil-fill"></i> Modifier le client
+            </a>
+            {% if request.user.profile.is_admin %}
+            <a href="{% url 'clients:client_history' client.pk %}" class="btn btn-ghost">
+              <i class="bi bi-clock-history"></i> Voir l'historique
+            </a>
+            <form method="post" action="{% url 'clients:client_deactivate' client.pk %}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="btn {% if client.is_active %}btn-danger-soft{% else %}btn-ghost{% endif %} w-100"
+                      onclick="return confirm('{% if client.is_active %}Désactiver ce client ?{% else %}Réactiver ce client ?{% endif %}')">
+                <i class="bi bi-{% if client.is_active %}slash-circle-fill{% else %}check-circle-fill{% endif %}"></i>
+                {% if client.is_active %}Désactiver{% else %}Réactiver{% endif %}
+              </button>
+            </form>
+            <a href="{% url 'clients:client_delete' client.pk %}"
+               class="btn w-100"
+               style="background:rgba(220,38,38,.08);color:#dc2626;border:1px solid rgba(220,38,38,.2);">
+              <i class="bi bi-trash3-fill"></i> Supprimer définitivement
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial summary (admin only) -->
+      {% if request.user.profile.is_admin %}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon green"><i class="bi bi-bar-chart-fill"></i></div>
+          <h3>Situation financière</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="stat-label mb-1">CA total</div>
+              <div class="stat-value" style="font-size:18px;">
+                {{ client.total_revenue|floatformat:0 }}
+                <span style="font-size:12px;font-weight:400;color:var(--text-muted);">DA</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Solde dû</div>
+              <div class="stat-value" style="font-size:18px;
+                    color:{% if client.has_outstanding_balance %}var(--danger){% else %}var(--success){% endif %};">
+                {{ client.outstanding_balance|floatformat:0 }}
+                <span style="font-size:12px;font-weight:400;color:var(--text-muted);">DA</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Factures finalisées</div>
+              <div class="stat-value" style="font-size:18px;">{{ client.invoice_count }}</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Statut paiement</div>
+              <div style="margin-top:4px;">
+                {% if client.has_outstanding_balance %}
+                  <span class="isi-badge red"><i class="bi bi-exclamation-circle-fill"></i> Impayé</span>
+                {% else %}
+                  <span class="isi-badge green"><i class="bi bi-check-circle-fill"></i> À jour</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Meta -->
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-info-circle-fill"></i></div>
+          <h3>Informations système</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="stat-label mb-1">Créé le</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ client.created_at|date:"d/m/Y à H:i" }}</div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Dernière modification</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ client.updated_at|date:"d/m/Y à H:i" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /col-lg-4 -->
+
+    <!-- ── Right column: details ───────────────────────────── -->
+    <div class="col-lg-8">
+
+      <!-- Coordonnées -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-geo-alt-fill"></i></div>
+          <h3>Coordonnées</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            {% if client.address %}
+            <div class="col-sm-6">
+              <div class="stat-label mb-1">Adresse</div>
+              <div style="font-weight:500;font-size:13.5px;line-height:1.5;">
+                {{ client.address }}<br>
+                {% if client.postal_code %}{{ client.postal_code }} {% endif %}
+                {{ client.city|default:"" }}
+              </div>
+            </div>
+            {% endif %}
+            <div class="col-sm-6">
+              <div class="stat-label mb-1">Téléphone</div>
+              <div style="font-weight:500;font-size:13.5px;">
+                {% if client.phone %}
+                  <a href="tel:{{ client.phone }}" style="color:var(--text-primary);text-decoration:none;">
+                    <i class="bi bi-telephone-fill" style="color:var(--accent);font-size:12px;"></i>
+                    {{ client.phone }}
+                  </a>
+                {% else %}—{% endif %}
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="stat-label mb-1">Email</div>
+              <div style="font-weight:500;font-size:13.5px;">
+                {% if client.email %}
+                  <a href="mailto:{{ client.email }}" style="color:var(--accent);">
+                    {{ client.email }}
+                  </a>
+                {% else %}—{% endif %}
+              </div>
+            </div>
+            {% if client.rib %}
+            <div class="col-sm-6">
+              <div class="stat-label mb-1">RIB</div>
+              <div style="font-weight:500;font-family:monospace;font-size:13px;
+                          background:#f8fafc;padding:5px 10px;border-radius:6px;
+                          display:inline-block;">
+                {{ client.rib }}
+              </div>
+            </div>
+            {% endif %}
+            <div class="col-sm-6">
+              <div class="stat-label mb-1">Site web</div>
+              <div style="font-weight:500;font-size:13.5px;">
+                {% if client.website %}
+                  <a href="{{ client.website }}" target="_blank" style="color:var(--accent);">
+                    <i class="bi bi-box-arrow-up-right" style="font-size:11px;"></i>
+                    {{ client.website|truncatechars:40 }}
+                  </a>
+                {% else %}—{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact principal (legacy inline field) -->
+      {% if client.contact_name %}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-person-fill"></i></div>
+          <h3>Contact principal (legacy)</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-sm-4">
+              <div class="stat-label mb-1">Nom</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ client.contact_name|default:"—" }}</div>
+            </div>
+            <div class="col-sm-4">
+              <div class="stat-label mb-1">Téléphone</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ client.contact_phone|default:"—" }}</div>
+            </div>
+            <div class="col-sm-4">
+              <div class="stat-label mb-1">Email</div>
+              <div style="font-weight:500;font-size:13.5px;">
+                {% if client.contact_email %}
+                  <a href="mailto:{{ client.contact_email }}" style="color:var(--accent);">{{ client.contact_email }}</a>
+                {% else %}—{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ── Identification fiscale — per-type ──────────────── -->
+
+      {% if client.client_type == 'entreprise' or client.client_type == 'startup' %}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-file-earmark-text-fill"></i></div>
+          <h3>Identification légale &amp; fiscale</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+
+            {% if client.forme_juridique %}
+            <div class="col-sm-4">
+              <div class="stat-label mb-1">Forme juridique</div>
+              <div style="font-weight:600;font-size:14px;">{{ client.forme_juridique }}</div>
+            </div>
+            {% endif %}
+
+            <div class="col-sm-4">
+              <div class="stat-label mb-1">N° RC</div>
+              <div style="font-family:monospace;font-size:13px;background:#f8fafc;
+                          padding:5px 10px;border-radius:6px;display:inline-block;">
+                {{ client.rc|default:"—" }}
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="stat-label mb-1">NIF</div>
+              <div style="font-family:monospace;font-size:13px;background:#f8fafc;
+                          padding:5px 10px;border-radius:6px;display:inline-block;">
+                {{ client.nif|default:"—" }}
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="stat-label mb-1">NIS</div>
+              <div style="font-family:monospace;font-size:13px;background:#f8fafc;
+                          padding:5px 10px;border-radius:6px;display:inline-block;">
+                {{ client.nis|default:"—" }}
+              </div>
+            </div>
+            {% if client.tin %}
+            <div class="col-sm-4">
+              <div class="stat-label mb-1">TIN</div>
+              <div style="font-family:monospace;font-size:13px;background:#f8fafc;
+                          padding:5px 10px;border-radius:6px;display:inline-block;">
+                {{ client.tin }}
+              </div>
+            </div>
+            {% endif %}
+            <div class="col-sm-4">
+              <div class="stat-label mb-1">Article d'imposition</div>
+              <div style="font-family:monospace;font-size:13px;background:#f8fafc;
+                          padding:5px 10px;border-radius:6px;display:inline-block;">
+                {{ client.article_imposition|default:"—" }}
+              </div>
+            </div>
+
+            {% if client.client_type == 'startup' %}
+            <div class="col-sm-6">
+              <div class="stat-label mb-1">N° Label Startup</div>
+              <div style="font-family:monospace;font-size:13px;background:#f8fafc;
+                          padding:5px 10px;border-radius:6px;display:inline-block;">
+                {{ client.label_startup_number|default:"—" }}
+              </div>
+            </div>
+            <div class="col-sm-3">
+              <div class="stat-label mb-1">Date label</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ client.label_startup_date|date:"d/m/Y"|default:"—" }}</div>
+            </div>
+            <div class="col-sm-3">
+              <div class="stat-label mb-1">Programme</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ client.programme_accompagnement|default:"—" }}</div>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+
+      {% elif client.client_type == 'auto_entrepreneur' %}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon violet"><i class="bi bi-file-earmark-text-fill"></i></div>
+          <h3>Identification — Auto-entrepreneur</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-sm-4">
+              <div class="stat-label mb-1">NIF</div>
+              <div style="font-family:monospace;font-size:13px;background:#f8fafc;
+                          padding:5px 10px;border-radius:6px;display:inline-block;">
+                {{ client.nif|default:"—" }}
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="stat-label mb-1">Article d'imposition</div>
+              <div style="font-family:monospace;font-size:13px;background:#f8fafc;
+                          padding:5px 10px;border-radius:6px;display:inline-block;">
+                {{ client.article_imposition|default:"—" }}
+              </div>
+            </div>
+            {% if client.tin %}
+            <div class="col-sm-4">
+              <div class="stat-label mb-1">TIN</div>
+              <div style="font-family:monospace;font-size:13px;background:#f8fafc;
+                          padding:5px 10px;border-radius:6px;display:inline-block;">
+                {{ client.tin }}
+              </div>
+            </div>
+            {% endif %}
+            <div class="col-sm-4">
+              <div class="stat-label mb-1">Carte AE</div>
+              <div style="font-family:monospace;font-size:13px;background:#f8fafc;
+                          padding:5px 10px;border-radius:6px;display:inline-block;">
+                {{ client.carte_auto_entrepreneur|default:"—" }}
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 p-3" style="background:rgba(245,158,11,.06);border-radius:8px;
+                                        border-left:3px solid var(--accent);font-size:12.5px;color:var(--text-muted);">
+            <i class="bi bi-info-circle-fill" style="color:var(--accent);"></i>
+            Régime IFU — exonéré de TVA.
+          </div>
+        </div>
+      </div>
+
+      {% else %} {# particulier #}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-person-vcard-fill"></i></div>
+          <h3>Identification — Particulier</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <div class="stat-label mb-1">NIN (Numéro d'identification national)</div>
+              <div style="font-family:monospace;font-size:13px;background:#f8fafc;
+                          padding:5px 10px;border-radius:6px;display:inline-block;letter-spacing:.05em;">
+                {{ client.nin|default:"—" }}
+              </div>
+            </div>
+            {% if client.tin %}
+            <div class="col-sm-6">
+              <div class="stat-label mb-1">TIN</div>
+              <div style="font-family:monospace;font-size:13px;background:#f8fafc;
+                          padding:5px 10px;border-radius:6px;display:inline-block;">
+                {{ client.tin }}
+              </div>
+            </div>
+            {% endif %}
+          <div class="mt-3 p-3" style="background:rgba(59,130,246,.06);border-radius:8px;
+                                        border-left:3px solid #3b82f6;font-size:12.5px;color:var(--text-muted);">
+            <i class="bi bi-info-circle-fill" style="color:#3b82f6;"></i>
+            Particulier — exonéré de TVA.
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Contacts (ClientContact) -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header" style="justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="card-icon amber"><i class="bi bi-people-fill"></i></div>
+            <h3>Contacts</h3>
+          </div>
+          <a href="{% url 'clients:contact_add' client.pk %}" class="btn btn-ghost btn-sm">
+            <i class="bi bi-plus-lg"></i> Ajouter
+          </a>
+        </div>
+
+        {% if contacts %}
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Fonction</th>
+                <th>Téléphone</th>
+                <th>Email</th>
+                <th>Rôle</th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for contact in contacts %}
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:30px;height:30px;border-radius:50%;
+                                background:rgba(59,130,246,.12);color:#3b82f6;
+                                display:flex;align-items:center;justify-content:center;
+                                font-family:var(--font-head);font-size:13px;font-weight:700;">
+                      {{ contact.first_name|slice:":1"|upper|default:contact.last_name|slice:":1"|upper }}
+                    </div>
+                    <span style="font-weight:600;">{{ contact.full_name }}</span>
+                  </div>
+                </td>
+                <td><span style="color:var(--text-muted);font-size:13px;">{{ contact.job_title|default:"—" }}</span></td>
+                <td><span style="color:var(--text-muted);font-size:13px;">{{ contact.phone|default:"—" }}</span></td>
+                <td>
+                  {% if contact.email %}
+                    <a href="mailto:{{ contact.email }}" style="color:var(--accent);font-size:13px;">{{ contact.email }}</a>
+                  {% else %}<span style="color:var(--text-muted);font-size:13px;">—</span>{% endif %}
+                </td>
+                <td>
+                  {% if contact.is_primary %}
+                    <span class="isi-badge amber"><i class="bi bi-star-fill"></i> Principal</span>
+                  {% else %}
+                    <span class="isi-badge gray">Secondaire</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div style="display:flex;justify-content:flex-end;gap:6px;">
+                    <a href="{% url 'clients:contact_edit' client.pk contact.pk %}"
+                       class="btn btn-ghost btn-sm" title="Modifier">
+                      <i class="bi bi-pencil-fill"></i>
+                    </a>
+                    <form method="post"
+                          action="{% url 'clients:contact_delete' client.pk contact.pk %}"
+                          style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger-soft btn-sm"
+                              title="Supprimer"
+                              onclick="return confirm('Supprimer ce contact ?')">
+                        <i class="bi bi-trash-fill"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="isi-card-body text-center" style="padding:36px 24px;">
+          <div style="font-size:36px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-person-plus"></i></div>
+          <p style="color:var(--text-muted);font-size:14px;margin:0 0 12px;">Aucun contact enregistré.</p>
+          <a href="{% url 'clients:contact_add' client.pk %}" class="btn btn-ghost btn-sm">
+            <i class="bi bi-plus-lg"></i> Ajouter un contact
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Notes -->
+      {% if client.notes %}
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon purple"><i class="bi bi-sticky-fill"></i></div>
+          <h3>Notes</h3>
+        </div>
+        <div class="isi-card-body">
+          <p style="font-size:14px;color:var(--text-primary);line-height:1.7;margin:0;
+                    white-space:pre-wrap;">{{ client.notes }}</p>
+        </div>
+      </div>
+      {% endif %}
+
+    </div><!-- /col-lg-8 -->
+  </div><!-- /row -->
+</div>
+{% endblock %}

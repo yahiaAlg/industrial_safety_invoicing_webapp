@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Clôturer — {{ project.title }}{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'etudes:project_list' %}" style="color:var(--text-muted);text-decoration:none;">Études</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'etudes:project_detail' project.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ project.title|truncatechars:30 }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Clôturer{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Clôturer le projet</h1>
+      <p>{{ project.title }}</p>
+    </div>
+    <a href="{% url 'etudes:project_detail' project.pk %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+
+      <!-- Project summary -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-body" style="padding:20px 24px;">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;flex-shrink:0;">
+              <i class="bi bi-diagram-3-fill"></i>
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:15px;color:var(--text-primary);">{{ project.title }}</div>
+              <div style="font-size:13px;color:var(--text-muted);">
+                {{ project.client.name }} —
+                {{ project.completed_phase_count }}/{{ project.phase_count }} phases terminées
+              </div>
+            </div>
+            <div style="margin-left:auto;">
+              <span class="isi-badge green" style="font-size:13px;padding:5px 12px;">
+                <i class="bi bi-check-circle-fill"></i> Prêt à clôturer
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon green"><i class="bi bi-check-circle-fill"></i></div>
+          <h3>Confirmer la clôture</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="alert alert-info mb-4">
+            <i class="bi bi-info-circle-fill"></i>
+            <div>Cette action marquera le projet comme <strong>Terminé</strong>. Elle est irréversible sauf modification manuelle.</div>
+          </div>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-4">
+              <label class="form-label" for="{{ form.actual_end_date.id_for_label }}">Date de clôture réelle *</label>
+              <div class="input-icon-wrap">
+                <i class="bi bi-calendar-event-fill"></i>
+                <input type="date" name="{{ form.actual_end_date.html_name }}"
+                       id="{{ form.actual_end_date.id_for_label }}"
+                       class="form-control {% if form.actual_end_date.errors %}is-invalid{% endif %}"
+                       value="{{ form.actual_end_date.value|default:'' }}" required>
+              </div>
+              {% if form.actual_end_date.errors %}
+              <div class="invalid-feedback d-block">{{ form.actual_end_date.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label" for="{{ form.notes.id_for_label }}">Notes de clôture</label>
+              <textarea name="{{ form.notes.html_name }}" id="{{ form.notes.id_for_label }}"
+                        class="form-control" rows="3"
+                        placeholder="Observations finales, livrables remis, résultats obtenus…">{{ form.notes.value|default:'' }}</textarea>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-4">
+              <i class="bi bi-exclamation-circle-fill"></i>
+              <div>{{ form.non_field_errors|join:"<br>" }}</div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-circle-fill"></i> Confirmer la clôture
+              </button>
+              <a href="{% url 'etudes:project_detail' project.pk %}" class="btn btn-ghost">Annuler</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

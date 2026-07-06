@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Émettre des attestations{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'formations:session_list' %}" style="color:var(--text-muted);text-decoration:none;">Sessions</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'formations:session_detail' session.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ session.formation.title|truncatechars:30 }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Émettre des attestations{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Émettre des attestations</h1>
+      <p>Session : <strong>{{ session.formation.title }}</strong> — {{ session.date_start|date:"d/m/Y" }}</p>
+    </div>
+    <a href="{% url 'formations:session_detail' session.pk %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <div class="row g-4 justify-content-center">
+    <div class="col-lg-7 col-md-9">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon green"><i class="bi bi-patch-check-fill"></i></div>
+          <h3>Émission des attestations</h3>
+        </div>
+        <div class="isi-card-body">
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-section-title">Date d'émission</div>
+            <div class="mb-4">
+              <label class="form-label" for="{{ form.issue_date.id_for_label }}">
+                Date d'émission <span style="color:var(--danger);">*</span>
+              </label>
+              <div class="input-icon-wrap" style="max-width:220px;">
+                <i class="bi bi-calendar-event-fill"></i>
+                <input type="date" name="{{ form.issue_date.html_name }}" id="{{ form.issue_date.id_for_label }}"
+                       class="form-control {% if form.issue_date.errors %}is-invalid{% endif %}"
+                       value="{{ form.issue_date.value|default:'' }}">
+              </div>
+              {% if form.issue_date.errors %}
+              <div class="invalid-feedback d-block">{{ form.issue_date.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="form-section-title">Participants éligibles</div>
+
+            {% if form.participant_ids.field.queryset.exists %}
+            <div class="mb-2" style="display:flex;gap:12px;align-items:center;">
+              <span style="font-size:13px;color:var(--text-muted);">
+                {{ form.participant_ids.field.queryset.count }} participant{{ form.participant_ids.field.queryset.count|pluralize }} éligible{{ form.participant_ids.field.queryset.count|pluralize }}
+                (présents, sans attestation)
+              </span>
+              <button type="button" class="btn btn-ghost btn-sm" id="select-all-btn">
+                <i class="bi bi-check-all"></i> Tout sélectionner
+              </button>
+            </div>
+
+            <div class="mb-4" style="border:1px solid var(--card-border);border-radius:8px;overflow:hidden;">
+              {% for participant in form.participant_ids.field.queryset %}
+              <label style="display:flex;align-items:center;gap:12px;padding:12px 16px;
+                            border-bottom:1px solid var(--card-border);cursor:pointer;
+                            transition:background .1s;"
+                     onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''"
+                     class="participant-checkbox-label">
+                <input type="checkbox" name="{{ form.participant_ids.html_name }}"
+                       value="{{ participant.pk }}"
+                       class="form-check-input participant-check"
+                       {% if form.participant_ids.value and participant.pk|stringformat:"s" in form.participant_ids.value|join:"," %}checked{% endif %}
+                       style="width:18px;height:18px;flex-shrink:0;">
+                <div>
+                  <div style="font-weight:600;font-size:14px;">{{ participant.full_name }}</div>
+                  <div style="font-size:12px;color:var(--text-muted);">
+                    {{ participant.employer|default:"" }}{% if participant.employer and participant.job_title %} · {% endif %}{{ participant.job_title|default:"" }}
+                  </div>
+                </div>
+              </label>
+              {% endfor %}
+            </div>
+
+            {% if form.participant_ids.errors %}
+            <div class="alert alert-danger mb-4">
+              <i class="bi bi-exclamation-circle-fill"></i>
+              <div>{{ form.participant_ids.errors|join:", " }}</div>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="alert alert-info mb-4">
+              <i class="bi bi-info-circle-fill"></i>
+              <div>
+                Aucun participant éligible. Vérifiez que des participants sont marqués présents et qu'ils n'ont pas encore d'attestation.
+              </div>
+            </div>
+            {% endif %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-4">
+              <i class="bi bi-exclamation-circle-fill"></i>
+              <div>{{ form.non_field_errors|join:"<br>" }}</div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+              {% if form.participant_ids.field.queryset.exists %}
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-patch-check-fill"></i> Émettre les attestations
+              </button>
+              {% endif %}
+              <a href="{% url 'formations:session_detail' session.pk %}" class="btn btn-ghost">Annuler</a>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const selectAllBtn = document.getElementById('select-all-btn');
+  const checks = document.querySelectorAll('.participant-check');
+  selectAllBtn?.addEventListener('click', () => {
+    const allChecked = [...checks].every(c => c.checked);
+    checks.forEach(c => c.checked = !allChecked);
+    selectAllBtn.innerHTML = allChecked
+      ? '<i class="bi bi-check-all"></i> Tout sélectionner'
+      : '<i class="bi bi-dash-square"></i> Tout désélectionner';
+  });
+</script>
+{% endblock %}

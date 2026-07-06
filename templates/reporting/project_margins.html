@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Marges projets{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:combined_margin_report' %}" style="color:var(--text-muted);text-decoration:none;">Marges</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Projets{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Marges par projet d'étude</h1><p>Rentabilité des projets terminés</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-diagram-3-fill"></i></div>
+      <div><div class="stat-value">{{ total_budget|floatformat:0 }} DA</div><div class="stat-label">Budget total</div></div>
+    </div></div></div>
+    <div class="col-sm-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon red" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-credit-card-fill"></i></div>
+      <div><div class="stat-value">{{ total_expenses|floatformat:0 }} DA</div><div class="stat-label">Dépenses</div></div>
+    </div></div></div>
+    <div class="col-sm-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-graph-up-arrow"></i></div>
+      <div><div class="stat-value" style="color:{% if total_margin >= 0 %}#10b981{% else %}#ef4444{% endif %};">{{ total_margin|floatformat:0 }} DA</div><div class="stat-label">Marge totale</div></div>
+    </div></div></div>
+    <div class="col-sm-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon purple" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-percent"></i></div>
+      <div><div class="stat-value">{{ avg_margin_rate }}%</div><div class="stat-label">Taux moyen</div></div>
+    </div></div></div>
+  </div>
+  <div class="isi-card">
+    <div class="isi-card-header"><div class="card-icon blue"><i class="bi bi-diagram-3-fill"></i></div><h3>Détail par projet</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>Projet</th><th>Client</th><th>Fin réelle</th><th style="text-align:right;">Budget</th><th style="text-align:right;">Dépenses</th><th style="text-align:right;">Marge</th><th style="text-align:right;">Taux</th></tr></thead>
+        <tbody>
+          {% for r in data %}
+          <tr>
+            <td><a href="{% url 'etudes:project_detail' r.project.pk %}" style="font-weight:600;color:var(--text-primary);text-decoration:none;">{{ r.project.title|truncatechars:30 }}</a></td>
+            <td style="color:#64748b;font-size:13px;">{{ r.project.client.name|truncatechars:22 }}</td>
+            <td style="color:#64748b;white-space:nowrap;">{{ r.project.actual_end_date|date:"d/m/Y"|default:"—" }}</td>
+            <td style="text-align:right;font-weight:600;">{{ r.budget|floatformat:0 }} DA</td>
+            <td style="text-align:right;color:#ef4444;">{{ r.expenses|floatformat:0 }} DA</td>
+            <td style="text-align:right;font-weight:700;color:{% if r.margin >= 0 %}#10b981{% else %}#ef4444{% endif %};">{{ r.margin|floatformat:0 }} DA</td>
+            <td style="text-align:right;"><span class="isi-badge {% if r.margin_rate >= 30 %}green{% elif r.margin_rate >= 10 %}amber{% else %}red{% endif %}">{{ r.margin_rate }}%</span></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7"><div class="text-center" style="padding:40px;"><div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-diagram-3"></i></div><p style="color:#64748b;margin:0;">Aucun projet terminé pour cette période.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

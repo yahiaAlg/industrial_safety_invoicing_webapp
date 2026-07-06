@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'clients:client_list' %}" style="color:var(--text-muted);text-decoration:none;">Clients</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'clients:forme_juridique_list' %}" style="color:var(--text-muted);text-decoration:none;">Formes juridiques</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ action }}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ action }}</h1>
+      <p>{% if fj %}Modifier le statut juridique{{ else }}Ajouter un nouveau statut juridique au référentiel{% endif %}</p>
+    </div>
+    <a href="{% url 'clients:forme_juridique_list' %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-7 col-md-10">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-bank2"></i></div>
+          <h3>Informations</h3>
+        </div>
+        <div class="isi-card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-4">
+              <label class="form-label" for="{{ form.name.id_for_label }}">
+                Sigle <span style="color:var(--danger);">*</span>
+              </label>
+              <input type="text" name="{{ form.name.html_name }}" id="{{ form.name.id_for_label }}"
+                     class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                     value="{{ form.name.value|default:'' }}"
+                     placeholder="Ex. SARL, SPA, EURL, GIE…"
+                     {% if fj and fj.name == "Autre" %}readonly{% endif %}>
+              {% if form.name.errors %}
+              <div class="invalid-feedback d-block">{{ form.name.errors|join:", " }}</div>
+              {% endif %}
+              {% if fj and fj.name == "Autre" %}
+              <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">
+                <i class="bi bi-lock-fill" style="color:var(--accent);"></i>
+                Valeur système — ce sigle ne peut pas être renommé.
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label" for="{{ form.description.id_for_label }}">Description complète</label>
+              <input type="text" name="{{ form.description.html_name }}" id="{{ form.description.id_for_label }}"
+                     class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                     value="{{ form.description.value|default:'' }}"
+                     placeholder="Ex. Société par Actions">
+              {% if form.description.errors %}
+              <div class="invalid-feedback d-block">{{ form.description.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-4">
+              <div class="form-check form-switch" style="padding-left:0;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <input class="form-check-input" type="checkbox"
+                         name="{{ form.is_active.html_name }}" id="{{ form.is_active.id_for_label }}"
+                         {% if form.is_active.value %}checked{% endif %}
+                         style="width:40px;height:22px;">
+                  <label class="form-check-label" for="{{ form.is_active.id_for_label }}"
+                         style="font-weight:500;font-size:14px;">
+                    Active
+                  </label>
+                </div>
+                <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;line-height:1.5;">
+                  Les formes inactives n'apparaissent plus dans le formulaire client.
+                </p>
+              </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-4">
+              <i class="bi bi-exclamation-circle-fill"></i>
+              <div>{{ form.non_field_errors|join:"<br>" }}</div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i>
+                {% if fj %}Enregistrer{% else %}Créer la forme{% endif %}
+              </button>
+              <a href="{% url 'clients:forme_juridique_list' %}" class="btn btn-ghost">Annuler</a>
+              {% if fj and fj.name != "Autre" and request.user.is_superuser %}
+              <a href="{% url 'clients:forme_juridique_delete' fj.pk %}"
+                 class="btn btn-ghost ms-auto"
+                 style="color:var(--danger);border-color:var(--danger);">
+                <i class="bi bi-trash3"></i> Supprimer
+              </a>
+              {% endif %}
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+      <!-- Common forms reference card -->
+      <div class="isi-card mt-3">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-journal-text"></i></div>
+          <h3>Formes courantes en Algérie</h3>
+        </div>
+        <div class="isi-card-body" style="padding-bottom:8px;">
+          {% for item in common_forms %}
+          <div style="display:flex;justify-content:space-between;align-items:center;
+                      padding:8px 0;border-bottom:1px solid var(--border-light);">
+            <div>
+              <span style="font-weight:700;font-size:13px;color:#92400e;
+                           background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.25);
+                           border-radius:5px;padding:2px 8px;">{{ item.name }}</span>
+              <span style="font-size:12.5px;color:var(--text-muted);margin-left:8px;">{{ item.desc }}</span>
+            </div>
+          </div>
+          {% empty %}
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            {% for abbr, desc in common_forms_static %}
+            <div style="display:flex;gap:12px;padding:7px 0;border-bottom:1px solid var(--border-light);">
+              <span style="font-weight:700;font-size:13px;color:#92400e;min-width:52px;
+                           background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.25);
+                           border-radius:5px;padding:2px 8px;text-align:center;">{{ abbr }}</span>
+              <span style="font-size:12.5px;color:var(--text-muted);line-height:1.5;">{{ desc }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

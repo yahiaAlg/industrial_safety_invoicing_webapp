@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Enregistrer le BC — {{ invoice.proforma_reference }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:invoice_list' %}" style="color:var(--text-muted);text-decoration:none;">Factures</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:invoice_detail' invoice.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ invoice.proforma_reference }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Bon de Commande{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Enregistrer le Bon de Commande</h1>
+      <p>{{ invoice.proforma_reference }} — {{ invoice.client.name }}</p>
+    </div>
+    <a href="{% url 'financial:invoice_detail' invoice.pk %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <!-- Step indicator -->
+  <div class="isi-card mb-4" style="border-left:4px solid var(--accent);">
+    <div class="isi-card-body" style="padding:14px 20px;display:flex;align-items:center;gap:12px;">
+      <i class="bi bi-file-earmark-check-fill" style="color:var(--accent);font-size:22px;flex-shrink:0;"></i>
+      <div>
+        <div style="font-weight:600;font-size:14px;">Étape 3 sur 5 — Enregistrement du BC client</div>
+        <div style="font-size:12.5px;color:var(--text-muted);">
+          Une fois le BC enregistré, vous pourrez finaliser la proforma en facture définitive.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Form -->
+    <div class="col-lg-7">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-file-earmark-check-fill"></i></div>
+          <h3>Détails du Bon de Commande</h3>
+        </div>
+        <div class="isi-card-body">
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            <div class="row g-3">
+
+              <div class="col-12">
+                <label class="form-label" for="{{ form.bon_commande_number.id_for_label }}">
+                  N° Bon de Commande *
+                </label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-hash"></i>
+                  {{ form.bon_commande_number }}
+                </div>
+                {% if form.bon_commande_number.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.bon_commande_number.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.bon_commande_date.id_for_label }}">Date du BC</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-calendar-fill"></i>
+                  {{ form.bon_commande_date }}
+                </div>
+                {% if form.bon_commande_date.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.bon_commande_date.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.bon_commande_amount.id_for_label }}">Montant BC (DA)</label>
+                {{ form.bon_commande_amount }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  Optionnel — pour vérifier la concordance avec la facture.
+                </div>
+                {% if form.bon_commande_amount.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.bon_commande_amount.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="{{ form.bon_commande_scan.id_for_label }}">Scan du BC</label>
+                {{ form.bon_commande_scan }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  PDF ou image — recommandé pour l'archivage.
+                </div>
+                {% if form.bon_commande_scan.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.bon_commande_scan.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              {% if form.non_field_errors %}
+              <div class="col-12">
+                {% for error in form.non_field_errors %}
+                <div style="color:var(--danger);font-size:13px;display:flex;gap:8px;align-items:flex-start;">
+                  <i class="bi bi-exclamation-circle-fill" style="margin-top:2px;flex-shrink:0;"></i> {{ error }}
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i> Enregistrer le BC
+              </button>
+              <a href="{% url 'financial:invoice_detail' invoice.pk %}" class="btn btn-ghost">
+                <i class="bi bi-x-lg"></i> Annuler
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proforma summary -->
+    <div class="col-lg-5">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-receipt-cutoff"></i></div>
+          <h3>Proforma concernée</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="stat-label mb-1">Référence</div>
+              <div style="font-family:var(--font-head);font-size:16px;font-weight:700;color:var(--accent);">
+                {{ invoice.proforma_reference }}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Client</div>
+              <div style="font-weight:600;font-size:13.5px;">{{ invoice.client.name }}</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Type</div>
+              <div style="margin-top:4px;">
+                {% if invoice.invoice_type == 'formation' %}
+                  <span class="isi-badge blue"><i class="bi bi-mortarboard-fill"></i> Formation</span>
+                {% else %}
+                  <span class="isi-badge purple"><i class="bi bi-diagram-3-fill"></i> Étude</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Validité</div>
+              <div style="font-weight:500;font-size:13.5px;">
+                {{ invoice.validity_date|date:"d/m/Y"|default:"—" }}
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;padding:14px 16px;background:var(--accent-soft);
+                      border-radius:10px;border:1px solid rgba(245,158,11,.25);">
+            <div class="stat-label mb-1">Total TTC proforma</div>
+            <div style="font-family:var(--font-head);font-size:24px;font-weight:700;color:var(--accent);">
+              {{ invoice.amount_ttc|floatformat:2 }} DA
+            </div>
+          </div>
+
+          {% if not invoice.client.is_invoice_ready %}
+          <div class="alert alert-warning mt-3" style="padding:12px 14px;">
+            <i class="bi bi-exclamation-triangle-fill" style="flex-shrink:0;"></i>
+            <div style="font-size:12.5px;">
+              <strong>Profil client incomplet</strong> — le BC peut être enregistré maintenant,
+              mais le client devra être complété avant la finalisation.<br>
+              Manquant : <em>{{ invoice.client.missing_fields_for_invoice|join:", " }}</em>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Pre-populate BC number with "B.C N° : HHMM/YYYY" on load if field is empty
+  document.addEventListener('DOMContentLoaded', function () {
+    const bcInput = document.getElementById('{{ form.bon_commande_number.id_for_label }}');
+    if (bcInput && !bcInput.value.trim()) {
+      const now  = new Date();
+      const hh   = String(now.getHours()).padStart(2, '0');
+      const mm   = String(now.getMinutes()).padStart(2, '0');
+      const yyyy = now.getFullYear();
+      bcInput.value = `B.C N° : ${hh}${mm}/${yyyy}`;
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Taux de complétion{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:sessions_report' %}" style="color:var(--text-muted);text-decoration:none;">Formations</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Taux de complétion{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Taux de complétion</h1><p>Présence et attestations émises par session</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon blue" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-people-fill"></i></div>
+      <div><div class="stat-value">{{ total_enrolled }}</div><div class="stat-label">Inscrits total</div></div>
+    </div></div></div>
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-person-fill-check"></i></div>
+      <div><div class="stat-value">{{ total_attended }}</div><div class="stat-label">Présents ({{ attendance_rate }}%)</div></div>
+    </div></div></div>
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-patch-check-fill"></i></div>
+      <div><div class="stat-value">{{ total_attested }}</div><div class="stat-label">Attestations ({{ attestation_rate }}%)</div></div>
+    </div></div></div>
+  </div>
+  <div class="isi-card fade-up-delay-1">
+    <div class="isi-card-header"><div class="card-icon green"><i class="bi bi-calendar3-fill"></i></div><h3>Détail par session</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>Formation</th><th>Date</th><th style="text-align:center;">Inscrits</th><th style="text-align:center;">Présents</th><th style="text-align:center;">Attestations</th><th style="text-align:right;">Présence %</th></tr></thead>
+        <tbody>
+          {% for s in sessions %}
+          <tr>
+            <td><a href="{% url 'formations:session_detail' s.pk %}" style="font-weight:600;color:var(--text-primary);text-decoration:none;">{{ s.formation.title|truncatechars:30 }}</a></td>
+            <td style="white-space:nowrap;color:#64748b;">{{ s.date_start|date:"d/m/Y" }}</td>
+            <td style="text-align:center;">{{ s.enrolled }}</td>
+            <td style="text-align:center;font-weight:600;color:#10b981;">{{ s.attended }}</td>
+            <td style="text-align:center;font-weight:600;color:#f59e0b;">{{ s.with_attestation }}</td>
+            <td style="text-align:right;">
+              {% if s.enrolled > 0 %}
+              {% widthratio s.attended s.enrolled 100 as pct %}
+              <span class="isi-badge {% if pct >= 80 %}green{% elif pct >= 60 %}amber{% else %}red{% endif %}">{% widthratio s.attended s.enrolled 100 %}%</span>
+              {% else %}<span class="isi-badge gray">—</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6"><div class="text-center" style="padding:40px;"><p style="color:#64748b;margin:0;">Aucune session.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

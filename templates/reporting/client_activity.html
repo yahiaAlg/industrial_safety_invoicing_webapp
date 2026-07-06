@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Activité clients{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:top_clients_report' %}" style="color:var(--text-muted);text-decoration:none;">Clients</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Activité{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Activité clients</h1><p>Détail des interactions par client actif</p></div></div>
+  <div class="isi-card fade-up-delay-1">
+    <div class="isi-card-header"><div class="card-icon blue"><i class="bi bi-building-fill"></i></div><h3>Clients actifs</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>Client</th><th style="text-align:center;">Sessions</th><th style="text-align:center;">Projets</th><th style="text-align:center;">Factures</th><th>Dernière session</th><th>Dernière facture</th></tr></thead>
+        <tbody>
+          {% for c in clients %}
+          <tr>
+            <td><a href="{% url 'clients:client_detail' c.pk %}" style="font-weight:600;color:var(--text-primary);text-decoration:none;">{{ c.name|truncatechars:30 }}</a><div style="font-size:12px;color:#64748b;">{{ c.city|default:"" }}{% if c.activity_sector %} · {{ c.activity_sector|truncatechars:18 }}{% endif %}</div></td>
+            <td style="text-align:center;font-weight:600;">{{ c.session_count }}</td>
+            <td style="text-align:center;">{{ c.project_count }}</td>
+            <td style="text-align:center;">{{ c.invoice_count }}</td>
+            <td style="color:#64748b;font-size:13px;">{{ c.last_session|date:"d/m/Y"|default:"—" }}</td>
+            <td style="color:#64748b;font-size:13px;">{{ c.last_invoice|date:"d/m/Y"|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6"><div class="text-center" style="padding:40px;"><p style="color:#64748b;margin:0;">Aucun client actif.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

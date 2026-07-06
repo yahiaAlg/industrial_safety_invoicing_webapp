@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}ROI équipements{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:equipment_report' %}" style="color:var(--text-muted);text-decoration:none;">Équipements</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}ROI{% endblock %}
+{% block extra_head %}<style>
+.fade-up,.fade-up-delay-1,.fade-up-delay-2{opacity:1!important;animation-fill-mode:forwards!important;}
+</style>{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>ROI & coût par utilisation</h1><p>Rentabilité du parc matériel</p></div></div>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-box-fill"></i></div>
+      <div><div class="stat-value">{{ total_purchase|floatformat:0 }} DA</div><div class="stat-label">Valeur d'achat</div></div>
+    </div></div></div>
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon red" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-wrench-adjustable-fill"></i></div>
+      <div><div class="stat-value">{{ total_maintenance|floatformat:0 }} DA</div><div class="stat-label">Coût maintenance</div></div>
+    </div></div></div>
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon purple" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-calculator-fill"></i></div>
+      <div><div class="stat-value">{{ total_cost|floatformat:0 }} DA</div><div class="stat-label">Coût total propriété</div></div>
+    </div></div></div>
+  </div>
+  <div class="isi-card fade-up-delay-1">
+    <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-graph-up-arrow"></i></div><h3>Classement coût par utilisation</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>Équipement</th><th>Catégorie</th><th style="text-align:center;">Utilisations</th><th style="text-align:right;">Coût achat</th><th style="text-align:right;">Maintenance</th><th style="text-align:right;">Coût/utilisation</th></tr></thead>
+        <tbody>
+          {% for e in equipment_list %}
+          <tr>
+            <td><a href="{% url 'resources:equipment_detail' e.pk %}" style="font-weight:600;color:var(--text-primary);text-decoration:none;">{{ e.name|truncatechars:28 }}</a></td>
+            <td><span class="isi-badge gray">{{ e.category|truncatechars:16 }}</span></td>
+            <td style="text-align:center;font-weight:600;">{{ e.usage_count }}</td>
+            <td style="text-align:right;">{{ e.purchase_cost|floatformat:0 }} DA</td>
+            <td style="text-align:right;color:#ef4444;">{{ e.total_maintenance_cost|floatformat:0 }} DA</td>
+            <td style="text-align:right;font-weight:700;font-family:var(--font-head);font-size:16px;">{{ e.cost_per_use|floatformat:0 }} DA</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6"><div class="text-center" style="padding:40px;"><p style="color:#64748b;margin:0;">Aucun équipement.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

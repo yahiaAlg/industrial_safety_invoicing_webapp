@@ -1,0 +1,35 @@
+# =============================================================================
+# requirements.txt
+# =============================================================================
+#
+# Django ISI — Industrial Safety Institute Management System
+# Python 3.11+
+#
+# Install: pip install -r requirements.txt
+# =============================================================================
+
+# ── Core ─────────────────────────────────────────────────────────────────── #
+django
+
+# ── Database ─────────────────────────────────────────────────────────────── #
+# Default: SQLite (dev). Swap to psycopg2-binary for PostgreSQL in production.
+# psycopg2-binary
+
+# ── Image handling (avatar, logo, signature uploads) ─────────────────────── #
+pillow
+
+# ── Import/Export (participant bulk import, data export) ─────────────────── #
+django-import-export
+openpyxl
+tablib
+
+# ── Static files (production) ────────────────────────────────────────────── #
+whitenoise
+
+# ── Environment variable management ──────────────────────────────────────── #
+python-decouple
+
+# ── Dev / debug tooling (remove or pin to dev deps in production) ─────────── #
+django-debug-toolbar
+# gunicorn is not a dev dependency, but we don't want it in the default install for development, so it's not included in the main requirements.txt. Install separately for production with `pip install gunicorn`.
+gunicorn

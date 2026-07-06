@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Analyse coût formateurs{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:trainer_utilization_report' %}" style="color:var(--text-muted);text-decoration:none;">Formateurs</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Analyse coûts{% endblock %}
+{% block extra_head %}<style>
+.fade-up,.fade-up-delay-1,.fade-up-delay-2{opacity:1!important;animation-fill-mode:forwards!important;}
+</style>{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Analyse coûts formateurs</h1><p>Coût, revenu généré et contribution par formateur</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="isi-card fade-up-delay-1">
+    <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-person-fill-check"></i></div><h3>Contribution par formateur</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>Formateur</th><th style="text-align:center;">Sessions</th><th style="text-align:center;">Jours</th><th style="text-align:right;">Coût brut</th><th style="text-align:right;">IRG (10%)</th><th style="text-align:right;">Coût total</th><th style="text-align:right;">Revenu généré</th><th style="text-align:right;">Contribution</th></tr></thead>
+        <tbody>
+          {% for r in data %}
+          <tr>
+            <td>
+              <div style="font-weight:600;">{{ r.trainer.full_name }}</div>
+              <div style="font-size:12px;color:#94a3b8;margin-top:2px;">
+                {{ r.trainer.daily_rate|floatformat:0 }} DA/jour
+                &nbsp;·&nbsp;
+                {% if r.trainer.is_internal %}<span class="isi-badge green" style="font-size:10px;padding:1px 6px;"><i class="bi bi-building" style="font-size:8px;"></i> Interne</span>{% else %}<span class="isi-badge purple" style="font-size:10px;padding:1px 6px;"><i class="bi bi-person-workspace" style="font-size:8px;"></i> Externe</span>{% endif %}
+              </div>
+            </td>
+            <td style="text-align:center;font-weight:600;">{{ r.sessions }}</td>
+            <td style="text-align:center;">{{ r.total_days }}</td>
+            <td style="text-align:right;color:#64748b;">{{ r.gross_cost|floatformat:0 }} DA</td>
+            <td style="text-align:right;color:#f59e0b;">{% if r.irg_amount %}{{ r.irg_amount|floatformat:0 }} DA{% else %}<span style="color:#cbd5e1;">—</span>{% endif %}</td>
+            <td style="text-align:right;color:#ef4444;font-weight:600;">{{ r.cost|floatformat:0 }} DA</td>
+            <td style="text-align:right;color:#10b981;font-weight:600;">{{ r.revenue|floatformat:0 }} DA</td>
+            <td style="text-align:right;font-weight:700;font-family:var(--font-head);font-size:16px;color:{% if r.contribution >= 0 %}#10b981{% else %}#ef4444{% endif %};">{{ r.contribution|floatformat:0 }} DA</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6"><div class="text-center" style="padding:40px;"><p style="color:#64748b;margin:0;">Aucune donnée.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

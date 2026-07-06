@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Sessions{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Sessions{% endblock %}
+
+{% block topbar_actions %}
+{% if request.user.profile.is_admin %}
+<a href="{% url 'formations:session_create' %}" class="topbar-btn primary">
+  <i class="bi bi-plus-lg"></i> Nouvelle session
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Sessions de formation</h1>
+      <p>Planification et suivi des sessions</p>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="isi-card mb-4">
+    <div class="isi-card-body" style="padding:16px 24px;">
+      <form method="get" novalidate>
+        <div class="row g-3 align-items-end">
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">Recherche</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-search"></i>
+              <input type="text" name="q" class="form-control"
+                     value="{{ filter_form.q.value|default:'' }}"
+                     placeholder="Formation, client, formateur…">
+            </div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label">Statut</label>
+            <select name="status" class="form-select">
+              {% for val, label in filter_form.status.field.choices %}
+              <option value="{{ val }}" {% if filter_form.status.value == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label">Formation</label>
+            <select name="formation" class="form-select">
+              <option value="">Toutes</option>
+              {% for f in filter_form.formation.field.queryset %}
+              <option value="{{ f.pk }}" {% if filter_form.formation.value|stringformat:"s" == f.pk|stringformat:"s" %}selected{% endif %}>
+                {{ f.title|truncatechars:30 }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-lg-2 col-sm-6">
+            <label class="form-label">Du</label>
+            <input type="date" name="date_from" class="form-control"
+                   value="{{ filter_form.date_from.value|default:'' }}">
+          </div>
+          <div class="col-lg-2 col-sm-6">
+            <label class="form-label">Au</label>
+            <input type="date" name="date_to" class="form-control"
+                   value="{{ filter_form.date_to.value|default:'' }}">
+          </div>
+          <div class="col-lg-1 col-sm-6">
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber flex-grow-1">
+                <i class="bi bi-funnel-fill"></i>
+              </button>
+              <a href="{% url 'formations:session_list' %}" class="btn btn-ghost" title="Réinitialiser">
+                <i class="bi bi-x-lg"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-calendar3-fill"></i></div>
+      <h3>
+        Sessions
+        {% if page_obj.paginator.count %}
+        <span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">
+          — {{ page_obj.paginator.count }} résultat{{ page_obj.paginator.count|pluralize }}
+        </span>
+        {% endif %}
+      </h3>
+    </div>
+
+    {% if page_obj.object_list %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Formation</th>
+            <th>Dates</th>
+            <th>Client</th>
+            <th>Formateur</th>
+            <th>Remplissage</th>
+            <th>Statut</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for session in page_obj.object_list %}
+          <tr>
+            <td>
+              <div>
+                <a href="{% url 'formations:session_detail' session.pk %}"
+                   style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                  {{ session.formation.title|truncatechars:40 }}
+                </a>
+                {% if session.room %}
+                <div style="font-size:12px;color:var(--text-muted);">
+                  <i class="bi bi-door-open-fill"></i> {{ session.room.name }}
+                </div>
+                {% elif session.external_location %}
+                <div style="font-size:12px;color:var(--text-muted);">
+                  <i class="bi bi-geo-alt-fill"></i> {{ session.external_location|truncatechars:30 }}
+                </div>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              <div style="font-weight:600;font-size:13px;">{{ session.date_start|date:"d/m/Y" }}</div>
+              {% if session.date_end != session.date_start %}
+              <div style="font-size:12px;color:var(--text-muted);">→ {{ session.date_end|date:"d/m/Y" }}</div>
+              {% endif %}
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">
+                {{ session.client.name|default:"—" }}
+              </span>
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">
+                {% if session.trainer %}
+                  {{ session.trainer.first_name }} {{ session.trainer.last_name }}
+                {% else %}—{% endif %}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:60px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                  <div style="height:100%;width:{{ session.fill_rate }}%;
+                              background:{% if session.fill_rate >= 80 %}var(--success){% elif session.fill_rate >= 50 %}var(--accent){% else %}#94a3b8{% endif %};
+                              border-radius:3px;"></div>
+                </div>
+                <span style="font-size:12px;color:var(--text-muted);">
+                  {{ session.participant_count }}/{{ session.capacity }}
+                </span>
+              </div>
+            </td>
+            <td>
+              {% if session.status == 'planned' %}
+                <span class="isi-badge blue"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Planifiée</span>
+              {% elif session.status == 'in_progress' %}
+                <span class="isi-badge amber"><i class="bi bi-circle-fill" style="font-size:7px;"></i> En cours</span>
+              {% elif session.status == 'completed' %}
+                <span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Terminée</span>
+              {% elif session.status == 'cancelled' %}
+                <span class="isi-badge red"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Annulée</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                <a href="{% url 'formations:session_detail' session.pk %}"
+                   class="btn btn-ghost btn-sm" title="Détail">
+                  <i class="bi bi-eye-fill"></i>
+                </a>
+                {% if request.user.profile.is_admin %}
+                <a href="{% url 'formations:session_edit' session.pk %}"
+                   class="btn btn-ghost btn-sm" title="Modifier">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div style="padding:16px 24px;border-top:1px solid var(--card-border);
+                display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="font-size:13px;color:var(--text-muted);">
+        Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+      </div>
+      <div style="display:flex;gap:4px;">
+        {% if page_obj.has_previous %}
+        <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}"
+           class="btn btn-ghost btn-sm"><i class="bi bi-chevron-left"></i></a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+          <button class="btn btn-amber btn-sm" disabled>{{ num }}</button>
+          {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+          <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}"
+             class="btn btn-ghost btn-sm">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}"
+           class="btn btn-ghost btn-sm"><i class="bi bi-chevron-right"></i></a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;"><i class="bi bi-calendar3"></i></div>
+      {% if filter_form.q.value or filter_form.status.value or filter_form.date_from.value %}
+        <p style="color:var(--text-muted);font-size:15px;margin:0 0 16px;">Aucune session ne correspond à vos critères.</p>
+        <a href="{% url 'formations:session_list' %}" class="btn btn-ghost">
+          <i class="bi bi-x-lg"></i> Réinitialiser les filtres
+        </a>
+      {% else %}
+        <p style="color:var(--text-muted);font-size:15px;margin:0 0 16px;">Aucune session planifiée.</p>
+        {% if request.user.profile.is_admin %}
+        <a href="{% url 'formations:session_create' %}" class="btn btn-amber">
+          <i class="bi bi-plus-lg"></i> Planifier une session
+        </a>
+        {% endif %}
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

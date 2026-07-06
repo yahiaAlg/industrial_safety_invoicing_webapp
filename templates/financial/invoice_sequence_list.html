@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Compteurs de numérotation{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:invoice_list' %}" style="color:var(--text-muted);text-decoration:none;">Factures</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Compteurs{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Compteurs de numérotation</h1>
+      <p>Définissez le prochain numéro à utiliser pour chaque type et phase de facture.</p>
+    </div>
+    <a href="{% url 'financial:invoice_list' %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <!-- Warning -->
+  <div class="isi-card mb-4" style="border-left:3px solid var(--warning);">
+    <div class="isi-card-body" style="padding:14px 20px;display:flex;align-items:flex-start;gap:12px;">
+      <i class="bi bi-exclamation-triangle-fill" style="color:var(--warning);font-size:18px;flex-shrink:0;margin-top:2px;"></i>
+      <div style="font-size:13px;line-height:1.6;">
+        <strong>Attention :</strong> Modifier le compteur peut créer des <strong>doublons ou des sauts</strong> dans la numérotation.
+        N'utilisez cette page qu'en cas de migration de données ou de correction d'erreur.
+        Le champ <em>Prochain n°</em> est le numéro qui sera assigné à la prochaine facture créée.
+      </div>
+    </div>
+  </div>
+
+  {% for year in years %}
+  <div class="isi-card mb-4">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-hash"></i></div>
+      <h3>Année {{ year }}</h3>
+    </div>
+    <div class="isi-card-body" style="padding:0;">
+      <table class="table" style="margin:0;">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Phase</th>
+            <th>Dernier n° utilisé</th>
+            <th>Prochain n°</th>
+            <th>Prévisualisation</th>
+            <th style="width:220px;">Définir le prochain n°</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for seq in sequences %}
+          {% if seq.year == year %}
+          <tr>
+            <td>
+              <span class="isi-badge {% if seq.invoice_type == 'formation' %}blue{% else %}purple{% endif %}">
+                {{ seq.get_invoice_type_display }}
+              </span>
+            </td>
+            <td>
+              <span class="isi-badge {% if seq.phase == 'proforma' %}gray{% else %}green{% endif %}">
+                {{ seq.get_phase_display }}
+              </span>
+            </td>
+            <td style="font-variant-numeric:tabular-nums;">
+              <code>{{ seq.last_number|stringformat:"03d" }}</code>
+            </td>
+            <td style="font-variant-numeric:tabular-nums;">
+              <strong>{{ seq.next_number|stringformat:"03d" }}</strong>
+            </td>
+            <td style="font-family:monospace;font-size:13px;color:var(--text-muted);">
+              {% if seq.phase == 'proforma' %}
+                {% if seq.invoice_type == 'formation' %}FP-{% else %}FP-E-{% endif %}{{ seq.next_number|stringformat:"03d" }}-{{ seq.year }}
+              {% else %}
+                {% if seq.invoice_type == 'formation' %}F-{% else %}E-{% endif %}{{ seq.next_number|stringformat:"03d" }}-{{ seq.year }}
+              {% endif %}
+            </td>
+            <td>
+              <form method="post" class="d-flex gap-2 align-items-center" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="seq_id" value="{{ seq.pk }}">
+                <input
+                  type="number"
+                  name="next_number"
+                  min="1"
+                  max="9999"
+                  value="{{ seq.next_number }}"
+                  class="form-control form-control-sm"
+                  style="width:90px;font-variant-numeric:tabular-nums;"
+                  required
+                >
+                <button type="submit" class="btn btn-sm btn-amber" title="Appliquer">
+                  <i class="bi bi-check-lg"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+{% endblock %}

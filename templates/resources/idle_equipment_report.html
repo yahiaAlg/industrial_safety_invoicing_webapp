@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Équipements inactifs{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:equipment_list' %}" style="color:var(--text-muted);text-decoration:none;">Équipements</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:equipment_analytics' %}" style="color:var(--text-muted);text-decoration:none;">Analytiques</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Équipements inactifs{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Équipements inactifs</h1>
+      <p>Équipements non utilisés depuis plus de {{ threshold_days|default:"90" }} jours</p>
+    </div>
+  </div>
+
+  <!-- ── Navigation tabs ───────────────────────────────────────── -->
+  <div class="isi-card mb-4" style="padding:0;overflow:hidden;">
+    <div style="display:flex;border-bottom:1px solid var(--card-border);">
+      <a href="{% url 'resources:equipment_analytics' %}"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;
+                display:flex;align-items:center;gap:8px;
+                border-bottom:2px solid transparent;color:var(--text-muted);">
+        <i class="bi bi-grid-1x2-fill"></i> Vue d'ensemble
+      </a>
+      <a href="{% url 'resources:utilization_report' %}"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;
+                display:flex;align-items:center;gap:8px;
+                border-bottom:2px solid transparent;color:var(--text-muted);">
+        <i class="bi bi-bar-chart-fill"></i> Taux d'utilisation
+      </a>
+      <a href="{% url 'resources:idle_equipment_report' %}"
+         style="padding:14px 22px;font-size:13.5px;font-weight:600;text-decoration:none;
+                display:flex;align-items:center;gap:8px;
+                border-bottom:2px solid var(--accent);color:var(--accent);">
+        <i class="bi bi-hourglass-split"></i> Inactifs
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Alert banner ──────────────────────────────────────────── -->
+  {% if idle_equipment %}
+  <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px;
+              padding:16px 20px;margin-bottom:24px;display:flex;align-items:flex-start;gap:14px;">
+    <i class="bi bi-info-circle-fill" style="color:var(--accent);font-size:20px;flex-shrink:0;margin-top:2px;"></i>
+    <div>
+      <div style="font-weight:600;font-size:14px;color:var(--text-primary);margin-bottom:4px;">
+        {{ idle_equipment|length }} équipement{{ idle_equipment|length|pluralize }} non utilisé{{ idle_equipment|length|pluralize }} depuis {{ threshold_days|default:"90" }}+ jours
+      </div>
+      <div style="font-size:13px;color:var(--text-muted);">
+        Ces équipements méritent une revue : sont-ils encore utiles ? Faut-il les mettre en réserve, les vendre ou les réformer ?
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Table ─────────────────────────────────────────────────── -->
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-hourglass-split"></i></div>
+      <h3>Équipements inactifs
+        {% if idle_equipment %}
+        <span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">
+          — {{ idle_equipment|length }} équipement{{ idle_equipment|length|pluralize }}
+        </span>
+        {% endif %}
+      </h3>
+    </div>
+
+    {% if idle_equipment %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Équipement</th>
+            <th>Catégorie</th>
+            <th>Dernière utilisation</th>
+            <th>Jours inactifs</th>
+            <th>Valeur actuelle</th>
+            <th>Statut</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for eq in idle_equipment %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:9px;
+                            background:rgba(100,116,139,.1);color:#64748b;
+                            display:flex;align-items:center;justify-content:center;
+                            font-size:17px;flex-shrink:0;">
+                  <i class="bi bi-tools"></i>
+                </div>
+                <div>
+                  <a href="{% url 'resources:equipment_detail' eq.pk %}"
+                     style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                    {{ eq.name }}
+                  </a>
+                </div>
+              </div>
+            </td>
+            <td><span style="color:var(--text-muted);font-size:13px;">{{ eq.category }}</span></td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">
+                {% if eq.last_used_date %}{{ eq.last_used_date|date:"d/m/Y" }}{% else %}Jamais{% endif %}
+              </span>
+            </td>
+            <td>
+              {% if eq.days_since_last_use %}
+              <span style="font-weight:600;font-size:13px;
+                           color:{% if eq.days_since_last_use > 180 %}var(--danger){% else %}var(--text-muted){% endif %};">
+                {{ eq.days_since_last_use }} jours
+              </span>
+              {% else %}
+              <span style="color:var(--text-muted);font-size:13px;">Jamais utilisé</span>
+              {% endif %}
+            </td>
+            <td>
+              <span style="font-size:13px;font-weight:500;">{{ eq.current_value|floatformat:0 }}
+                <span style="font-size:11px;color:var(--text-muted);">DA</span>
+              </span>
+            </td>
+            <td>
+              {% if eq.status == 'active' %}
+                <span class="isi-badge green">Actif</span>
+              {% elif eq.status == 'maintenance' %}
+                <span class="isi-badge amber">Maintenance</span>
+              {% elif eq.status == 'reserved' %}
+                <span class="isi-badge blue">Réservé</span>
+              {% else %}
+                <span class="isi-badge gray">À vendre</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                <a href="{% url 'resources:equipment_detail' eq.pk %}"
+                   class="btn btn-ghost btn-sm" title="Voir le détail">
+                  <i class="bi bi-eye-fill"></i>
+                </a>
+                <a href="{% url 'resources:equipment_edit' eq.pk %}"
+                   class="btn btn-ghost btn-sm" title="Modifier le statut">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;"><i class="bi bi-check-circle"></i></div>
+      <p style="color:var(--text-muted);font-size:15px;margin:0;">
+        Excellent ! Aucun équipement n'est inactif depuis plus de {{ threshold_days|default:"90" }} jours.
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

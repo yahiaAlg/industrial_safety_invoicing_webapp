@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Formes juridiques{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'clients:client_list' %}" style="color:var(--text-muted);text-decoration:none;">Clients</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Formes juridiques{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'clients:forme_juridique_create' %}" class="topbar-btn primary">
+  <i class="bi bi-plus-lg"></i> Nouvelle forme
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Formes juridiques</h1>
+      <p>Gérer les statuts juridiques disponibles dans les fiches clients</p>
+    </div>
+    <a href="{% url 'clients:client_list' %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour aux clients
+    </a>
+  </div>
+
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-bank2"></i></div>
+      <h3>Formes juridiques
+        <span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">
+          — {{ formes.count }} au total
+        </span>
+      </h3>
+    </div>
+
+    {% if formes %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Sigle</th>
+            <th>Description</th>
+            <th>Clients liés</th>
+            <th>Statut</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fj in formes %}
+          <tr>
+            <td>
+              <span style="font-weight:700;font-size:14px;
+                           background:rgba(245,158,11,.10);
+                           color:#92400e;
+                           border:1px solid rgba(245,158,11,.25);
+                           border-radius:6px;
+                           padding:3px 10px;
+                           letter-spacing:.3px;">
+                {{ fj.name }}
+              </span>
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">
+                {{ fj.description|default:"—"|truncatechars:60 }}
+              </span>
+            </td>
+            <td>
+              <span style="font-weight:600;">{{ fj.clients.count }}</span>
+            </td>
+            <td>
+              {% if fj.is_active %}
+              <span class="status-badge status-paid">Active</span>
+              {% else %}
+              <span class="status-badge status-cancelled">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                {% if fj.name != "Autre" %}
+                <a href="{% url 'clients:forme_juridique_edit' fj.pk %}"
+                   class="btn btn-ghost btn-sm" title="Modifier">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+                {% else %}
+                <span class="btn btn-ghost btn-sm" style="opacity:.35;cursor:not-allowed;" title="Valeur système — non modifiable">
+                  <i class="bi bi-lock-fill"></i>
+                </span>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;"><i class="bi bi-bank2"></i></div>
+      <p style="color:var(--text-muted);font-size:15px;margin:0 0 16px;">Aucune forme juridique configurée.</p>
+      <a href="{% url 'clients:forme_juridique_create' %}" class="btn btn-amber">
+        <i class="bi bi-plus-lg"></i> Créer la première
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Info note -->
+  <div class="isi-card mt-3" style="border-left:3px solid var(--accent);">
+    <div class="isi-card-body" style="padding:14px 20px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <i class="bi bi-info-circle-fill" style="color:var(--accent);margin-top:2px;flex-shrink:0;"></i>
+        <p style="margin:0;font-size:13px;color:var(--text-muted);line-height:1.6;">
+          La forme <strong>Autre</strong> est une valeur système — elle est utilisée comme repli automatique
+          lorsqu'aucune forme n'est sélectionnée pour une entreprise ou startup.
+          Elle ne peut pas être renommée ni supprimée.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

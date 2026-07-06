@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attestation {{ attestation.reference }} — {{ attestation.participant.full_name }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Barlow', sans-serif;
+      font-size: 13.5px;
+      color: #0f172a;
+      background: #fff;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── Amber top band ── */
+    .top-band {
+      height: 8mm;
+      background: #f59e0b;
+    }
+    .bottom-band {
+      height: 4mm;
+      background: #f59e0b;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 12mm 18mm 8mm;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .institute-info {
+      flex: 1;
+    }
+    .institute-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
+    .institute-sub {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .institute-contact {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 8px;
+      line-height: 1.7;
+    }
+
+    .logo-zone {
+      width: 60mm;
+      text-align: right;
+    }
+    .logo-zone img {
+      max-height: 24mm;
+      max-width: 55mm;
+      object-fit: contain;
+    }
+    .logo-placeholder {
+      width: 55mm;
+      height: 24mm;
+      border: 2px dashed #e2e8f0;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #94a3b8;
+      margin-left: auto;
+    }
+
+    /* ── Document title ── */
+    .doc-title-section {
+      padding: 10mm 18mm 6mm;
+      text-align: center;
+    }
+    .doc-type-label {
+      font-size: 11px;
+      color: #64748b;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .doc-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      line-height: 1;
+    }
+    .doc-subtitle {
+      font-size: 14px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    /* ── Decorative rule ── */
+    .deco-rule {
+      margin: 0 18mm;
+      height: 3px;
+      background: linear-gradient(to right, #f59e0b, transparent);
+      border-radius: 2px;
+    }
+
+    /* ── Main content ── */
+    .content {
+      padding: 10mm 18mm;
+    }
+
+    .certify-text {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #0f172a;
+      text-align: center;
+      margin-bottom: 8mm;
+    }
+
+    /* ── Recipient highlight ── */
+    .recipient-box {
+      border: 2px solid #f59e0b;
+      border-radius: 10px;
+      padding: 6mm 10mm;
+      margin: 0 auto 8mm;
+      max-width: 140mm;
+      text-align: center;
+      background: rgba(245, 158, 11, .04);
+    }
+    .recipient-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 30px;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: .3px;
+    }
+    .recipient-details {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 3px;
+    }
+
+    /* ── Formation info table ── */
+    .formation-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 8mm;
+    }
+    .formation-table td {
+      padding: 6px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 13px;
+    }
+    .formation-table td:first-child {
+      width: 45%;
+      color: #64748b;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+    }
+    .formation-table td:last-child {
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    /* ── Validity box ── */
+    .validity-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 8mm;
+    }
+    .validity-item {
+      flex: 1;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 5mm 6mm;
+      text-align: center;
+    }
+    .validity-item-label {
+      font-size: 10px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .validity-item-value {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .validity-item.highlight {
+      border-color: #f59e0b;
+      background: rgba(245, 158, 11, .06);
+    }
+    .validity-item.highlight .validity-item-value {
+      color: #d97706;
+    }
+
+    /* ── Reference badge ── */
+    .reference-badge {
+      display: inline-block;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 4px 16px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: .5px;
+      margin-bottom: 8mm;
+    }
+
+    /* ── Signature area ── */
+    .signature-area {
+      margin-top: 8mm;
+      display: flex;
+      justify-content: flex-end;
+      padding-right: 0;
+    }
+    .signature-block {
+      text-align: center;
+      min-width: 60mm;
+    }
+    .signature-line {
+      width: 60mm;
+      height: 1px;
+      background: #e2e8f0;
+      margin: 0 auto 4px;
+    }
+    .signature-name {
+      font-weight: 600;
+      font-size: 12px;
+      color: #0f172a;
+    }
+    .signature-title {
+      font-size: 11px;
+      color: #64748b;
+    }
+    .signature-img {
+      max-height: 20mm;
+      max-width: 55mm;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto 4px;
+    }
+
+    /* ── Footer ── */
+    .doc-footer {
+      position: absolute;
+      bottom: 8mm;
+      left: 18mm;
+      right: 18mm;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #94a3b8;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 3mm;
+    }
+
+    /* ── Print ── */
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
+    }
+
+    /* ── Screen only ── */
+    @media screen {
+      body { background: #f1f5f9; }
+      .page {
+        margin: 20px auto;
+        box-shadow: 0 4px 32px rgba(0,0,0,.15);
+      }
+      .print-controls {
+        text-align: center;
+        padding: 16px;
+        font-family: 'Barlow', sans-serif;
+      }
+      .print-controls button {
+        background: #f59e0b;
+        color: #0f172a;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 24px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        margin: 0 6px;
+      }
+      .print-controls a {
+        color: #64748b;
+        text-decoration: none;
+        font-size: 13px;
+        padding: 10px 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        display: inline-block;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="print-controls no-print">
+  <button onclick="window.print()">🖨️ Imprimer</button>
+  <a href="{% url 'formations:attestation_detail' attestation.pk %}">← Retour</a>
+</div>
+
+<div class="page">
+  <div class="top-band"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="institute-info">
+      <div class="institute-name">{{ institute.name }}</div>
+      <div class="institute-sub">Institut de Sécurité Industrielle</div>
+      <div class="institute-contact">
+        {{ institute.address }}{% if institute.city %}, {{ institute.city }}{% endif %}<br>
+        {% if institute.phone %}Tél. {{ institute.phone }}{% endif %}{% if institute.email %} · {{ institute.email }}{% endif %}
+        {% if institute.nif %}<br>NIF : {{ institute.nif }}{% if institute.nis %} · NIS : {{ institute.nis }}{% endif %}{% endif %}
+      </div>
+    </div>
+    <div class="logo-zone">
+      {% if institute.logo %}
+      <img src="{{ institute.logo.url }}" alt="Logo {{ institute.name }}">
+      {% else %}
+      <div class="logo-placeholder">Logo</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Document title -->
+  <div class="doc-title-section">
+    <div class="doc-type-label">Document officiel</div>
+    <div class="doc-title">Attestation de formation</div>
+    <div class="doc-subtitle">Centre de Formation — Sécurité Industrielle</div>
+  </div>
+  <div class="deco-rule"></div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <p class="certify-text">
+      L'<strong>{{ institute.name }}</strong> certifie que
+    </p>
+
+    <div class="recipient-box">
+      <div class="recipient-name">{{ attestation.participant.full_name }}</div>
+      <div class="recipient-details">
+        {% if attestation.participant.job_title %}{{ attestation.participant.job_title }}{% endif %}
+        {% if attestation.participant.employer %} · {{ attestation.participant.employer }}{% endif %}
+      </div>
+    </div>
+
+    <p class="certify-text">
+      a suivi et validé avec succès la formation
+    </p>
+
+    <!-- Formation details table -->
+    <table class="formation-table">
+      <tr>
+        <td>Intitulé de la formation</td>
+        <td>{{ attestation.session.formation.title }}</td>
+      </tr>
+      {% if attestation.session.formation.category %}
+      <tr>
+        <td>Domaine</td>
+        <td>{{ attestation.session.formation.category.name }}</td>
+      </tr>
+      {% endif %}
+      <tr>
+        <td>Dates de la session</td>
+        <td>
+          du {{ attestation.session.date_start|date:"d/m/Y" }}
+          au {{ attestation.session.date_end|date:"d/m/Y" }}
+        </td>
+      </tr>
+      {% if attestation.session.formation.duration_hours %}
+      <tr>
+        <td>Durée</td>
+        <td>{{ attestation.session.formation.duration_hours }} heures</td>
+      </tr>
+      {% endif %}
+      {% if attestation.session.trainer %}
+      <tr>
+        <td>Formateur</td>
+        <td>{{ attestation.session.trainer.first_name }} {{ attestation.session.trainer.last_name }}</td>
+      </tr>
+      {% endif %}
+      {% if attestation.session.formation.accreditation_body %}
+      <tr>
+        <td>Accréditation</td>
+        <td>{{ attestation.session.formation.accreditation_body }}
+          {% if attestation.session.formation.accreditation_reference %}
+          — Réf. {{ attestation.session.formation.accreditation_reference }}
+          {% endif %}
+        </td>
+      </tr>
+      {% endif %}
+    </table>
+
+    <!-- Validity -->
+    <div class="validity-row">
+      <div class="validity-item">
+        <div class="validity-item-label">Date d'émission</div>
+        <div class="validity-item-value">{{ attestation.issue_date|date:"d/m/Y" }}</div>
+      </div>
+      <div class="validity-item highlight">
+        <div class="validity-item-label">Valide jusqu'au</div>
+        <div class="validity-item-value">{{ attestation.valid_until|date:"d/m/Y" }}</div>
+      </div>
+      <div class="validity-item">
+        <div class="validity-item-label">Référence</div>
+        <div class="validity-item-value" style="font-size:14px;">{{ attestation.reference }}</div>
+      </div>
+    </div>
+
+    <!-- Signature -->
+    <div class="signature-area">
+      <div class="signature-block">
+        {% if formation_info.director_signature %}
+        <img src="{{ formation_info.director_signature.url }}" alt="Signature" class="signature-img">
+        {% else %}
+        <div style="height:20mm;"></div>
+        {% endif %}
+        <div class="signature-line"></div>
+        <div class="signature-name">
+          {% if formation_info.director_name %}{{ formation_info.director_name }}{% else %}{{ institute.director_name }}{% endif %}
+        </div>
+        <div class="signature-title">
+          {% if formation_info.director_title %}{{ formation_info.director_title }}{% else %}Directeur{% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div><!-- .content -->
+
+  <!-- Footer -->
+  <div class="doc-footer">
+    <span>{{ institute.name }} — {{ institute.city }}</span>
+    <span>Réf. {{ attestation.reference }} · Émise le {{ attestation.issue_date|date:"d/m/Y" }}</span>
+    <span>Document officiel — Ne peut être reproduit sans autorisation</span>
+  </div>
+
+  <div class="bottom-band"></div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block title %}Analyse des dépenses{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:dashboard' %}" style="color:var(--text-muted);text-decoration:none;">Rapports</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Dépenses{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'reporting:expense_by_category' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}" class="topbar-btn secondary"><i class="bi bi-tags-fill"></i> Par catégorie</a>
+<a href="{% url 'reporting:pending_expenses_report' %}" class="topbar-btn secondary"><i class="bi bi-clock-fill"></i> En attente</a>
+<a href="{% url 'reporting:export_expenses_csv' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}" class="topbar-btn primary"><i class="bi bi-download"></i> Exporter CSV</a>
+{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Analyse des dépenses</h1>
+      <p>Répartition des dépenses approuvées — {{ date_from|date:"d/m/Y" }} au {{ date_to|date:"d/m/Y" }}</p>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:14px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <select name="allocation" class="form-select" style="width:190px;">
+        <option value="">Toutes affectations</option>
+        <option value="session" {% if request.GET.allocation == 'session' %}selected{% endif %}>Sessions</option>
+        <option value="project" {% if request.GET.allocation == 'project' %}selected{% endif %}>Projets</option>
+        <option value="overhead" {% if request.GET.allocation == 'overhead' %}selected{% endif %}>Frais généraux</option>
+      </select>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+      <a href="{% url 'reporting:expense_breakdown_report' %}" class="btn btn-outline-secondary" style="font-size:13px;">Réinitialiser</a>
+    </form>
+  </div></div>
+
+  <!-- KPI cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon red" style="width:48px;height:48px;font-size:22px;border-radius:12px;flex-shrink:0;"><i class="bi bi-credit-card-fill"></i></div>
+      <div>
+        <div class="stat-value">{{ totals.total|default:0|floatformat:0 }} <span style="font-size:13px;font-weight:400;">DA</span></div>
+        <div class="stat-label">Total dépenses</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px;">{{ expenses|length }} opération(s)</div>
+      </div>
+    </div></div></div>
+
+    <div class="col-sm-6 col-lg-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon amber" style="width:48px;height:48px;font-size:22px;border-radius:12px;flex-shrink:0;"><i class="bi bi-mortarboard-fill"></i></div>
+      <div>
+        <div class="stat-value">{{ totals.session_total|default:0|floatformat:0 }} <span style="font-size:13px;font-weight:400;">DA</span></div>
+        <div class="stat-label">Sessions</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px;">{% if totals.total %}{% widthratio totals.session_total|default:0 totals.total 100 %}%{% else %}—{% endif %} du total</div>
+      </div>
+    </div></div></div>
+
+    <div class="col-sm-6 col-lg-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon blue" style="width:48px;height:48px;font-size:22px;border-radius:12px;flex-shrink:0;"><i class="bi bi-diagram-3-fill"></i></div>
+      <div>
+        <div class="stat-value">{{ totals.project_total|default:0|floatformat:0 }} <span style="font-size:13px;font-weight:400;">DA</span></div>
+        <div class="stat-label">Projets d'étude</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px;">{% if totals.total %}{% widthratio totals.project_total|default:0 totals.total 100 %}%{% else %}—{% endif %} du total</div>
+      </div>
+    </div></div></div>
+
+    <div class="col-sm-6 col-lg-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div style="width:48px;height:48px;font-size:22px;border-radius:12px;flex-shrink:0;background:#f1f5f9;color:#475569;display:flex;align-items:center;justify-content:center;"><i class="bi bi-building-fill"></i></div>
+      <div>
+        <div class="stat-value">{{ totals.overhead_total|default:0|floatformat:0 }} <span style="font-size:13px;font-weight:400;">DA</span></div>
+        <div class="stat-label">Frais généraux</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px;">{% if totals.total %}{% widthratio totals.overhead_total|default:0 totals.total 100 %}%{% else %}—{% endif %} du total</div>
+      </div>
+    </div></div></div>
+  </div>
+
+  <!-- Charts row 1 -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4">
+      <div class="isi-card h-100">
+        <div class="isi-card-header"><div class="card-icon purple"><i class="bi bi-pie-chart-fill"></i></div><h3>Répartition par affectation</h3></div>
+        <div class="isi-card-body">
+          <div style="position:relative;height:210px;"><canvas id="chartExp"></canvas></div>
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;"><span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>Sessions</span><span style="font-weight:600;">{{ totals.session_total|default:0|floatformat:0 }} DA</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;"><span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#3b82f6;display:inline-block;"></span>Projets</span><span style="font-weight:600;">{{ totals.project_total|default:0|floatformat:0 }} DA</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;"><span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>Généraux</span><span style="font-weight:600;">{{ totals.overhead_total|default:0|floatformat:0 }} DA</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="isi-card h-100">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-bar-chart-fill"></i></div>
+          <h3>Évolution mensuelle (empilée)</h3>
+          <div class="ms-auto" style="display:flex;gap:14px;font-size:12px;color:#64748b;">
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:4px;border-radius:2px;background:#f59e0b;display:inline-block;"></span>Sessions</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:4px;border-radius:2px;background:#3b82f6;display:inline-block;"></span>Projets</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:4px;border-radius:2px;background:#94a3b8;display:inline-block;"></span>Généraux</span>
+          </div>
+        </div>
+        <div class="isi-card-body"><div style="position:relative;height:260px;"><canvas id="chartExpMonth"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts row 2 -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="isi-card h-100">
+        <div class="isi-card-header"><div class="card-icon" style="background:rgba(16,185,129,.15);color:#10b981;width:36px;height:36px;border-radius:10px;font-size:16px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-graph-up-arrow"></i></div><h3>Tendance cumulative</h3></div>
+        <div class="isi-card-body"><div style="position:relative;height:220px;"><canvas id="chartCumulative"></canvas></div></div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="isi-card h-100">
+        <div class="isi-card-header">
+          <div class="card-icon red"><i class="bi bi-bar-chart-steps"></i></div>
+          <h3>Montant &amp; volume par affectation</h3>
+          <a href="{% url 'reporting:expense_by_category' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}" class="ms-auto" style="font-size:12px;color:var(--accent);text-decoration:none;">Par catégorie →</a>
+        </div>
+        <div class="isi-card-body"><div style="position:relative;height:220px;"><canvas id="chartAllocBar"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Allocation synthesis table -->
+  <div class="isi-card mb-4">
+    <div class="isi-card-header"><div class="card-icon blue"><i class="bi bi-table"></i></div><h3>Synthèse par affectation</h3></div>
+    <div style="overflow-x:auto;"><table class="isi-table">
+      <thead><tr><th>Affectation</th><th style="text-align:right;">Nb</th><th style="text-align:right;">Total</th><th style="text-align:right;">Moyenne</th><th>Part</th></tr></thead>
+      <tbody>
+        {% with tot=totals.total|default:1 %}
+        <tr>
+          <td><span style="display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;"></span><strong>Sessions</strong></span></td>
+          <td style="text-align:right;">{{ totals.session_count|default:"—" }}</td>
+          <td style="text-align:right;font-weight:600;">{{ totals.session_total|default:0|floatformat:0 }} DA</td>
+          <td style="text-align:right;color:#64748b;">{{ totals.session_avg|default:0|floatformat:0 }} DA</td>
+          <td><div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;height:6px;background:#f1f5f9;border-radius:3px;"><div style="width:{% widthratio totals.session_total|default:0 tot 100 %}%;height:6px;background:#f59e0b;border-radius:3px;"></div></div><span style="font-size:12px;font-weight:600;min-width:32px;">{% widthratio totals.session_total|default:0 tot 100 %}%</span></div></td>
+        </tr>
+        <tr>
+          <td><span style="display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;border-radius:50%;background:#3b82f6;display:inline-block;"></span><strong>Projets d'étude</strong></span></td>
+          <td style="text-align:right;">{{ totals.project_count|default:"—" }}</td>
+          <td style="text-align:right;font-weight:600;">{{ totals.project_total|default:0|floatformat:0 }} DA</td>
+          <td style="text-align:right;color:#64748b;">{{ totals.project_avg|default:0|floatformat:0 }} DA</td>
+          <td><div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;height:6px;background:#f1f5f9;border-radius:3px;"><div style="width:{% widthratio totals.project_total|default:0 tot 100 %}%;height:6px;background:#3b82f6;border-radius:3px;"></div></div><span style="font-size:12px;font-weight:600;min-width:32px;">{% widthratio totals.project_total|default:0 tot 100 %}%</span></div></td>
+        </tr>
+        <tr>
+          <td><span style="display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;border-radius:50%;background:#94a3b8;display:inline-block;"></span><strong>Frais généraux</strong></span></td>
+          <td style="text-align:right;">{{ totals.overhead_count|default:"—" }}</td>
+          <td style="text-align:right;font-weight:600;">{{ totals.overhead_total|default:0|floatformat:0 }} DA</td>
+          <td style="text-align:right;color:#64748b;">{{ totals.overhead_avg|default:0|floatformat:0 }} DA</td>
+          <td><div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;height:6px;background:#f1f5f9;border-radius:3px;"><div style="width:{% widthratio totals.overhead_total|default:0 tot 100 %}%;height:6px;background:#94a3b8;border-radius:3px;"></div></div><span style="font-size:12px;font-weight:600;min-width:32px;">{% widthratio totals.overhead_total|default:0 tot 100 %}%</span></div></td>
+        </tr>
+        {% endwith %}
+        <tr style="background:#f8fafc;font-weight:700;">
+          <td>Total</td><td style="text-align:right;">{{ expenses|length }}</td><td style="text-align:right;">{{ totals.total|default:0|floatformat:0 }} DA</td><td style="text-align:right;color:#64748b;">{{ totals.avg|default:0|floatformat:0 }} DA</td><td></td>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- Detail list -->
+  <div class="isi-card">
+    <div class="isi-card-header"><div class="card-icon red"><i class="bi bi-list-ul"></i></div><h3>Liste des dépenses</h3><div class="ms-auto" style="font-size:13px;color:#64748b;">{{ expenses|length }} entrée(s)</div></div>
+    <div style="overflow-x:auto;"><table class="isi-table">
+      <thead><tr><th>Date</th><th>Catégorie</th><th>Description</th><th>Bénéficiaire</th><th>Affectation</th><th>Justificatif</th><th style="text-align:right;">Montant</th></tr></thead>
+      <tbody>
+        {% for e in expenses %}
+        <tr>
+          <td style="white-space:nowrap;">{{ e.date|date:"d/m/Y" }}</td>
+          <td><span class="isi-badge gray">{{ e.category.name|default:"—" }}</span></td>
+          <td style="color:#64748b;font-size:13px;">{{ e.description|truncatechars:40 }}</td>
+          <td style="font-size:13px;color:#475569;">{{ e.beneficiary.name|default:"—"|truncatechars:22 }}</td>
+          <td style="font-size:13px;">
+            {% if e.allocated_to_session %}<span style="color:#f59e0b;"><i class="bi bi-mortarboard-fill"></i> {{ e.allocated_to_session.formation.title|truncatechars:20 }}</span>
+            {% elif e.allocated_to_project %}<span style="color:#3b82f6;"><i class="bi bi-diagram-3-fill"></i> {{ e.allocated_to_project.title|truncatechars:20 }}</span>
+            {% else %}<span style="color:#94a3b8;"><i class="bi bi-building-fill"></i> Frais généraux</span>{% endif %}
+          </td>
+          <td>
+            {% if e.receipt_missing %}<span class="isi-badge red"><i class="bi bi-file-earmark-x-fill"></i> Manquant</span>
+            {% else %}<span class="isi-badge" style="background:rgba(16,185,129,.12);color:#059669;"><i class="bi bi-file-earmark-check-fill"></i> OK</span>{% endif %}
+          </td>
+          <td style="text-align:right;font-weight:600;color:#ef4444;">{{ e.amount|floatformat:0 }} DA</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7"><div class="text-center" style="padding:48px;"><div style="font-size:44px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-credit-card"></i></div><p style="color:#64748b;margin:0;">Aucune dépense pour cette période.</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const sessionTotal  = {{ totals.session_total|default:0|stringformat:".2f" }};
+const projectTotal  = {{ totals.project_total|default:0|stringformat:".2f" }};
+const overheadTotal = {{ totals.overhead_total|default:0|stringformat:".2f" }};
+
+const mData = [{% for m in by_month %}{
+  m:  "{{ m.m|escapejs }}",
+  s:  {{ m.s|stringformat:".2f" }},
+  p:  {{ m.p|stringformat:".2f" }},
+  oh: {{ m.oh|stringformat:".2f" }},
+  t:  {{ m.t|stringformat:".2f" }}
+},{% endfor %}];
+
+const palette = ['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#f97316','#06b6d4','#84cc16','#ec4899','#6366f1'];
+const fmtDA = v => v.toLocaleString('fr-DZ') + ' DA';
+const baseOpts = { responsive:true, maintainAspectRatio:false };
+
+/* 1 — Donut: par affectation */
+new Chart(document.getElementById('chartExp'), {
+  type:'doughnut',
+  data:{labels:['Sessions','Projets','Généraux'],datasets:[{data:[sessionTotal,projectTotal,overheadTotal],backgroundColor:['#f59e0b','#3b82f6','#94a3b8'],borderWidth:0,hoverOffset:6}]},
+  options:{...baseOpts,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${fmtDA(ctx.parsed)}`}}}}
+});
+
+/* 2 — Stacked bar: évolution mensuelle */
+if(mData.length){
+  new Chart(document.getElementById('chartExpMonth'),{
+    type:'bar',
+    data:{labels:mData.map(d=>d.m),datasets:[
+      {label:'Sessions', data:mData.map(d=>d.s), backgroundColor:'#f59e0b',borderRadius:4,stack:'s'},
+      {label:'Projets',  data:mData.map(d=>d.p), backgroundColor:'#3b82f6',borderRadius:4,stack:'s'},
+      {label:'Généraux', data:mData.map(d=>d.oh),backgroundColor:'#94a3b8',borderRadius:4,stack:'s'}
+    ]},
+    options:{...baseOpts,plugins:{legend:{display:false},tooltip:{mode:'index',callbacks:{label:ctx=>` ${ctx.dataset.label}: ${fmtDA(ctx.parsed.y)}`}}},scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#64748b',font:{family:'Barlow',size:11}}},y:{stacked:true,grid:{color:'#e2e8f0'},ticks:{color:'#64748b',font:{family:'Barlow',size:11},callback:v=>v.toLocaleString('fr-DZ')}}}}
+  });
+}
+
+/* 3 — Line: tendance cumulative */
+if(mData.length){
+  let cum=0;
+  const cumData=mData.map(d=>{cum+=d.t;return cum;});
+  new Chart(document.getElementById('chartCumulative'),{
+    type:'line',
+    data:{labels:mData.map(d=>d.m),datasets:[{label:'Cumul',data:cumData,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.08)',fill:true,tension:0.4,pointBackgroundColor:'#ef4444',pointRadius:4,pointHoverRadius:6,borderWidth:2}]},
+    options:{...baseOpts,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#64748b',font:{family:'Barlow',size:11}}},y:{grid:{color:'#e2e8f0'},ticks:{color:'#64748b',font:{family:'Barlow',size:11},callback:v=>v.toLocaleString('fr-DZ')}}}}
+  });
+}
+
+/* 4 — Grouped bar: montant + nb par affectation (uses totals — always available) */
+(function(){
+  const labels  = ['Sessions', 'Projets', 'Frais généraux'];
+  const amounts = [sessionTotal, projectTotal, overheadTotal];
+  const counts  = [{{ totals.session_count|default:0 }}, {{ totals.project_count|default:0 }}, {{ totals.overhead_count|default:0 }}];
+  const colors  = ['#f59e0b', '#3b82f6', '#94a3b8'];
+  new Chart(document.getElementById('chartAllocBar'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Montant (DA)', data: amounts, backgroundColor: colors.map(c=>c+'bb'), borderColor: colors, borderWidth:1, borderRadius:6, yAxisID:'yAmt' },
+        { label: 'Nb dépenses', data: counts,  backgroundColor: colors.map(c=>c+'33'), borderColor: colors, borderWidth:1, borderRadius:6, yAxisID:'yCnt' }
+      ]
+    },
+    options: {
+      ...baseOpts,
+      plugins: {
+        legend: { position:'bottom', labels:{color:'#64748b',font:{family:'Barlow',size:11},padding:12,boxWidth:12} },
+        tooltip: { mode:'index', callbacks:{ label: ctx => ctx.datasetIndex===0 ? ` Montant : ${fmtDA(ctx.parsed.y)}` : ` Nb : ${ctx.parsed.y}` } }
+      },
+      scales: {
+        x:    { grid:{display:false}, ticks:{color:'#64748b',font:{family:'Barlow',size:11}} },
+        yAmt: { position:'left',  grid:{color:'#e2e8f0'}, ticks:{color:'#64748b',font:{family:'Barlow',size:10},callback:v=>v.toLocaleString('fr-DZ')} },
+        yCnt: { position:'right', grid:{display:false},   ticks:{color:'#94a3b8',font:{family:'Barlow',size:10}} }
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}

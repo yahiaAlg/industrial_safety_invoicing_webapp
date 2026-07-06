@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}{{ trainer.first_name }} {{ trainer.last_name }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:trainer_list' %}" style="color:var(--text-muted);text-decoration:none;">Formateurs</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ trainer.first_name }} {{ trainer.last_name }}{% endblock %}
+
+{% block topbar_actions %}
+{% if request.user.profile.is_admin %}
+<a href="{% url 'resources:trainer_edit' trainer.pk %}" class="topbar-btn primary">
+  <i class="bi bi-pencil-fill"></i> Modifier
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ trainer.first_name }} {{ trainer.last_name }}</h1>
+      <p>{{ trainer.specialty|default:"Formateur" }}</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ── Left column ────────────────────────────────────────── -->
+    <div class="col-lg-4">
+
+      <!-- Identity card -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-body" style="padding:28px 24px;text-align:center;">
+          <div style="width:72px;height:72px;border-radius:50%;
+                      background:rgba(245,158,11,.12);color:#d97706;
+                      display:flex;align-items:center;justify-content:center;
+                      font-family:var(--font-head);font-size:30px;font-weight:700;
+                      margin:0 auto 16px;">
+            {{ trainer.first_name|slice:":1"|upper }}
+          </div>
+          <h2 style="font-family:var(--font-head);font-size:20px;font-weight:700;
+                     margin:0 0 8px;color:var(--text-primary);">
+            {{ trainer.first_name }} {{ trainer.last_name }}
+          </h2>
+          <div style="margin-bottom:8px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;">
+            {% if trainer.is_active %}
+              <span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Actif</span>
+            {% else %}
+              <span class="isi-badge gray"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Inactif</span>
+            {% endif %}
+            {% if trainer.is_internal %}
+              <span class="isi-badge green"><i class="bi bi-building" style="font-size:9px;"></i> Interne</span>
+            {% else %}
+              <span class="isi-badge purple"><i class="bi bi-person-workspace" style="font-size:9px;"></i> Externe</span>
+            {% endif %}
+          </div>
+          {% if trainer.specialty %}
+          <div style="font-size:13px;color:var(--text-muted);">
+            <i class="bi bi-briefcase-fill" style="color:var(--accent);"></i>
+            {{ trainer.specialty }}
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="section-divider" style="margin:0;"></div>
+
+        {% if request.user.profile.is_admin %}
+        <div class="isi-card-body" style="padding:16px 24px;">
+          <div class="d-flex flex-column gap-2">
+            <a href="{% url 'resources:trainer_edit' trainer.pk %}" class="btn btn-amber">
+              <i class="bi bi-pencil-fill"></i> Modifier
+            </a>
+            <form method="post" action="{% url 'resources:trainer_deactivate' trainer.pk %}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="btn {% if trainer.is_active %}btn-danger-soft{% else %}btn-ghost{% endif %} w-100"
+                      onclick="return confirm('{% if trainer.is_active %}Désactiver ce formateur ?{% else %}Réactiver ce formateur ?{% endif %}')">
+                <i class="bi bi-{% if trainer.is_active %}slash-circle-fill{% else %}check-circle-fill{% endif %}"></i>
+                {% if trainer.is_active %}Désactiver{% else %}Réactiver{% endif %}
+              </button>
+            </form>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Activity / financial summary (admin only) -->
+      {% if request.user.profile.is_admin %}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon green"><i class="bi bi-bar-chart-fill"></i></div>
+          <h3>Activité</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="stat-label mb-1">Sessions</div>
+              <div class="stat-value" style="font-size:20px;">{{ session_count|default:"0" }}</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Tarif / jour</div>
+              <div class="stat-value" style="font-size:18px;">
+                {{ trainer.daily_rate|floatformat:0|default:"—" }}
+                <span style="font-size:12px;font-weight:400;color:var(--text-muted);">DA</span>
+              </div>
+            </div>
+            {% if trainer.is_internal and trainer.monthly_rate %}
+            <div class="col-6">
+              <div class="stat-label mb-1">Tarif mensuel</div>
+              <div class="stat-value" style="font-size:18px;">
+                {{ trainer.monthly_rate|floatformat:0 }}
+                <span style="font-size:12px;font-weight:400;color:var(--text-muted);">DA</span>
+              </div>
+            </div>
+            {% endif %}
+            {% if trainer.total_earnings %}
+            <div class="col-{% if trainer.is_internal and trainer.monthly_rate %}12{% else %}6{% endif %}">
+              <div class="stat-label mb-1">Gains estimés</div>
+              <div class="stat-value" style="font-size:18px;">
+                {{ trainer.total_earnings|floatformat:0 }}
+                <span style="font-size:12px;font-weight:400;color:var(--text-muted);">DA</span>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Fiscal info (admin only, external trainers) -->
+      {% if request.user.profile.is_admin and trainer.is_external %}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-receipt-cutoff"></i></div>
+          <h3>Informations fiscales</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="stat-label mb-1">NIF</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ trainer.nif|default:"—" }}</div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">RIB</div>
+              <div style="font-weight:500;font-size:13.5px;word-break:break-all;">{{ trainer.rib|default:"—" }}</div>
+            </div>
+            <div class="col-12">
+              <div style="font-size:11.5px;color:#94a3b8;">
+                <i class="bi bi-info-circle"></i>
+                Retenue IRG 10% applicable sur les paiements.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Meta -->
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-info-circle-fill"></i></div>
+          <h3>Informations système</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="stat-label mb-1">Créé le</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ trainer.created_at|date:"d/m/Y à H:i" }}</div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Modifié le</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ trainer.updated_at|date:"d/m/Y à H:i" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /col-lg-4 -->
+
+    <!-- ── Right column ──────────────────────────────────────── -->
+    <div class="col-lg-8">
+
+      <!-- Coordonnées -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-telephone-fill"></i></div>
+          <h3>Coordonnées</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <div class="stat-label mb-1">Téléphone</div>
+              <div style="font-weight:500;font-size:13.5px;">
+                {% if trainer.phone %}
+                  <a href="tel:{{ trainer.phone }}" style="color:var(--accent);">{{ trainer.phone }}</a>
+                {% else %}—{% endif %}
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="stat-label mb-1">Email</div>
+              <div style="font-weight:500;font-size:13.5px;">
+                {% if trainer.email %}
+                  <a href="mailto:{{ trainer.email }}" style="color:var(--accent);">{{ trainer.email }}</a>
+                {% else %}—{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Certifications -->
+      {% if trainer.certifications %}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon green"><i class="bi bi-award-fill"></i></div>
+          <h3>Certifications et habilitations</h3>
+        </div>
+        <div class="isi-card-body">
+          <p style="font-size:14px;color:var(--text-primary);line-height:1.7;margin:0;white-space:pre-wrap;">{{ trainer.certifications }}</p>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- CV download -->
+      {% if trainer.cv %}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-file-earmark-person-fill"></i></div>
+          <h3>Curriculum Vitae</h3>
+        </div>
+        <div class="isi-card-body">
+          <a href="{{ trainer.cv.url }}" target="_blank" class="btn btn-ghost">
+            <i class="bi bi-download"></i> Télécharger le CV
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Sessions animées -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-calendar3-fill"></i></div>
+          <h3>Sessions animées</h3>
+        </div>
+        {% if sessions %}
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead>
+              <tr>
+                <th>Formation</th>
+                <th>Date début</th>
+                <th>Date fin</th>
+                <th>Salle</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for session in sessions %}
+              <tr>
+                <td>
+                  <a href="{% url 'formations:session_detail' session.pk %}"
+                     style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                    {{ session.formation.title }}
+                  </a>
+                </td>
+                <td><span style="color:var(--text-muted);font-size:13px;">{{ session.date_start|date:"d/m/Y" }}</span></td>
+                <td><span style="color:var(--text-muted);font-size:13px;">{{ session.date_end|date:"d/m/Y" }}</span></td>
+                <td><span style="color:var(--text-muted);font-size:13px;">{{ session.room.name|default:"—" }}</span></td>
+                <td>
+                  {% if session.status == 'planned' %}
+                    <span class="isi-badge blue"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Planifiée</span>
+                  {% elif session.status == 'in_progress' %}
+                    <span class="isi-badge amber"><i class="bi bi-circle-fill" style="font-size:7px;"></i> En cours</span>
+                  {% elif session.status == 'completed' %}
+                    <span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Terminée</span>
+                  {% else %}
+                    <span class="isi-badge gray"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Annulée</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="isi-card-body text-center" style="padding:36px 24px;">
+          <div style="font-size:36px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-calendar3"></i></div>
+          <p style="color:var(--text-muted);font-size:14px;margin:0;">Aucune session assignée pour l'instant.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Notes -->
+      {% if trainer.notes %}
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon purple"><i class="bi bi-sticky-fill"></i></div>
+          <h3>Notes</h3>
+        </div>
+        <div class="isi-card-body">
+          <p style="font-size:14px;color:var(--text-primary);line-height:1.7;margin:0;white-space:pre-wrap;">{{ trainer.notes }}</p>
+        </div>
+      </div>
+      {% endif %}
+
+    </div><!-- /col-lg-8 -->
+  </div>
+</div>
+{% endblock %}

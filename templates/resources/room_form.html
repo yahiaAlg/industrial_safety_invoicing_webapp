@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}{% if room %}Modifier {{ room.name }}{% else %}Nouvelle salle{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:room_list' %}" style="color:var(--text-muted);text-decoration:none;">Salles</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{% if room %}Modifier{% else %}Nouvelle salle{% endif %}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{% if room %}Modifier la salle{% else %}Nouvelle salle{% endif %}</h1>
+      <p>{% if room %}Mise à jour de {{ room.name }}{% else %}Enregistrer un nouvel espace de formation{% endif %}</p>
+    </div>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="row g-4">
+
+      <!-- ── Main form ──────────────────────────────────────── -->
+      <div class="col-lg-8">
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-door-open-fill"></i></div>
+            <h3>Informations de la salle</h3>
+          </div>
+          <div class="isi-card-body">
+
+            <div class="form-section-title">Identification</div>
+            <div class="row g-3 mb-3">
+              <div class="col-sm-8">
+                <label class="form-label" for="{{ form.name.id_for_label }}">Nom de la salle</label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.capacity.id_for_label }}">Capacité (places)</label>
+                {{ form.capacity }}
+                {% if form.capacity.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.capacity.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="{{ form.location.id_for_label }}">Emplacement / Localisation</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-geo-alt-fill"></i>
+                  {{ form.location }}
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Ex. Bâtiment A — 2e étage, Annexe Nord…</div>
+                {% if form.location.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.location.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title">Description</div>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.description.id_for_label }}">Description de la salle</label>
+                {{ form.description }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Équipements disponibles, configuration, particularités…</div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Save bar -->
+          <div style="padding:16px 24px;border-top:1px solid var(--card-border);">
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i> {% if room %}Enregistrer les modifications{% else %}Créer la salle{% endif %}
+              </button>
+              <a href="{% if room %}{% url 'resources:room_detail' room.pk %}{% else %}{% url 'resources:room_list' %}{% endif %}"
+                 class="btn btn-ghost">
+                <i class="bi bi-x-lg"></i> Annuler
+              </a>
+            </div>
+          </div>
+        </div>
+      </div><!-- /col-lg-8 -->
+
+      <!-- ── Sidebar ──────────────────────────────────────── -->
+      <div class="col-lg-4">
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-toggle-on"></i></div>
+            <h3>Statut</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="form-check" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+              {{ form.is_active }}
+              <label class="form-check-label" for="{{ form.is_active.id_for_label }}"
+                     style="cursor:pointer;font-size:14px;font-weight:500;">
+                Salle active
+              </label>
+            </div>
+            <div style="font-size:11.5px;color:#94a3b8;margin-top:8px;">
+              Décocher pour retirer la salle de la liste de disponibilité.
+            </div>
+          </div>
+        </div>
+
+        {% if room %}
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon purple"><i class="bi bi-info-circle-fill"></i></div>
+            <h3>Informations</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="stat-label mb-1">Créé le</div>
+            <div style="font-size:13.5px;font-weight:500;margin-bottom:12px;">{{ room.created_at|date:"d/m/Y" }}</div>
+            <div class="stat-label mb-1">Modifié le</div>
+            <div style="font-size:13.5px;font-weight:500;">{{ room.updated_at|date:"d/m/Y" }}</div>
+          </div>
+        </div>
+        {% endif %}
+      </div><!-- /col-lg-4 -->
+
+    </div><!-- /row -->
+  </form>
+</div>
+{% endblock %}

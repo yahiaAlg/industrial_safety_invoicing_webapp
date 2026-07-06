@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+
+{% block title %}{{ equipment.name }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:equipment_list' %}" style="color:var(--text-muted);text-decoration:none;">Équipements</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ equipment.name }}{% endblock %}
+
+{% block topbar_actions %}
+{% if request.user.profile.is_admin %}
+<a href="{% url 'resources:equipment_edit' equipment.pk %}" class="topbar-btn primary">
+  <i class="bi bi-pencil-fill"></i> Modifier
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ equipment.name }}</h1>
+      <p>{{ equipment.category }}{% if equipment.location %} — {{ equipment.location }}{% endif %}</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ── Left column ────────────────────────────────────────── -->
+    <div class="col-lg-4">
+
+      <!-- Identity card -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-body" style="padding:28px 24px;text-align:center;">
+          <div style="width:72px;height:72px;border-radius:18px;
+                      background:rgba(245,158,11,.12);color:#d97706;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:32px;margin:0 auto 16px;">
+            <i class="bi bi-tools"></i>
+          </div>
+          <h2 style="font-family:var(--font-head);font-size:20px;font-weight:700;
+                     margin:0 0 6px;color:var(--text-primary);">{{ equipment.name }}</h2>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">{{ equipment.category }}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:8px;">
+            {% if equipment.condition == 'good' %}
+              <span class="isi-badge green"><i class="bi bi-check-circle-fill" style="font-size:9px;"></i> Bon état</span>
+            {% elif equipment.condition == 'needs_review' %}
+              <span class="isi-badge amber"><i class="bi bi-exclamation-circle-fill" style="font-size:9px;"></i> À réviser</span>
+            {% else %}
+              <span class="isi-badge red"><i class="bi bi-x-circle-fill" style="font-size:9px;"></i> Hors service</span>
+            {% endif %}
+            {% if equipment.status == 'active' %}
+              <span class="isi-badge green">Actif</span>
+            {% elif equipment.status == 'maintenance' %}
+              <span class="isi-badge amber">Maintenance</span>
+            {% elif equipment.status == 'reserved' %}
+              <span class="isi-badge blue">Réservé</span>
+            {% else %}
+              <span class="isi-badge gray">À vendre</span>
+            {% endif %}
+          </div>
+          {% if equipment.is_maintenance_due %}
+          <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);
+                      border-radius:8px;padding:8px 12px;margin-top:10px;font-size:12px;color:#991b1b;">
+            <i class="bi bi-exclamation-triangle-fill"></i> Maintenance due le {{ equipment.next_maintenance_due|date:"d/m/Y" }}
+          </div>
+          {% endif %}
+          {% if equipment.is_idle %}
+          <div style="background:rgba(100,116,139,.08);border:1px solid rgba(100,116,139,.2);
+                      border-radius:8px;padding:8px 12px;margin-top:8px;font-size:12px;color:#475569;">
+            <i class="bi bi-hourglass"></i> Non utilisé depuis {{ equipment.days_since_last_use }} jours
+          </div>
+          {% endif %}
+        </div>
+
+        {% if request.user.profile.is_admin %}
+        <div class="section-divider" style="margin:0;"></div>
+        <!-- Update status form -->
+        <div class="isi-card-body" style="padding:16px 24px;">
+          <div class="stat-label mb-2">Changer le statut</div>
+          <form method="post" action="{% url 'resources:equipment_update_status' equipment.pk %}" novalidate>
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+              <select name="status" class="form-select form-select-sm flex-grow-1">
+                <option value="active" {% if equipment.status == 'active' %}selected{% endif %}>Actif</option>
+                <option value="maintenance" {% if equipment.status == 'maintenance' %}selected{% endif %}>En maintenance</option>
+                <option value="reserved" {% if equipment.status == 'reserved' %}selected{% endif %}>Mis en réserve</option>
+                <option value="for_sale" {% if equipment.status == 'for_sale' %}selected{% endif %}>À vendre / Réformer</option>
+              </select>
+              <button type="submit" class="btn btn-amber btn-sm">
+                <i class="bi bi-check-lg"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="section-divider" style="margin:0;"></div>
+        <div class="isi-card-body" style="padding:16px 24px;">
+          <div class="d-flex flex-column gap-2">
+            <a href="{% url 'resources:equipment_edit' equipment.pk %}" class="btn btn-amber">
+              <i class="bi bi-pencil-fill"></i> Modifier
+            </a>
+            <a href="{% url 'resources:maintenance_add' equipment.pk %}" class="btn btn-ghost">
+              <i class="bi bi-wrench"></i> Ajouter une maintenance
+            </a>
+            <a href="{% url 'resources:usage_add' equipment.pk %}" class="btn btn-ghost">
+              <i class="bi bi-plus-circle"></i> Enregistrer une utilisation
+            </a>
+            <a href="{% url 'resources:booking_add' equipment.pk %}" class="btn btn-ghost">
+              <i class="bi bi-calendar-plus"></i> Nouvelle réservation
+            </a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Financial summary (admin only) -->
+      {% if request.user.profile.is_admin %}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon green"><i class="bi bi-bar-chart-fill"></i></div>
+          <h3>Analyse financière</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="stat-label mb-1">Coût d'achat</div>
+              <div class="stat-value" style="font-size:16px;">{{ equipment.purchase_cost|floatformat:0 }}
+                <span style="font-size:11px;font-weight:400;color:var(--text-muted);">DA</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Valeur actuelle</div>
+              <div class="stat-value" style="font-size:16px;">{{ equipment.current_value|floatformat:0 }}
+                <span style="font-size:11px;font-weight:400;color:var(--text-muted);">DA</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Coût maintenance</div>
+              <div class="stat-value" style="font-size:16px;">{{ equipment.total_maintenance_cost|floatformat:0 }}
+                <span style="font-size:11px;font-weight:400;color:var(--text-muted);">DA</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Coût total</div>
+              <div class="stat-value" style="font-size:16px;">{{ equipment.total_cost_of_ownership|floatformat:0 }}
+                <span style="font-size:11px;font-weight:400;color:var(--text-muted);">DA</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Utilisations</div>
+              <div class="stat-value" style="font-size:18px;">{{ equipment.usage_count }}</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Coût / utilisation</div>
+              <div class="stat-value" style="font-size:16px;">{{ equipment.cost_per_use|floatformat:0 }}
+                <span style="font-size:11px;font-weight:400;color:var(--text-muted);">DA</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Technical info -->
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-info-circle-fill"></i></div>
+          <h3>Informations techniques</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="stat-label mb-1">N° de série</div>
+              <div style="font-weight:500;font-family:monospace;font-size:12.5px;
+                          background:#f8fafc;padding:4px 8px;border-radius:6px;display:inline-block;">
+                {{ equipment.serial_number|default:"—" }}
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Référence modèle</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ equipment.model_number|default:"—" }}</div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Fournisseur</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ equipment.supplier|default:"—" }}</div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Date d'achat</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ equipment.purchase_date|date:"d/m/Y" }}</div>
+            </div>
+            {% if equipment.warranty_expiry %}
+            <div class="col-12">
+              <div class="stat-label mb-1">Fin de garantie</div>
+              <div style="font-weight:500;font-size:13.5px;
+                          color:{% if equipment.is_under_warranty %}var(--success){% else %}var(--danger){% endif %};">
+                {{ equipment.warranty_expiry|date:"d/m/Y" }}
+                {% if equipment.is_under_warranty %}
+                  <span class="isi-badge green ms-1" style="font-size:10px;">Valide</span>
+                {% else %}
+                  <span class="isi-badge red ms-1" style="font-size:10px;">Expirée</span>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+            <div class="col-12">
+              <div class="stat-label mb-1">Emplacement</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ equipment.location|default:"—" }}</div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Créé le</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ equipment.created_at|date:"d/m/Y à H:i" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /col-lg-4 -->
+
+    <!-- ── Right column ──────────────────────────────────────── -->
+    <div class="col-lg-8">
+
+      <!-- Maintenance logs -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header" style="justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="card-icon amber"><i class="bi bi-wrench-adjustable"></i></div>
+            <h3>Historique de maintenance</h3>
+          </div>
+          {% if request.user.profile.is_admin %}
+          <a href="{% url 'resources:maintenance_add' equipment.pk %}" class="btn btn-ghost btn-sm">
+            <i class="bi bi-plus-lg"></i> Ajouter
+          </a>
+          {% endif %}
+        </div>
+        {% if maintenance_logs %}
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Effectué par</th>
+                {% if request.user.profile.is_admin %}<th>Coût</th>{% endif %}
+                {% if request.user.profile.is_admin %}
+                <th style="text-align:right;">Actions</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in maintenance_logs %}
+              <tr>
+                <td><span style="font-weight:500;font-size:13px;">{{ log.date|date:"d/m/Y" }}</span></td>
+                <td>
+                  {% if log.maintenance_type == 'preventive' %}
+                    <span class="isi-badge blue">Préventif</span>
+                  {% else %}
+                    <span class="isi-badge amber">Correctif</span>
+                  {% endif %}
+                </td>
+                <td><span style="color:var(--text-muted);font-size:13px;">{{ log.description|truncatechars:60 }}</span></td>
+                <td><span style="color:var(--text-muted);font-size:13px;">{{ log.performed_by|default:"—" }}</span></td>
+                {% if request.user.profile.is_admin %}
+                <td>
+                  <span style="font-size:13px;font-weight:500;">{{ log.cost|floatformat:0 }}
+                    <span style="font-size:11px;color:var(--text-muted);">DA</span>
+                  </span>
+                </td>
+                <td>
+                  <div style="display:flex;justify-content:flex-end;gap:6px;">
+                    <a href="{% url 'resources:maintenance_edit' equipment.pk log.pk %}"
+                       class="btn btn-ghost btn-sm" title="Modifier">
+                      <i class="bi bi-pencil-fill"></i>
+                    </a>
+                    <form method="post" action="{% url 'resources:maintenance_delete' equipment.pk log.pk %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger-soft btn-sm"
+                              onclick="return confirm('Supprimer cet enregistrement ?')">
+                        <i class="bi bi-trash-fill"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="isi-card-body text-center" style="padding:36px 24px;">
+          <div style="font-size:36px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-wrench"></i></div>
+          <p style="color:var(--text-muted);font-size:14px;margin:0 0 10px;">Aucune maintenance enregistrée.</p>
+          {% if request.user.profile.is_admin %}
+          <a href="{% url 'resources:maintenance_add' equipment.pk %}" class="btn btn-ghost btn-sm">
+            <i class="bi bi-plus-lg"></i> Ajouter
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Usage log -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header" style="justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="card-icon blue"><i class="bi bi-clock-history"></i></div>
+            <h3>Historique d'utilisation</h3>
+          </div>
+          {% if request.user.profile.is_admin %}
+          <a href="{% url 'resources:usage_add' equipment.pk %}" class="btn btn-ghost btn-sm">
+            <i class="bi bi-plus-lg"></i> Ajouter
+          </a>
+          {% endif %}
+        </div>
+        {% if usages %}
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Assigné à</th>
+                <th>Durée</th>
+                <th>Contexte</th>
+                {% if request.user.profile.is_admin %}
+                <th style="text-align:right;">Actions</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for usage in usages %}
+              <tr>
+                <td><span style="font-weight:500;font-size:13px;">{{ usage.date|date:"d/m/Y" }}</span></td>
+                <td>
+                  {% if usage.assigned_to_session %}
+                    <span class="isi-badge amber" style="font-size:11px;"><i class="bi bi-mortarboard-fill"></i>
+                      Session : {{ usage.assigned_to_session.formation.title|truncatechars:30 }}
+                    </span>
+                  {% elif usage.assigned_to_project %}
+                    <span class="isi-badge blue" style="font-size:11px;"><i class="bi bi-diagram-3-fill"></i>
+                      Projet : {{ usage.assigned_to_project.title|truncatechars:30 }}
+                    </span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span style="font-weight:500;font-size:13px;">{{ usage.duration_hours }}h</span>
+                </td>
+                <td><span style="color:var(--text-muted);font-size:13px;">{{ usage.context|truncatechars:50|default:"—" }}</span></td>
+                {% if request.user.profile.is_admin %}
+                <td>
+                  <div style="display:flex;justify-content:flex-end;gap:6px;">
+                    <a href="{% url 'resources:usage_edit' equipment.pk usage.pk %}"
+                       class="btn btn-ghost btn-sm" title="Modifier">
+                      <i class="bi bi-pencil-fill"></i>
+                    </a>
+                    <form method="post" action="{% url 'resources:usage_delete' equipment.pk usage.pk %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger-soft btn-sm"
+                              onclick="return confirm('Supprimer cette utilisation ?')">
+                        <i class="bi bi-trash-fill"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="isi-card-body text-center" style="padding:36px 24px;">
+          <div style="font-size:36px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-clock-history"></i></div>
+          <p style="color:var(--text-muted);font-size:14px;margin:0 0 10px;">Aucune utilisation enregistrée.</p>
+          {% if request.user.profile.is_admin %}
+          <a href="{% url 'resources:usage_add' equipment.pk %}" class="btn btn-ghost btn-sm">
+            <i class="bi bi-plus-lg"></i> Enregistrer une utilisation
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Bookings -->
+      <div class="isi-card">
+        <div class="isi-card-header" style="justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="card-icon green"><i class="bi bi-calendar-check-fill"></i></div>
+            <h3>Réservations à venir</h3>
+          </div>
+          {% if request.user.profile.is_admin %}
+          <a href="{% url 'resources:booking_add' equipment.pk %}" class="btn btn-ghost btn-sm">
+            <i class="bi bi-plus-lg"></i> Réserver
+          </a>
+          {% endif %}
+        </div>
+        {% if bookings %}
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead>
+              <tr>
+                <th>Du</th>
+                <th>Au</th>
+                <th>Assigné à</th>
+                <th>Notes</th>
+                {% if request.user.profile.is_admin %}
+                <th style="text-align:right;">Actions</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for booking in bookings %}
+              <tr>
+                <td><span style="font-weight:500;font-size:13px;">{{ booking.date_from|date:"d/m/Y" }}</span></td>
+                <td><span style="font-weight:500;font-size:13px;">{{ booking.date_to|date:"d/m/Y" }}</span></td>
+                <td>
+                  {% if booking.reserved_for_session %}
+                    <span class="isi-badge amber" style="font-size:11px;"><i class="bi bi-mortarboard-fill"></i>
+                      {{ booking.reserved_for_session.formation.title|truncatechars:30 }}
+                    </span>
+                  {% elif booking.reserved_for_project %}
+                    <span class="isi-badge blue" style="font-size:11px;"><i class="bi bi-diagram-3-fill"></i>
+                      {{ booking.reserved_for_project.title|truncatechars:30 }}
+                    </span>
+                  {% endif %}
+                </td>
+                <td><span style="color:var(--text-muted);font-size:13px;">{{ booking.notes|truncatechars:40|default:"—" }}</span></td>
+                {% if request.user.profile.is_admin %}
+                <td>
+                  <div style="display:flex;justify-content:flex-end;gap:6px;">
+                    <a href="{% url 'resources:booking_edit' equipment.pk booking.pk %}"
+                       class="btn btn-ghost btn-sm" title="Modifier">
+                      <i class="bi bi-pencil-fill"></i>
+                    </a>
+                    <form method="post" action="{% url 'resources:booking_delete' equipment.pk booking.pk %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger-soft btn-sm"
+                              onclick="return confirm('Supprimer cette réservation ?')">
+                        <i class="bi bi-trash-fill"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="isi-card-body text-center" style="padding:36px 24px;">
+          <div style="font-size:36px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-calendar-check"></i></div>
+          <p style="color:var(--text-muted);font-size:14px;margin:0 0 10px;">Aucune réservation à venir.</p>
+          {% if request.user.profile.is_admin %}
+          <a href="{% url 'resources:booking_add' equipment.pk %}" class="btn btn-ghost btn-sm">
+            <i class="bi bi-plus-lg"></i> Créer une réservation
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Notes -->
+      {% if equipment.notes %}
+      <div class="isi-card mt-4">
+        <div class="isi-card-header">
+          <div class="card-icon purple"><i class="bi bi-sticky-fill"></i></div>
+          <h3>Notes</h3>
+        </div>
+        <div class="isi-card-body">
+          <p style="font-size:14px;color:var(--text-primary);line-height:1.7;margin:0;white-space:pre-wrap;">{{ equipment.notes }}</p>
+        </div>
+      </div>
+      {% endif %}
+
+    </div><!-- /col-lg-8 -->
+  </div>
+</div>
+{% endblock %}

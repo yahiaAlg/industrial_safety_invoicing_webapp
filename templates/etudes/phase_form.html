@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} — {{ project.title }}{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'etudes:project_list' %}" style="color:var(--text-muted);text-decoration:none;">Études</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'etudes:project_detail' project.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ project.title|truncatechars:30 }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ action }}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ action }}</h1>
+      <p>Projet : <strong>{{ project.title }}</strong></p>
+    </div>
+    <a href="{% url 'etudes:project_detail' project.pk %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-layers-fill"></i></div>
+          <h3>Informations de la phase</h3>
+        </div>
+        <div class="isi-card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-section-title">Identification</div>
+            <div class="row g-3 mb-4">
+              <div class="col-sm-8">
+                <label class="form-label" for="{{ form.name.id_for_label }}">Nom de la phase *</label>
+                <input type="text" name="{{ form.name.html_name }}" id="{{ form.name.id_for_label }}"
+                       class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                       value="{{ form.name.value|default:'' }}"
+                       placeholder="Ex. Diagnostic initial, Enquête terrain, Rapport final…" required>
+                {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors|join:", " }}</div>{% endif %}
+              </div>
+              <div class="col-sm-2">
+                <label class="form-label" for="{{ form.order.id_for_label }}">Ordre</label>
+                <input type="number" name="{{ form.order.html_name }}" id="{{ form.order.id_for_label }}"
+                       class="form-control" value="{{ form.order.value|default:'1' }}" min="1">
+              </div>
+              <div class="col-sm-2">
+                <label class="form-label" for="{{ form.status.id_for_label }}">Statut</label>
+                <select name="{{ form.status.html_name }}" id="{{ form.status.id_for_label }}" class="form-select">
+                  {% for val, label in form.status.field.choices %}
+                  <option value="{{ val }}" {% if form.status.value == val %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
+                <textarea name="{{ form.description.html_name }}" id="{{ form.description.id_for_label }}"
+                          class="form-control" rows="2"
+                          placeholder="Objectif et contenu de cette phase…">{{ form.description.value|default:'' }}</textarea>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="form-section-title">Planification</div>
+            <div class="row g-3 mb-4">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.start_date.id_for_label }}">Date de début</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-calendar-event-fill"></i>
+                  <input type="date" name="{{ form.start_date.html_name }}" id="{{ form.start_date.id_for_label }}"
+                         class="form-control {% if form.start_date.errors %}is-invalid{% endif %}"
+                         value="{{ form.start_date.value|default:'' }}">
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.due_date.id_for_label }}">Date d'échéance</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-calendar-event-fill"></i>
+                  <input type="date" name="{{ form.due_date.html_name }}" id="{{ form.due_date.id_for_label }}"
+                         class="form-control {% if form.due_date.errors %}is-invalid{% endif %}"
+                         value="{{ form.due_date.value|default:'' }}">
+                </div>
+                {% if form.due_date.errors %}<div class="invalid-feedback d-block">{{ form.due_date.errors|join:", " }}</div>{% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.estimated_hours.id_for_label }}">Heures estimées</label>
+                <input type="number" name="{{ form.estimated_hours.html_name }}" id="{{ form.estimated_hours.id_for_label }}"
+                       class="form-control" value="{{ form.estimated_hours.value|default:'' }}"
+                       min="0" step="0.5" placeholder="0.0">
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="form-section-title">Livrable & Notes</div>
+            <div class="row g-3 mb-4">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.deliverable.id_for_label }}">Livrable attendu</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-file-earmark-arrow-down-fill"></i>
+                  <input type="text" name="{{ form.deliverable.html_name }}" id="{{ form.deliverable.id_for_label }}"
+                         class="form-control" value="{{ form.deliverable.value|default:'' }}"
+                         placeholder="Ex. Rapport de diagnostic, Cartographie des risques…">
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="{{ form.notes.id_for_label }}">Notes</label>
+                <textarea name="{{ form.notes.html_name }}" id="{{ form.notes.id_for_label }}"
+                          class="form-control" rows="2"
+                          placeholder="Remarques, dépendances, ressources nécessaires…">{{ form.notes.value|default:'' }}</textarea>
+              </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-4">
+              <i class="bi bi-exclamation-circle-fill"></i>
+              <div>{{ form.non_field_errors|join:"<br>" }}</div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i>
+                {% if form.instance.pk %}Enregistrer{% else %}Ajouter la phase{% endif %}
+              </button>
+              <a href="{% url 'etudes:project_detail' project.pk %}" class="btn btn-ghost">Annuler</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

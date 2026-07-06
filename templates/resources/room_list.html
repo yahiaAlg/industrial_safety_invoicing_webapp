@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Salles de formation{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Salles{% endblock %}
+
+{% block topbar_actions %}
+{% if request.user.profile.is_admin %}
+<a href="{% url 'resources:room_create' %}" class="topbar-btn primary">
+  <i class="bi bi-plus-lg"></i> Nouvelle salle
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Salles de formation</h1>
+      <p>Gérez les espaces disponibles pour les sessions</p>
+    </div>
+  </div>
+
+  <!-- ── KPI row ────────────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-door-open-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ rooms_active_count|default:"0" }}</div>
+            <div class="stat-label">Actives</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon blue" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ total_capacity|default:"0" }}</div>
+            <div class="stat-label">Capacité totale</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Table card ─────────────────────────────────────────── -->
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-door-open-fill"></i></div>
+      <h3>Liste des salles
+        {% if rooms %}
+        <span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">
+          — {{ rooms|length }} salle{{ rooms|length|pluralize }}
+        </span>
+        {% endif %}
+      </h3>
+    </div>
+
+    {% if rooms %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Salle</th>
+            <th>Capacité</th>
+            <th>Emplacement</th>
+            <th>Description</th>
+            <th>Statut</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for room in rooms %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:9px;
+                            background:rgba(245,158,11,.12);color:#d97706;
+                            display:flex;align-items:center;justify-content:center;
+                            font-size:17px;flex-shrink:0;">
+                  <i class="bi bi-door-open-fill"></i>
+                </div>
+                <div>
+                  <a href="{% url 'resources:room_detail' room.pk %}"
+                     style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                    {{ room.name }}
+                  </a>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span style="font-weight:600;font-size:13.5px;">{{ room.capacity }}
+                <span style="font-size:11px;color:var(--text-muted);">places</span>
+              </span>
+            </td>
+            <td><span style="color:var(--text-muted);font-size:13px;">{{ room.location|default:"—" }}</span></td>
+            <td><span style="color:var(--text-muted);font-size:13px;">{{ room.description|truncatechars:50|default:"—" }}</span></td>
+            <td>
+              {% if room.is_active %}
+                <span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Active</span>
+              {% else %}
+                <span class="isi-badge gray"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                <a href="{% url 'resources:room_detail' room.pk %}"
+                   class="btn btn-ghost btn-sm" title="Voir">
+                  <i class="bi bi-eye-fill"></i>
+                </a>
+                {% if request.user.profile.is_admin %}
+                <a href="{% url 'resources:room_edit' room.pk %}"
+                   class="btn btn-ghost btn-sm" title="Modifier">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+                <form method="post" action="{% url 'resources:room_deactivate' room.pk %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-ghost btn-sm"
+                          title="{% if room.is_active %}Désactiver{% else %}Réactiver{% endif %}"
+                          onclick="return confirm('{% if room.is_active %}Désactiver cette salle ?{% else %}Réactiver cette salle ?{% endif %}')">
+                    <i class="bi bi-{% if room.is_active %}slash-circle{% else %}check-circle{% endif %}"></i>
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;"><i class="bi bi-door-open"></i></div>
+      <p style="color:var(--text-muted);font-size:15px;margin:0 0 16px;">Aucune salle enregistrée.</p>
+      {% if request.user.profile.is_admin %}
+      <a href="{% url 'resources:room_create' %}" class="btn btn-amber">
+        <i class="bi bi-plus-lg"></i> Ajouter la première salle
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

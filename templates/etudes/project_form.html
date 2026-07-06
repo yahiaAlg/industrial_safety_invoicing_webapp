@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} — Projet d'étude{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'etudes:project_list' %}" style="color:var(--text-muted);text-decoration:none;">Études</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% if project %}
+<a href="{% url 'etudes:project_detail' project.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ project.title|truncatechars:30 }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endif %}
+{% endblock %}
+{% block breadcrumb_active %}{{ action }}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ action }}{% if action == "Modifier" %} — {{ project.title|truncatechars:40 }}{% endif %}</h1>
+      <p>{% if project %}Modifiez les informations du projet{% else %}Créez un nouveau projet de conseil ou d'audit{% endif %}</p>
+    </div>
+    <a href="{% if project %}{% url 'etudes:project_detail' project.pk %}{% else %}{% url 'etudes:project_list' %}{% endif %}"
+       class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  {% if request.user.profile.is_receptionist %}
+  <div class="alert alert-info mb-4">
+    <i class="bi bi-info-circle-fill"></i>
+    <div>Vous pouvez saisir les informations de base du projet. Les champs financiers et de gestion sont réservés à l'administrateur.</div>
+  </div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="row g-4">
+      <div class="col-lg-8">
+
+        <!-- Identification -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-diagram-3-fill"></i></div>
+            <h3>Identification du projet</h3>
+          </div>
+          <div class="isi-card-body">
+
+            <div class="form-section-title">Informations générales</div>
+            <div class="row g-3 mb-4">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.client.id_for_label }}">Client *</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-building-fill"></i>
+                  <select name="{{ form.client.html_name }}" id="{{ form.client.id_for_label }}"
+                          class="form-select {% if form.client.errors %}is-invalid{% endif %}"
+                          style="padding-left:38px;">
+                    <option value="">— Sélectionnez un client —</option>
+                    {% for val, label in form.client.field.choices %}
+                    {% if val %}
+                    <option value="{{ val }}" {% if form.client.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                    {% endif %}
+                    {% endfor %}
+                  </select>
+                </div>
+                {% if form.client.errors %}<div class="invalid-feedback d-block">{{ form.client.errors|join:", " }}</div>{% endif %}
+              </div>
+              <div class="col-sm-8">
+                <label class="form-label" for="{{ form.title.id_for_label }}">Titre du projet *</label>
+                <input type="text" name="{{ form.title.html_name }}" id="{{ form.title.id_for_label }}"
+                       class="form-control {% if form.title.errors %}is-invalid{% endif %}"
+                       value="{{ form.title.value|default:'' }}" required>
+                {% if form.title.errors %}<div class="invalid-feedback d-block">{{ form.title.errors|join:", " }}</div>{% endif %}
+              </div>
+              {% if form.reference %}
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.reference.id_for_label }}">Référence interne</label>
+                <input type="text" name="{{ form.reference.html_name }}" id="{{ form.reference.id_for_label }}"
+                       class="form-control" value="{{ form.reference.value|default:'' }}"
+                       placeholder="ETU-2026-001">
+              </div>
+              {% endif %}
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.project_type.id_for_label }}">Type de mission</label>
+                <input type="text" name="{{ form.project_type.html_name }}" id="{{ form.project_type.id_for_label }}"
+                       class="form-control" value="{{ form.project_type.value|default:'' }}"
+                       placeholder="Ex. Audit SST, Diagnostic incendie…">
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
+                <textarea name="{{ form.description.html_name }}" id="{{ form.description.id_for_label }}"
+                          class="form-control" rows="3"
+                          placeholder="Contexte, périmètre et objectifs de la mission…">{{ form.description.value|default:'' }}</textarea>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="{{ form.site_address.id_for_label }}">Adresse du site d'intervention</label>
+                <textarea name="{{ form.site_address.html_name }}" id="{{ form.site_address.id_for_label }}"
+                          class="form-control" rows="2"
+                          placeholder="Adresse complète du site…">{{ form.site_address.value|default:'' }}</textarea>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="form-section-title">Planification</div>
+            <div class="row g-3 mb-0">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.start_date.id_for_label }}">Date de début *</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-calendar-event-fill"></i>
+                  <input type="date" name="{{ form.start_date.html_name }}" id="{{ form.start_date.id_for_label }}"
+                         class="form-control {% if form.start_date.errors %}is-invalid{% endif %}"
+                         value="{{ form.start_date.value|default:'' }}" required>
+                </div>
+                {% if form.start_date.errors %}<div class="invalid-feedback d-block">{{ form.start_date.errors|join:", " }}</div>{% endif %}
+              </div>
+              {% if form.end_date %}
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.end_date.id_for_label }}">Date de fin prévue</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-calendar-event-fill"></i>
+                  <input type="date" name="{{ form.end_date.html_name }}" id="{{ form.end_date.id_for_label }}"
+                         class="form-control {% if form.end_date.errors %}is-invalid{% endif %}"
+                         value="{{ form.end_date.value|default:'' }}">
+                </div>
+                {% if form.end_date.errors %}<div class="invalid-feedback d-block">{{ form.end_date.errors|join:", " }}</div>{% endif %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Financial (admin only) -->
+        {% if form.budget %}
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon green"><i class="bi bi-bar-chart-fill"></i></div>
+            <h3>Budget & Gestion</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.budget.id_for_label }}">Budget contractuel (DA)</label>
+                <input type="number" name="{{ form.budget.html_name }}" id="{{ form.budget.id_for_label }}"
+                       class="form-control {% if form.budget.errors %}is-invalid{% endif %}"
+                       value="{{ form.budget.value|default:'0' }}" min="0" step="1000">
+                {% if form.budget.errors %}<div class="invalid-feedback d-block">{{ form.budget.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Notes -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon purple"><i class="bi bi-sticky-fill"></i></div>
+            <h3>Notes</h3>
+          </div>
+          <div class="isi-card-body">
+            {% if form.notes %}
+            <textarea name="{{ form.notes.html_name }}" id="{{ form.notes.id_for_label }}"
+                      class="form-control" rows="3"
+                      placeholder="Informations complémentaires, contraintes, risques identifiés…">{{ form.notes.value|default:'' }}</textarea>
+            {% else %}
+            <p style="font-size:13px;color:var(--text-muted);margin:0;">Notes disponibles pour l'administrateur uniquement.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger mb-4">
+          <i class="bi bi-exclamation-circle-fill"></i>
+          <div>{{ form.non_field_errors|join:"<br>" }}</div>
+        </div>
+        {% endif %}
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-amber">
+            <i class="bi bi-check-lg"></i>
+            {% if project %}Enregistrer les modifications{% else %}Créer le projet{% endif %}
+          </button>
+          <a href="{% if project %}{% url 'etudes:project_detail' project.pk %}{% else %}{% url 'etudes:project_list' %}{% endif %}"
+             class="btn btn-ghost">Annuler</a>
+        </div>
+
+      </div><!-- /col-lg-8 -->
+
+      <!-- Side column -->
+      <div class="col-lg-4">
+
+        {% if form.status %}
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-toggle-on"></i></div>
+            <h3>Statut & Priorité</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.status.id_for_label }}">Statut</label>
+              <select name="{{ form.status.html_name }}" id="{{ form.status.id_for_label }}" class="form-select">
+                {% for val, label in form.status.field.choices %}
+                <option value="{{ val }}" {% if form.status.value == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="{{ form.priority.id_for_label }}">Priorité</label>
+              <select name="{{ form.priority.html_name }}" id="{{ form.priority.id_for_label }}" class="form-select">
+                {% for val, label in form.priority.field.choices %}
+                <option value="{{ val }}" {% if form.priority.value == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-question-circle-fill"></i></div>
+            <h3>Statuts des projets</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="mb-2 p-2" style="background:rgba(59,130,246,.08);border-radius:7px;">
+              <span class="isi-badge blue"><i class="bi bi-play-circle-fill"></i> En cours</span>
+              <p style="font-size:12px;color:#1e3a8a;margin:4px 0 0;">Mission en cours d'exécution.</p>
+            </div>
+            <div class="mb-2 p-2" style="background:rgba(245,158,11,.08);border-radius:7px;">
+              <span class="isi-badge amber"><i class="bi bi-pause-circle-fill"></i> En pause</span>
+              <p style="font-size:12px;color:#78350f;margin:4px 0 0;">Temporairement suspendue.</p>
+            </div>
+            <div class="mb-2 p-2" style="background:rgba(16,185,129,.08);border-radius:7px;">
+              <span class="isi-badge green"><i class="bi bi-check-circle-fill"></i> Terminé</span>
+              <p style="font-size:12px;color:#065f46;margin:4px 0 0;">Clôturé avec succès.</p>
+            </div>
+            <div class="p-2" style="background:#f1f5f9;border-radius:7px;">
+              <span class="isi-badge gray"><i class="bi bi-x-circle-fill"></i> Annulé</span>
+              <p style="font-size:12px;color:#475569;margin:4px 0 0;">Mission annulée.</p>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /col-lg-4 -->
+    </div><!-- /row -->
+  </form>
+</div>
+{% endblock %}

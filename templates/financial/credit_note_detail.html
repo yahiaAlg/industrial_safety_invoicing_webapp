@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Avoir {{ credit_note.reference }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:credit_note_list' %}" style="color:var(--text-muted);text-decoration:none;">Avoirs</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ credit_note.reference }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'financial:credit_note_print' credit_note.pk %}" class="topbar-btn" target="_blank">
+  <i class="bi bi-printer-fill"></i> Imprimer
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ credit_note.reference }}</h1>
+      <p>Avoir — {{ credit_note.invoice.client.name }}</p>
+    </div>
+    <div>
+      {% if credit_note.is_full_reversal %}
+        <span class="isi-badge red" style="font-size:13px;padding:6px 14px;">
+          <i class="bi bi-arrow-counterclockwise"></i> Annulation totale
+        </span>
+      {% else %}
+        <span class="isi-badge amber" style="font-size:13px;padding:6px 14px;">
+          <i class="bi bi-arrow-return-left"></i> Avoir partiel
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <div class="col-lg-8">
+
+      <!-- Credit note details -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon purple"><i class="bi bi-arrow-return-left"></i></div>
+          <h3>Détail de l'avoir</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="stat-label mb-1">Facture d'origine</div>
+              <div style="font-weight:600;font-size:14px;">
+                <a href="{% url 'financial:invoice_detail' credit_note.invoice.pk %}"
+                   style="color:var(--accent);text-decoration:none;">
+                  {{ credit_note.invoice.reference }}
+                </a>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="stat-label mb-1">Date d'émission</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ credit_note.created_at|date:"d/m/Y" }}</div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Motif</div>
+              <div style="font-size:14px;color:var(--text-primary);line-height:1.6;">
+                {{ credit_note.reason|default:"—" }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Amounts -->
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon red" style="background:rgba(239,68,68,.12);color:var(--danger);">
+            <i class="bi bi-bar-chart-fill"></i>
+          </div>
+          <h3>Montants</h3>
+        </div>
+        <div class="isi-card-body">
+          <div style="display:flex;justify-content:flex-end;">
+            <div style="min-width:260px;">
+              <div style="display:flex;justify-content:space-between;padding:7px 0;
+                          border-bottom:1px solid var(--card-border);">
+                <span style="color:var(--text-muted);font-size:13px;">Montant HT</span>
+                <span style="font-weight:600;color:var(--danger);">
+                  -{{ credit_note.amount_ht|floatformat:2 }} DA
+                </span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:7px 0;
+                          border-bottom:1px solid var(--card-border);">
+                <span style="color:var(--text-muted);font-size:13px;">TVA</span>
+                <span style="font-weight:600;color:var(--danger);">
+                  -{{ credit_note.amount_tva|floatformat:2 }} DA
+                </span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:12px 0 0;">
+                <span style="font-family:var(--font-head);font-size:16px;font-weight:700;">Net TTC</span>
+                <span style="font-family:var(--font-head);font-size:22px;font-weight:700;color:var(--danger);">
+                  -{{ credit_note.amount_ttc|floatformat:2 }} DA
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-lg-4">
+
+      <!-- Quick info -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-info-circle-fill"></i></div>
+          <h3>Informations</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="stat-label mb-1">Client</div>
+              <div style="font-weight:600;font-size:14px;">
+                <a href="{% url 'clients:client_detail' credit_note.invoice.client.pk %}"
+                   style="color:var(--accent);text-decoration:none;">
+                  {{ credit_note.invoice.client.name }}
+                </a>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Référence</div>
+              <div style="font-family:var(--font-head);font-size:17px;font-weight:700;">
+                {{ credit_note.reference }}
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Type</div>
+              <div style="margin-top:4px;">
+                {% if credit_note.is_full_reversal %}
+                  <span class="isi-badge red">Annulation totale</span>
+                {% else %}
+                  <span class="isi-badge amber">Partiel</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-lightning-fill"></i></div>
+          <h3>Actions</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="d-flex flex-column gap-2">
+            <a href="{% url 'financial:credit_note_print' credit_note.pk %}" target="_blank"
+               class="btn btn-amber">
+              <i class="bi bi-printer-fill"></i> Imprimer l'avoir
+            </a>
+            <a href="{% url 'financial:invoice_detail' credit_note.invoice.pk %}"
+               class="btn btn-ghost">
+              <i class="bi bi-receipt-cutoff"></i> Voir la facture d'origine
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Coûts maintenance{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:equipment_report' %}" style="color:var(--text-muted);text-decoration:none;">Équipements</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Maintenance{% endblock %}
+{% block extra_head %}<style>
+.fade-up,.fade-up-delay-1,.fade-up-delay-2{opacity:1!important;animation-fill-mode:forwards!important;}
+</style>{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Coûts de maintenance</h1><p>Dépenses maintenance par équipement et type</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon red" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-wrench-adjustable-fill"></i></div>
+      <div><div class="stat-value">{{ grand_total|floatformat:0 }} DA</div><div class="stat-label">Total maintenance</div></div>
+    </div></div></div>
+    {% for t in by_type %}
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon {% if t.maintenance_type == 'preventive' %}blue{% else %}amber{% endif %}" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-tools"></i></div>
+      <div><div class="stat-value">{{ t.total|floatformat:0 }} DA</div><div class="stat-label">{% if t.maintenance_type == 'preventive' %}Préventif{% else %}Correctif{% endif %} ({{ t.count }})</div></div>
+    </div></div></div>
+    {% endfor %}
+  </div>
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="isi-card fade-up-delay-1">
+        <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-bar-chart-fill"></i></div><h3>Par équipement</h3></div>
+        <div style="overflow-x:auto;"><table class="isi-table">
+          <thead><tr><th>Équipement</th><th>Catégorie</th><th style="text-align:center;">Maintenances</th><th style="text-align:right;">Total</th></tr></thead>
+          <tbody>{% for r in by_equipment %}<tr>
+            <td style="font-weight:600;">{{ r.equipment__name|truncatechars:24 }}</td>
+            <td><span class="isi-badge gray">{{ r.equipment__category|truncatechars:14 }}</span></td>
+            <td style="text-align:center;">{{ r.count }}</td>
+            <td style="text-align:right;font-weight:600;color:#ef4444;">{{ r.total|floatformat:0 }} DA</td>
+          </tr>{% empty %}<tr><td colspan="4" style="text-align:center;padding:20px;color:#64748b;">Aucune maintenance.</td></tr>{% endfor %}</tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="isi-card fade-up-delay-2">
+        <div class="isi-card-header"><div class="card-icon red"><i class="bi bi-list-ul"></i></div><h3>Historique des interventions</h3></div>
+        <div style="overflow-x:auto;"><table class="isi-table">
+          <thead><tr><th>Date</th><th>Équipement</th><th>Type</th><th style="text-align:right;">Coût</th></tr></thead>
+          <tbody>{% for l in logs %}<tr>
+            <td style="white-space:nowrap;">{{ l.date|date:"d/m/Y" }}</td>
+            <td style="font-weight:600;font-size:13px;">{{ l.equipment.name|truncatechars:22 }}</td>
+            <td>{% if l.maintenance_type == 'preventive' %}<span class="isi-badge blue">Préventif</span>{% else %}<span class="isi-badge amber">Correctif</span>{% endif %}</td>
+            <td style="text-align:right;font-weight:600;color:#ef4444;">{{ l.cost|floatformat:0 }} DA</td>
+          </tr>{% empty %}<tr><td colspan="4" style="text-align:center;padding:20px;color:#64748b;">Aucune intervention.</td></tr>{% endfor %}</tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

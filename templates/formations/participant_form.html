@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'formations:session_list' %}" style="color:var(--text-muted);text-decoration:none;">Sessions</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'formations:session_detail' session.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ session.formation.title|truncatechars:30 }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ action }}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ action }}</h1>
+      <p>Session : <strong>{{ session.formation.title }}</strong> — {{ session.date_start|date:"d/m/Y" }}</p>
+    </div>
+    <a href="{% url 'formations:session_detail' session.pk %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <!-- Capacity info bar -->
+  <div class="isi-card mb-4">
+    <div class="isi-card-body" style="padding:14px 24px;display:flex;align-items:center;gap:16px;">
+      <div class="card-icon amber" style="width:38px;height:38px;flex-shrink:0;">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:13px;font-weight:600;">Remplissage</span>
+          <span style="font-size:13px;color:var(--text-muted);">
+            {{ session.participant_count }} / {{ session.capacity }} participants
+          </span>
+        </div>
+        <div style="height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:{{ session.fill_rate }}%;
+                      background:{% if session.fill_rate >= 80 %}var(--success){% elif session.fill_rate >= 50 %}var(--accent){% else %}#94a3b8{% endif %};
+                      border-radius:3px;"></div>
+        </div>
+      </div>
+      {% if session.available_spots == 0 %}
+      <span class="isi-badge red"><i class="bi bi-exclamation-circle-fill"></i> Session complète</span>
+      {% else %}
+      <span class="isi-badge green">{{ session.available_spots }} place{{ session.available_spots|pluralize }} disponible{{ session.available_spots|pluralize }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-person-fill"></i></div>
+          <h3>Informations du participant</h3>
+        </div>
+        <div class="isi-card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-section-title">Identité</div>
+            <div class="row g-3 mb-4">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.first_name.id_for_label }}">
+                  Prénom <span style="color:var(--danger);">*</span>
+                </label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-person"></i>
+                  <input type="text" name="{{ form.first_name.html_name }}" id="{{ form.first_name.id_for_label }}"
+                         class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
+                         value="{{ form.first_name.value|default:'' }}">
+                </div>
+                {% if form.first_name.errors %}
+                <div class="invalid-feedback d-block">{{ form.first_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.last_name.id_for_label }}">
+                  Nom <span style="color:var(--danger);">*</span>
+                </label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-person"></i>
+                  <input type="text" name="{{ form.last_name.html_name }}" id="{{ form.last_name.id_for_label }}"
+                         class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
+                         value="{{ form.last_name.value|default:'' }}">
+                </div>
+                {% if form.last_name.errors %}
+                <div class="invalid-feedback d-block">{{ form.last_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="{{ form.job_title.id_for_label }}">Fonction</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-briefcase-fill"></i>
+                  <input type="text" name="{{ form.job_title.html_name }}" id="{{ form.job_title.id_for_label }}"
+                         class="form-control"
+                         value="{{ form.job_title.value|default:'' }}"
+                         placeholder="Ex. Responsable HSE, Opérateur, Chef d'équipe…">
+                </div>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="form-section-title">Employeur</div>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.employer.id_for_label }}">Nom de l'employeur</label>
+                <input type="text" name="{{ form.employer.html_name }}" id="{{ form.employer.id_for_label }}"
+                       class="form-control"
+                       value="{{ form.employer.value|default:'' }}"
+                       placeholder="Nom de l'entreprise">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.employer_client.id_for_label }}">Client enregistré</label>
+                <select name="{{ form.employer_client.html_name }}" id="{{ form.employer_client.id_for_label }}"
+                        class="form-select">
+                  <option value="">— Lier à un client —</option>
+                  {% for c in form.employer_client.field.queryset %}
+                  <option value="{{ c.pk }}" {% if form.employer_client.value|stringformat:"s" == c.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ c.name }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="form-section-title">Coordonnées</div>
+            <div class="row g-3 mb-4">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.phone.id_for_label }}">Téléphone</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-telephone-fill"></i>
+                  <input type="text" name="{{ form.phone.html_name }}" id="{{ form.phone.id_for_label }}"
+                         class="form-control"
+                         value="{{ form.phone.value|default:'' }}">
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-envelope-fill"></i>
+                  <input type="email" name="{{ form.email.html_name }}" id="{{ form.email.id_for_label }}"
+                         class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                         value="{{ form.email.value|default:'' }}">
+                </div>
+                {% if form.email.errors %}
+                <div class="invalid-feedback d-block">{{ form.email.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="row g-3 mb-4">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.notes.id_for_label }}">Notes</label>
+                <textarea name="{{ form.notes.html_name }}" id="{{ form.notes.id_for_label }}"
+                          class="form-control" rows="2"
+                          placeholder="Informations complémentaires…">{{ form.notes.value|default:'' }}</textarea>
+              </div>
+            </div>
+
+            <!-- Présence toggle (edit only) -->
+            {% if form.instance.pk %}
+            <div class="mb-4 p-3" style="background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);">
+              <div class="form-check form-switch" style="padding-left:0;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <input class="form-check-input" type="checkbox"
+                         name="{{ form.attended.html_name }}" id="{{ form.attended.id_for_label }}"
+                         {% if form.attended.value %}checked{% endif %}
+                         style="width:40px;height:22px;">
+                  <label class="form-check-label" for="{{ form.attended.id_for_label }}"
+                         style="font-weight:600;font-size:14px;">
+                    <i class="bi bi-check-circle-fill" style="color:var(--success);"></i>
+                    Participant présent
+                  </label>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-4">
+              <i class="bi bi-exclamation-circle-fill"></i>
+              <div>{{ form.non_field_errors|join:"<br>" }}</div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i>
+                {% if form.instance.pk %}Enregistrer{% else %}Inscrire le participant{% endif %}
+              </button>
+              <a href="{% url 'formations:session_detail' session.pk %}" class="btn btn-ghost">Annuler</a>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

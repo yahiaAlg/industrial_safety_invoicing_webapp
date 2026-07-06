@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}{{ period.name }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:period_list' %}" style="color:var(--text-muted);text-decoration:none;">Périodes</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ period.name }}{% endblock %}
+
+{% block topbar_actions %}
+{% if not period.is_closed %}
+<a href="{% url 'financial:period_edit' period.pk %}" class="topbar-btn primary">
+  <i class="bi bi-pencil-fill"></i> Modifier
+</a>
+<form method="post" action="{% url 'financial:period_close' period.pk %}" style="display:inline;">
+  {% csrf_token %}
+  <button type="submit" class="topbar-btn"
+          onclick="return confirm('Clôturer cette période ? Action irréversible.')">
+    <i class="bi bi-lock-fill"></i> Clôturer
+  </button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ period.name }}</h1>
+      <p>{{ period.date_start|date:"d/m/Y" }} — {{ period.date_end|date:"d/m/Y" }}</p>
+    </div>
+    <div>
+      {% if period.is_closed %}
+        <span class="isi-badge gray" style="font-size:13px;padding:6px 14px;">
+          <i class="bi bi-lock-fill"></i> Clôturée
+        </span>
+      {% else %}
+        <span class="isi-badge green" style="font-size:13px;padding:6px 14px;">
+          <i class="bi bi-circle-fill" style="font-size:7px;"></i> Ouverte
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── KPI row ─────────────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-receipt-cutoff"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ summary.invoiced_ttc|floatformat:0 }}</div>
+            <div class="stat-label">Facturé TTC (DA)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-cash-coin"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ summary.collected|floatformat:0 }}</div>
+            <div class="stat-label">Encaissé (DA)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon red" style="background:rgba(239,68,68,.12);color:var(--danger);width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-credit-card-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ summary.expenses|floatformat:0 }}</div>
+            <div class="stat-label">Dépenses (DA)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon purple" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-graph-up-arrow"></i>
+          </div>
+          <div>
+            <div class="stat-value" style="color:{% if summary.gross_margin >= 0 %}var(--success){% else %}var(--danger){% endif %};">
+              {{ summary.gross_margin|floatformat:0 }}
+            </div>
+            <div class="stat-label">Marge brute (DA)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+
+      <!-- Revenue breakdown -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-bar-chart-fill"></i></div>
+          <h3>Résumé financier</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div style="padding:16px;background:#f8fafc;border-radius:10px;
+                          border:1px solid var(--card-border);">
+                <div class="stat-label mb-2">Chiffre d'affaires HT</div>
+                <div style="font-family:var(--font-head);font-size:22px;font-weight:700;color:var(--accent);">
+                  {{ summary.invoiced_ht|floatformat:2 }} DA
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div style="padding:16px;background:#f8fafc;border-radius:10px;
+                          border:1px solid var(--card-border);">
+                <div class="stat-label mb-2">Encaissé</div>
+                <div style="font-family:var(--font-head);font-size:22px;font-weight:700;color:var(--success);">
+                  {{ summary.collected|floatformat:2 }} DA
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div style="padding:16px;background:#f8fafc;border-radius:10px;
+                          border:1px solid var(--card-border);">
+                <div class="stat-label mb-2">En attente de règlement</div>
+                <div style="font-family:var(--font-head);font-size:22px;font-weight:700;
+                              color:{% if summary.outstanding > 0 %}var(--danger){% else %}var(--success){% endif %};">
+                  {{ summary.outstanding|floatformat:2 }} DA
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div style="padding:16px;background:#f8fafc;border-radius:10px;
+                          border:1px solid var(--card-border);">
+                <div class="stat-label mb-2">Taux de marge</div>
+                <div style="font-family:var(--font-head);font-size:22px;font-weight:700;
+                              color:{% if summary.margin_rate >= 20 %}var(--success){% else %}var(--text-primary){% endif %};">
+                  {{ summary.margin_rate }}%
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="col-lg-4">
+
+      <!-- Period info -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-calendar3-fill"></i></div>
+          <h3>Informations</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="stat-label mb-1">Type</div>
+              <div style="margin-top:4px;">
+                <span class="isi-badge blue">{{ period.get_period_type_display }}</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Début</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ period.date_start|date:"d/m/Y" }}</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Fin</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ period.date_end|date:"d/m/Y" }}</div>
+            </div>
+            {% if period.notes %}
+            <div class="col-12">
+              <div class="stat-label mb-1">Notes</div>
+              <div style="font-size:13.5px;color:var(--text-muted);line-height:1.6;">
+                {{ period.notes }}
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick links -->
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-lightning-fill"></i></div>
+          <h3>Rapports</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="d-flex flex-column gap-2">
+            <a href="{% url 'financial:revenue_report' %}?period={{ period.pk }}" class="btn btn-ghost">
+              <i class="bi bi-bar-chart-fill"></i> Rapport de revenus
+            </a>
+            <a href="{% url 'financial:expense_report' %}?period={{ period.pk }}" class="btn btn-ghost">
+              <i class="bi bi-credit-card-fill"></i> Rapport de dépenses
+            </a>
+            <a href="{% url 'financial:outstanding_report' %}" class="btn btn-ghost">
+              <i class="bi bi-exclamation-circle-fill"></i> Impayés
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

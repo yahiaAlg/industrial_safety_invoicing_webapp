@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Rapport de marges combiné{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:dashboard' %}" style="color:var(--text-muted);text-decoration:none;">Rapports</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Marges combinées{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'reporting:session_margins' %}" class="topbar-btn"><i class="bi bi-mortarboard-fill"></i> Sessions</a>
+<a href="{% url 'reporting:project_margins' %}" class="topbar-btn"><i class="bi bi-diagram-3-fill"></i> Projets</a>
+{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Rapport de marges combiné</h1><p>Formations vs Études — comparaison de rentabilité</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="isi-card">
+        <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-mortarboard-fill"></i></div><h3>Formations</h3></div>
+        <div class="isi-card-body"><div class="row g-3">
+          <div class="col-6"><div class="stat-label mb-1">Revenu</div><div style="font-size:22px;font-family:var(--font-head);font-weight:700;">{{ formation_revenue|floatformat:0 }} DA</div></div>
+          <div class="col-6"><div class="stat-label mb-1">Dépenses</div><div style="font-size:22px;font-family:var(--font-head);font-weight:700;color:#ef4444;">{{ formation_expenses|floatformat:0 }} DA</div></div>
+          <div class="col-6"><div class="stat-label mb-1">Marge</div><div style="font-size:22px;font-family:var(--font-head);font-weight:700;color:{% if formation_margin >= 0 %}#10b981{% else %}#ef4444{% endif %};">{{ formation_margin|floatformat:0 }} DA</div></div>
+          <div class="col-6"><div class="stat-label mb-1">Taux de marge</div><div style="font-size:22px;font-family:var(--font-head);font-weight:700;">{{ formation_margin_rate }}%</div></div>
+        </div></div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="isi-card">
+        <div class="isi-card-header"><div class="card-icon blue"><i class="bi bi-diagram-3-fill"></i></div><h3>Études / Consulting</h3></div>
+        <div class="isi-card-body"><div class="row g-3">
+          <div class="col-6"><div class="stat-label mb-1">Budget</div><div style="font-size:22px;font-family:var(--font-head);font-weight:700;">{{ etude_budget|floatformat:0 }} DA</div></div>
+          <div class="col-6"><div class="stat-label mb-1">Dépenses</div><div style="font-size:22px;font-family:var(--font-head);font-weight:700;color:#ef4444;">{{ etude_expenses|floatformat:0 }} DA</div></div>
+          <div class="col-6"><div class="stat-label mb-1">Marge</div><div style="font-size:22px;font-family:var(--font-head);font-weight:700;color:{% if etude_margin >= 0 %}#10b981{% else %}#ef4444{% endif %};">{{ etude_margin|floatformat:0 }} DA</div></div>
+          <div class="col-6"><div class="stat-label mb-1">Taux de marge</div><div style="font-size:22px;font-family:var(--font-head);font-weight:700;">{{ etude_margin_rate }}%</div></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+  <div class="isi-card">
+    <div class="isi-card-header"><div class="card-icon purple"><i class="bi bi-bar-chart-fill"></i></div><h3>Comparaison visuelle</h3></div>
+    <div class="isi-card-body"><div style="position:relative;height:240px;"><canvas id="chartCombo"></canvas></div></div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+new Chart(document.getElementById('chartCombo'), {
+  type: 'bar',
+  data: {
+    labels: ['Revenu/Budget', 'Dépenses', 'Marge'],
+    datasets: [
+      { label: 'Formations', data: [{{ formation_revenue|default:0|floatformat:2 }}, {{ formation_expenses|default:0|floatformat:2 }}, {{ formation_margin|default:0|floatformat:2 }}], backgroundColor: ['rgba(245,158,11,.7)', 'rgba(245,158,11,.4)', 'rgba(245,158,11,.9)'], borderRadius: 4 },
+      { label: 'Études', data: [{{ etude_budget|default:0|floatformat:2 }}, {{ etude_expenses|default:0|floatformat:2 }}, {{ etude_margin|default:0|floatformat:2 }}], backgroundColor: ['rgba(59,130,246,.7)', 'rgba(59,130,246,.4)', 'rgba(59,130,246,.9)'], borderRadius: 4 }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#64748b', font: { family: 'Barlow', size: 12 } } }, tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw.toLocaleString('fr-DZ')} DA` } } }, scales: { x: { grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Barlow', size: 12 } } }, y: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b', font: { family: 'Barlow', size: 11 }, callback: v => v.toLocaleString('fr-DZ') } } } }
+});
+</script>
+{% endblock %}

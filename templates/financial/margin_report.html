@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Rapport des marges{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:analytics' %}" style="color:var(--text-muted);text-decoration:none;">Analytique</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Marges{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Rapport des marges</h1>
+      <p>
+        {% if date_from and date_to %}
+        {{ date_from|date:"d/m/Y" }} — {{ date_to|date:"d/m/Y" }}
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="isi-card mb-4">
+    <div class="isi-card-body" style="padding:16px 24px;">
+      <form method="get" novalidate>
+        <div class="row g-3 align-items-end">
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">{{ form.period.label }}</label>
+            {{ form.period }}
+          </div>
+          <div class="col-lg-2 col-md-3">
+            <label class="form-label">{{ form.date_from.label }}</label>
+            {{ form.date_from }}
+          </div>
+          <div class="col-lg-2 col-md-3">
+            <label class="form-label">{{ form.date_to.label }}</label>
+            {{ form.date_to }}
+          </div>
+          <div class="col-lg-3">
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber flex-grow-1">
+                <i class="bi bi-funnel-fill"></i> Appliquer
+              </button>
+              <a href="{% url 'financial:margin_report' %}" class="btn btn-ghost">
+                <i class="bi bi-x-lg"></i>
+              </a>
+            </div>
+          </div>
+          {% if form.non_field_errors %}
+          <div class="col-12">
+            {% for error in form.non_field_errors %}
+            <div style="color:var(--danger);font-size:12.5px;">
+              <i class="bi bi-exclamation-circle-fill"></i> {{ error }}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Session margins ──────────────────────────────────── -->
+  <div class="isi-card mb-4">
+    <div class="isi-card-header">
+      <div class="card-icon blue"><i class="bi bi-mortarboard-fill"></i></div>
+      <h3>
+        Marges par session de formation
+        {% if session_margins %}
+        <span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">
+          — {{ session_margins|length }} session{{ session_margins|length|pluralize }}
+        </span>
+        {% endif %}
+      </h3>
+    </div>
+
+    {% if session_margins %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Session</th>
+            <th>Client</th>
+            <th>Date</th>
+            <th style="text-align:right;">Revenus</th>
+            <th style="text-align:right;">Dépenses</th>
+            <th style="text-align:right;">Marge</th>
+            <th style="text-align:right;">Taux</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in session_margins %}
+          <tr>
+            <td>
+              <a href="{% url 'formations:session_detail' row.session.pk %}"
+                 style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                {{ row.session.formation.title|truncatechars:40 }}
+              </a>
+            </td>
+            <td>
+              <span style="font-size:13px;color:var(--text-muted);">
+                {{ row.session.client.name|default:"—" }}
+              </span>
+            </td>
+            <td>
+              <span style="font-size:13px;color:var(--text-muted);">
+                {{ row.session.date_start|date:"d/m/Y" }}
+              </span>
+            </td>
+            <td style="text-align:right;color:var(--success);font-weight:600;">
+              {{ row.revenue|floatformat:2 }} DA
+            </td>
+            <td style="text-align:right;color:var(--danger);font-weight:600;">
+              {{ row.expenses|floatformat:2 }} DA
+            </td>
+            <td style="text-align:right;font-family:var(--font-head);font-weight:700;font-size:15px;
+                        color:{% if row.margin >= 0 %}var(--success){% else %}var(--danger){% endif %};">
+              {{ row.margin|floatformat:2 }} DA
+            </td>
+            <td style="text-align:right;">
+              <span class="isi-badge {% if row.margin_rate >= 20 %}green{% elif row.margin_rate >= 0 %}amber{% else %}red{% endif %}">
+                {{ row.margin_rate }}%
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:40px 24px;">
+      <div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;">
+        <i class="bi bi-mortarboard"></i>
+      </div>
+      <p style="color:var(--text-muted);font-size:14px;margin:0;">
+        Aucune session terminée sur cette période.
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── Project margins ──────────────────────────────────── -->
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon purple"><i class="bi bi-diagram-3-fill"></i></div>
+      <h3>
+        Marges par projet d'étude
+        {% if project_margins %}
+        <span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">
+          — {{ project_margins|length }} projet{{ project_margins|length|pluralize }}
+        </span>
+        {% endif %}
+      </h3>
+    </div>
+
+    {% if project_margins %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Projet</th>
+            <th>Client</th>
+            <th>Fin réelle</th>
+            <th style="text-align:right;">Budget</th>
+            <th style="text-align:right;">Dépenses</th>
+            <th style="text-align:right;">Marge</th>
+            <th style="text-align:right;">Taux</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in project_margins %}
+          <tr>
+            <td>
+              <a href="{% url 'etudes:project_detail' row.project.pk %}"
+                 style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                {{ row.project.title|truncatechars:40 }}
+              </a>
+              {% if row.project.reference %}
+              <div style="font-size:11px;color:var(--text-muted);font-family:monospace;">
+                {{ row.project.reference }}
+              </div>
+              {% endif %}
+            </td>
+            <td>
+              <span style="font-size:13px;color:var(--text-muted);">
+                {{ row.project.client.name }}
+              </span>
+            </td>
+            <td>
+              <span style="font-size:13px;color:var(--text-muted);">
+                {{ row.project.actual_end_date|date:"d/m/Y"|default:"—" }}
+              </span>
+            </td>
+            <td style="text-align:right;font-weight:600;">
+              {{ row.budget|floatformat:2 }} DA
+            </td>
+            <td style="text-align:right;color:var(--danger);font-weight:600;">
+              {{ row.expenses|floatformat:2 }} DA
+            </td>
+            <td style="text-align:right;font-family:var(--font-head);font-weight:700;font-size:15px;
+                        color:{% if row.margin >= 0 %}var(--success){% else %}var(--danger){% endif %};">
+              {{ row.margin|floatformat:2 }} DA
+            </td>
+            <td style="text-align:right;">
+              <span class="isi-badge {% if row.margin_rate >= 20 %}green{% elif row.margin_rate >= 0 %}amber{% else %}red{% endif %}">
+                {{ row.margin_rate }}%
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:40px 24px;">
+      <div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;">
+        <i class="bi bi-diagram-3"></i>
+      </div>
+      <p style="color:var(--text-muted);font-size:14px;margin:0;">
+        Aucun projet terminé sur cette période.
+      </p>
+    </div>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}

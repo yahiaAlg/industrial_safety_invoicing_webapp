@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}Dépenses en attente{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:expense_breakdown_report' %}" style="color:var(--text-muted);text-decoration:none;">Dépenses</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}En attente{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'reporting:expense_breakdown_report' %}" class="topbar-btn secondary"><i class="bi bi-bar-chart-fill"></i> Analyse complète</a>
+{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Dépenses en attente</h1>
+      <p>Dépenses nécessitant validation ou justificatif manquant</p>
+    </div>
+  </div>
+
+  {% if expenses %}
+  <div class="alert alert-warning mb-4" style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-radius:12px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#92400e;">
+    <i class="bi bi-exclamation-triangle-fill" style="font-size:20px;color:#f59e0b;flex-shrink:0;"></i>
+    <div><strong>{{ expenses|length }} dépense(s) nécessitent votre attention</strong> — Total exposé : <strong>{{ total_pending|default:0|floatformat:0 }} DA</strong></div>
+  </div>
+  {% endif %}
+
+  <!-- KPI cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon amber" style="width:48px;height:48px;font-size:22px;border-radius:12px;flex-shrink:0;"><i class="bi bi-clock-fill"></i></div>
+      <div><div class="stat-value">{{ pending_approval_count|default:0 }}</div><div class="stat-label">En attente validation</div><div style="font-size:11px;color:#94a3b8;margin-top:2px;">{{ pending_approval_total|default:0|floatformat:0 }} DA</div></div>
+    </div></div></div>
+
+    <div class="col-sm-6 col-lg-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon red" style="width:48px;height:48px;font-size:22px;border-radius:12px;flex-shrink:0;"><i class="bi bi-file-earmark-x-fill"></i></div>
+      <div><div class="stat-value">{{ missing_receipt_count|default:0 }}</div><div class="stat-label">Justificatif manquant</div><div style="font-size:11px;color:#94a3b8;margin-top:2px;">{{ missing_receipt_total|default:0|floatformat:0 }} DA</div></div>
+    </div></div></div>
+
+    <div class="col-sm-6 col-lg-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon" style="width:48px;height:48px;font-size:22px;border-radius:12px;flex-shrink:0;background:rgba(239,68,68,.12);color:#ef4444;"><i class="bi bi-exclamation-diamond-fill"></i></div>
+      <div><div class="stat-value">{{ both_issues_count|default:0 }}</div><div class="stat-label">Double problème</div><div style="font-size:11px;color:#94a3b8;margin-top:2px;">En attente + justificatif</div></div>
+    </div></div></div>
+
+    <div class="col-sm-6 col-lg-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon purple" style="width:48px;height:48px;font-size:22px;border-radius:12px;flex-shrink:0;"><i class="bi bi-currency-exchange"></i></div>
+      <div><div class="stat-value">{{ total_pending|default:0|floatformat:0 }} <span style="font-size:13px;font-weight:400;">DA</span></div><div class="stat-label">Total exposé</div></div>
+    </div></div></div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4">
+      <div class="isi-card h-100">
+        <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-pie-chart-fill"></i></div><h3>Répartition des problèmes</h3></div>
+        <div class="isi-card-body">
+          <div style="position:relative;height:200px;"><canvas id="chartIssues"></canvas></div>
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;"><span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>En attente de validation</span><span class="isi-badge amber">{{ pending_approval_count|default:0 }}</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;"><span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;"></span>Justificatif manquant</span><span class="isi-badge red">{{ missing_receipt_count|default:0 }}</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;"><span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#8b5cf6;display:inline-block;"></span>Double problème</span><span class="isi-badge" style="background:rgba(139,92,246,.15);color:#7c3aed;">{{ both_issues_count|default:0 }}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="isi-card h-100">
+        <div class="isi-card-header"><div class="card-icon red"><i class="bi bi-tags-fill"></i></div><h3>Par catégorie</h3></div>
+        <div class="isi-card-body"><div style="position:relative;height:240px;"><canvas id="chartPendingByCat"></canvas></div></div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="isi-card h-100">
+        <div class="isi-card-header"><div class="card-icon blue"><i class="bi bi-diagram-3-fill"></i></div><h3>Par affectation</h3></div>
+        <div class="isi-card-body"><div style="position:relative;height:240px;"><canvas id="chartPendingByAlloc"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aging analysis -->
+  <div class="isi-card mb-4">
+    <div class="isi-card-header">
+      <div class="card-icon" style="background:rgba(239,68,68,.12);color:#ef4444;width:36px;height:36px;border-radius:10px;font-size:16px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-hourglass-split"></i></div>
+      <h3>Vieillissement des dépenses en attente</h3>
+    </div>
+    <div class="isi-card-body"><div style="position:relative;height:180px;"><canvas id="chartAging"></canvas></div></div>
+  </div>
+
+  <!-- Detailed table -->
+  <div class="isi-card">
+    <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-clock-fill"></i></div><h3>Dépenses nécessitant action</h3><div class="ms-auto" style="font-size:13px;color:#64748b;">{{ expenses|length }} entrée(s)</div></div>
+    <div style="overflow-x:auto;"><table class="isi-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Âge</th>
+          <th>Catégorie</th>
+          <th>Description</th>
+          <th>Bénéficiaire</th>
+          <th>Affectation</th>
+          <th>Problème(s)</th>
+          <th style="text-align:right;">Montant</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in expenses %}
+        <tr>
+          <td style="white-space:nowrap;">{{ e.date|date:"d/m/Y" }}</td>
+          <td style="white-space:nowrap;">
+            {% now "Y-m-d" as today_str %}
+            <span style="font-size:12px;{% if e.date < today|timesince %}color:#ef4444;font-weight:600;{% else %}color:#94a3b8;{% endif %}">
+              {{ e.date|timesince }}
+            </span>
+          </td>
+          <td><span class="isi-badge gray">{{ e.category.name|default:"—" }}</span></td>
+          <td style="font-size:13px;color:#64748b;">{{ e.description|truncatechars:35 }}</td>
+          <td style="font-size:13px;color:#475569;">{{ e.beneficiary.name|default:"—"|truncatechars:18 }}</td>
+          <td style="font-size:13px;">
+            {% if e.allocated_to_session %}<span style="color:#f59e0b;"><i class="bi bi-mortarboard-fill"></i> {{ e.allocated_to_session.formation.title|truncatechars:18 }}</span>
+            {% elif e.allocated_to_project %}<span style="color:#3b82f6;"><i class="bi bi-diagram-3-fill"></i> {{ e.allocated_to_project.title|truncatechars:18 }}</span>
+            {% else %}<span style="color:#94a3b8;"><i class="bi bi-building-fill"></i> Généraux</span>{% endif %}
+          </td>
+          <td>
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              {% if e.approval_status == 'pending' %}<span class="isi-badge amber"><i class="bi bi-clock-fill"></i> En attente</span>{% endif %}
+              {% if e.receipt_missing %}<span class="isi-badge red"><i class="bi bi-file-earmark-x-fill"></i> Justificatif</span>{% endif %}
+            </div>
+          </td>
+          <td style="text-align:right;font-weight:600;color:#ef4444;white-space:nowrap;">{{ e.amount|floatformat:0 }} DA</td>
+          <td style="white-space:nowrap;">
+            <div style="display:flex;gap:6px;align-items:center;">
+              {% if e.approval_status == 'pending' %}
+              <form method="post" action="{% url 'financial:expense_approve' e.pk %}" style="display:inline;">{% csrf_token %}<button type="submit" class="btn btn-sm" style="padding:3px 8px;font-size:11px;background:rgba(16,185,129,.12);color:#059669;border:1px solid rgba(16,185,129,.3);border-radius:6px;cursor:pointer;" title="Approuver"><i class="bi bi-check-lg"></i></button></form>
+              <form method="post" action="{% url 'financial:expense_reject' e.pk %}" style="display:inline;">{% csrf_token %}<button type="submit" class="btn btn-sm" style="padding:3px 8px;font-size:11px;background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.25);border-radius:6px;cursor:pointer;" title="Rejeter"><i class="bi bi-x-lg"></i></button></form>
+              {% else %}
+              <span style="font-size:11px;padding:3px 8px;border-radius:6px;background:rgba(16,185,129,.12);color:#059669;border:1px solid rgba(16,185,129,.3);white-space:nowrap;"><i class="bi bi-check-circle-fill"></i> {{ e.get_approval_status_display }}</span>
+              {% endif %}
+              <a href="{% url 'financial:expense_detail' e.pk %}" class="btn btn-sm" style="padding:3px 8px;font-size:11px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:6px;" title="Détail"><i class="bi bi-eye"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9"><div class="text-center" style="padding:48px;"><div style="font-size:48px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-check-circle"></i></div><p style="color:#64748b;margin:0;font-weight:500;">Aucune dépense en attente. Tout est à jour !</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const pendingApproval  = {{ pending_approval_count|default:0 }};
+const missingReceipt   = {{ missing_receipt_count|default:0 }};
+const bothIssues       = {{ both_issues_count|default:0 }};
+
+const catData = [{% for c in pending_by_category %}{
+  label: "{{ c.category__name|default:'Sans catégorie'|escapejs }}",
+  total: {{ c.total|default:0|stringformat:".2f" }},
+  count: {{ c.count|default:0 }}
+},{% endfor %}];
+
+const allocData = {
+  session:  {{ alloc_session_total|default:0|stringformat:".2f" }},
+  project:  {{ alloc_project_total|default:0|stringformat:".2f" }},
+  overhead: {{ alloc_overhead_total|default:0|stringformat:".2f" }}
+};
+
+const agingData = [{% for b in aging_buckets %}{
+  label: "{{ b.label|escapejs }}",
+  count: {{ b.count|default:0 }},
+  total: {{ b.total|default:0|stringformat:".2f" }}
+},{% endfor %}];
+
+const palette = ['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#f97316','#06b6d4','#84cc16','#ec4899','#6366f1'];
+const fmtDA = v => v.toLocaleString('fr-DZ') + ' DA';
+const base = {responsive:true, maintainAspectRatio:false};
+
+/* 1 — Issues donut */
+new Chart(document.getElementById('chartIssues'),{
+  type:'doughnut',
+  data:{labels:['En attente validation','Justificatif manquant','Double problème'],datasets:[{data:[pendingApproval,missingReceipt,bothIssues],backgroundColor:['#f59e0b','#ef4444','#8b5cf6'],borderWidth:0,hoverOffset:5}]},
+  options:{...base,cutout:'65%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed}`}}}}
+});
+
+/* 2 — Horizontal bar by category */
+if(catData.length){
+  new Chart(document.getElementById('chartPendingByCat'),{
+    type:'bar',
+    data:{labels:catData.map(d=>d.label),datasets:[{label:'Montant',data:catData.map(d=>d.total),backgroundColor:catData.map((_,i)=>palette[i%palette.length]+'bb'),borderColor:catData.map((_,i)=>palette[i%palette.length]),borderWidth:1,borderRadius:4}]},
+    options:{...base,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${fmtDA(ctx.parsed.x)}`}}},scales:{x:{grid:{color:'#e2e8f0'},ticks:{color:'#64748b',font:{family:'Barlow',size:10},callback:v=>v.toLocaleString('fr-DZ')}},y:{grid:{display:false},ticks:{color:'#475569',font:{family:'Barlow',size:10}}}}}
+  });
+}
+
+/* 3 — Donut by allocation */
+new Chart(document.getElementById('chartPendingByAlloc'),{
+  type:'doughnut',
+  data:{labels:['Sessions','Projets','Frais généraux'],datasets:[{data:[allocData.session,allocData.project,allocData.overhead],backgroundColor:['#f59e0b','#3b82f6','#94a3b8'],borderWidth:0,hoverOffset:5}]},
+  options:{...base,cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:'#64748b',font:{family:'Barlow',size:11},padding:10,boxWidth:12}},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${fmtDA(ctx.parsed)}`}}}}
+});
+
+/* 4 — Aging bar chart */
+if(agingData.length){
+  const agingColors=['#10b981','#f59e0b','#f97316','#ef4444','#8b5cf6'];
+  new Chart(document.getElementById('chartAging'),{
+    type:'bar',
+    data:{labels:agingData.map(d=>d.label),datasets:[
+      {label:'Nb dépenses',data:agingData.map(d=>d.count),backgroundColor:agingColors,borderRadius:6,borderWidth:0,yAxisID:'y1'},
+      {label:'Montant',data:agingData.map(d=>d.total),backgroundColor:agingColors.map(c=>c+'44'),borderColor:agingColors,borderWidth:1.5,borderRadius:6,type:'bar',yAxisID:'y2'}
+    ]},
+    options:{...base,plugins:{legend:{position:'bottom',labels:{color:'#64748b',font:{family:'Barlow',size:11},padding:12,boxWidth:12}},tooltip:{mode:'index',callbacks:{label:ctx=>ctx.datasetIndex===0?` ${ctx.parsed.y} dépense(s)`:` ${fmtDA(ctx.parsed.y)}`}}},scales:{x:{grid:{display:false},ticks:{color:'#64748b',font:{family:'Barlow',size:11}}},y1:{position:'left',title:{display:true,text:'Nb',color:'#94a3b8',font:{size:10}},grid:{color:'#e2e8f0'},ticks:{color:'#64748b',font:{family:'Barlow',size:10}}},y2:{position:'right',title:{display:true,text:'DA',color:'#94a3b8',font:{size:10}},grid:{display:false},ticks:{color:'#64748b',font:{family:'Barlow',size:10},callback:v=>v.toLocaleString('fr-DZ')}}}}
+  });
+}
+</script>
+{% endblock %}

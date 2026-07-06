@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Formateurs{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Formateurs{% endblock %}
+
+{% block topbar_actions %}
+{% if request.user.profile.is_admin %}
+<a href="{% url 'resources:trainer_create' %}" class="topbar-btn primary">
+  <i class="bi bi-plus-lg"></i> Nouveau formateur
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Formateurs</h1>
+      <p>Gérez les formateurs internes et externes de l'institut</p>
+    </div>
+  </div>
+
+  <!-- ── KPI row ────────────────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-person-fill-check"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ trainers_active_count|default:"0" }}</div>
+            <div class="stat-label">Actifs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon blue" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ trainers_total_count|default:"0" }}</div>
+            <div class="stat-label">Total</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-building-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ trainers_internal_count|default:"0" }}</div>
+            <div class="stat-label">Internes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon purple" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-person-workspace"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ trainers_external_count|default:"0" }}</div>
+            <div class="stat-label">Externes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main table card ───────────────────────────────────────── -->
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-person-fill-check"></i></div>
+      <h3>Liste des formateurs
+        {% if trainers %}
+        <span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">
+          — {{ trainers|length }} formateur{{ trainers|length|pluralize }}
+        </span>
+        {% endif %}
+      </h3>
+    </div>
+
+    {% if trainers %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Formateur</th>
+            <th>Type</th>
+            <th>Spécialité</th>
+            <th>Téléphone</th>
+            <th>Email</th>
+            <th>Tarif / jour</th>
+            <th>Statut</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for trainer in trainers %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:50%;
+                            background:rgba(245,158,11,.12);color:#d97706;
+                            display:flex;align-items:center;justify-content:center;
+                            font-family:var(--font-head);font-size:15px;font-weight:700;flex-shrink:0;">
+                  {{ trainer.first_name|slice:":1"|upper }}
+                </div>
+                <div>
+                  <a href="{% url 'resources:trainer_detail' trainer.pk %}"
+                     style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                    {{ trainer.first_name }} {{ trainer.last_name }}
+                  </a>
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if trainer.is_internal %}
+                <span class="isi-badge green"><i class="bi bi-building" style="font-size:9px;"></i> Interne</span>
+              {% else %}
+                <span class="isi-badge purple"><i class="bi bi-person-workspace" style="font-size:9px;"></i> Externe</span>
+              {% endif %}
+            </td>
+            <td><span style="color:var(--text-muted);font-size:13px;">{{ trainer.specialty|default:"—" }}</span></td>
+            <td><span style="color:var(--text-muted);font-size:13px;">{{ trainer.phone|default:"—" }}</span></td>
+            <td>
+              {% if trainer.email %}
+                <a href="mailto:{{ trainer.email }}" style="color:var(--accent);font-size:13px;">{{ trainer.email }}</a>
+              {% else %}<span style="color:var(--text-muted);font-size:13px;">—</span>{% endif %}
+            </td>
+            <td>
+              {% if trainer.daily_rate %}
+                <span style="font-weight:600;font-size:13.5px;">{{ trainer.daily_rate|floatformat:0 }}
+                  <span style="font-size:11px;color:var(--text-muted);">DA</span>
+                </span>
+              {% else %}<span style="color:var(--text-muted);font-size:13px;">—</span>{% endif %}
+            </td>
+            <td>
+              {% if trainer.is_active %}
+                <span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Actif</span>
+              {% else %}
+                <span class="isi-badge gray"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Inactif</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                <a href="{% url 'resources:trainer_detail' trainer.pk %}"
+                   class="btn btn-ghost btn-sm" title="Voir">
+                  <i class="bi bi-eye-fill"></i>
+                </a>
+                {% if request.user.profile.is_admin %}
+                <a href="{% url 'resources:trainer_edit' trainer.pk %}"
+                   class="btn btn-ghost btn-sm" title="Modifier">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+                <form method="post" action="{% url 'resources:trainer_deactivate' trainer.pk %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-ghost btn-sm"
+                          title="{% if trainer.is_active %}Désactiver{% else %}Réactiver{% endif %}"
+                          onclick="return confirm('{% if trainer.is_active %}Désactiver ce formateur ?{% else %}Réactiver ce formateur ?{% endif %}')">
+                    <i class="bi bi-{% if trainer.is_active %}slash-circle{% else %}check-circle{% endif %}"></i>
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;"><i class="bi bi-person-fill-check"></i></div>
+      <p style="color:var(--text-muted);font-size:15px;margin:0 0 16px;">Aucun formateur enregistré.</p>
+      {% if request.user.profile.is_admin %}
+      <a href="{% url 'resources:trainer_create' %}" class="btn btn-amber">
+        <i class="bi bi-plus-lg"></i> Ajouter le premier formateur
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

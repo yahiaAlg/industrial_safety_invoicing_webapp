@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Changer le statut{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'formations:session_list' %}" style="color:var(--text-muted);text-decoration:none;">Sessions</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'formations:session_detail' session.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ session.formation.title|truncatechars:30 }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Changer le statut{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Changer le statut</h1>
+      <p>Session : <strong>{{ session.formation.title }}</strong> — {{ session.date_start|date:"d/m/Y" }}</p>
+    </div>
+    <a href="{% url 'formations:session_detail' session.pk %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-5 col-md-7">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-arrow-repeat"></i></div>
+          <h3>Transition de statut</h3>
+        </div>
+        <div class="isi-card-body">
+
+          <div class="mb-4 p-3" style="background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">Statut actuel</div>
+            {% if session.status == 'planned' %}
+              <span class="isi-badge blue"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Planifiée</span>
+            {% elif session.status == 'in_progress' %}
+              <span class="isi-badge amber"><i class="bi bi-circle-fill" style="font-size:7px;"></i> En cours</span>
+            {% endif %}
+          </div>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-4">
+              <label class="form-label" for="{{ form.status.id_for_label }}">
+                Nouveau statut <span style="color:var(--danger);">*</span>
+              </label>
+              <select name="{{ form.status.html_name }}" id="{{ form.status.id_for_label }}"
+                      class="form-select {% if form.status.errors %}is-invalid{% endif %}"
+                      id="id_status_select">
+                <option value="">— Sélectionner —</option>
+                {% for val, label in form.status.field.choices %}
+                <option value="{{ val }}" {% if form.status.value == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              {% if form.status.errors %}
+              <div class="invalid-feedback d-block">{{ form.status.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+            <div id="cancellation-section" style="display:none;">
+              <div class="section-divider"></div>
+              <div class="mb-4">
+                <label class="form-label" for="{{ form.cancellation_reason.id_for_label }}">
+                  Motif d'annulation <span style="color:var(--danger);">*</span>
+                </label>
+                <textarea name="{{ form.cancellation_reason.html_name }}" id="{{ form.cancellation_reason.id_for_label }}"
+                          class="form-control {% if form.cancellation_reason.errors %}is-invalid{% endif %}"
+                          rows="3" placeholder="Expliquez la raison de l'annulation…">{{ form.cancellation_reason.value|default:'' }}</textarea>
+                {% if form.cancellation_reason.errors %}
+                <div class="invalid-feedback d-block">{{ form.cancellation_reason.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-4">
+              <i class="bi bi-exclamation-circle-fill"></i>
+              <div>{{ form.non_field_errors|join:"<br>" }}</div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i> Confirmer
+              </button>
+              <a href="{% url 'formations:session_detail' session.pk %}" class="btn btn-ghost">Annuler</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const select = document.getElementById('id_status_select');
+  const section = document.getElementById('cancellation-section');
+  function toggleCancel() {
+    section.style.display = select.value === 'cancelled' ? 'block' : 'none';
+  }
+  select?.addEventListener('change', toggleCancel);
+  toggleCancel();
+</script>
+{% endblock %}

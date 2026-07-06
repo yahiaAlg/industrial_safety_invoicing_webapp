@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Annuler — {{ project.title }}{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'etudes:project_list' %}" style="color:var(--text-muted);text-decoration:none;">Études</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'etudes:project_detail' project.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ project.title|truncatechars:30 }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Annuler{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Annuler le projet</h1>
+      <p>{{ project.title }}</p>
+    </div>
+    <a href="{% url 'etudes:project_detail' project.pk %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon red"><i class="bi bi-x-circle-fill"></i></div>
+          <h3>Confirmer l'annulation</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="alert alert-danger mb-4">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div>Cette action marquera le projet comme <strong>Annulé</strong>. Le motif sera ajouté aux notes du projet.</div>
+          </div>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-4">
+              <label class="form-label" for="{{ form.reason.id_for_label }}">Motif d'annulation *</label>
+              <textarea name="{{ form.reason.html_name }}" id="{{ form.reason.id_for_label }}"
+                        class="form-control {% if form.reason.errors %}is-invalid{% endif %}" rows="4"
+                        placeholder="Précisez la raison de l'annulation : résiliation contractuelle, abandon client, force majeure…"
+                        required>{{ form.reason.value|default:'' }}</textarea>
+              {% if form.reason.errors %}
+              <div class="invalid-feedback d-block">{{ form.reason.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-4">
+              <i class="bi bi-exclamation-circle-fill"></i>
+              <div>{{ form.non_field_errors|join:"<br>" }}</div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-danger-soft"
+                      onclick="return confirm('Confirmer l\'annulation du projet ?')">
+                <i class="bi bi-x-circle-fill"></i> Confirmer l'annulation
+              </button>
+              <a href="{% url 'etudes:project_detail' project.pk %}" class="btn btn-ghost">Retour</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

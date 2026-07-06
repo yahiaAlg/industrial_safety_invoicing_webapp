@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} utilisateur{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'accounts:user_list' %}" style="color:var(--text-muted);text-decoration:none;">Utilisateurs</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ action }}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ action }} un utilisateur</h1>
+      <p>{% if action == "Créer" %}Créez un nouveau compte d'accès{% else %}Modifiez les informations du compte{% endif %}</p>
+    </div>
+    <a href="{% url 'accounts:user_list' %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  {% if is_self %}
+  <div class="alert alert-warning mb-4">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div>Vous modifiez <strong>votre propre compte</strong>. Soyez prudent avec le rôle et le statut.</div>
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+    <!-- Main form -->
+    <div class="col-lg-8">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-person-fill"></i></div>
+          <h3>Informations du compte</h3>
+        </div>
+        <div class="isi-card-body">
+          <form method="post" id="user-form" novalidate>
+            {% csrf_token %}
+
+            <!-- Identity -->
+            <div class="form-section-title">Identité</div>
+            <div class="row g-3 mb-4">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.first_name.id_for_label }}">Prénom</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-person"></i>
+                  {{ form.first_name }}
+                </div>
+                {% if form.first_name.errors %}
+                <div class="invalid-feedback d-block">{{ form.first_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.last_name.id_for_label }}">Nom</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-person"></i>
+                  {{ form.last_name }}
+                </div>
+                {% if form.last_name.errors %}
+                <div class="invalid-feedback d-block">{{ form.last_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Account -->
+            <div class="section-divider"></div>
+            <div class="form-section-title">Compte</div>
+            <div class="row g-3 mb-4">
+              {% if form.username %}
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.username.id_for_label }}">Nom d'utilisateur *</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-at"></i>
+                  {{ form.username }}
+                </div>
+                {% if form.username.errors %}
+                <div class="invalid-feedback d-block">{{ form.username.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              {% endif %}
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-envelope-fill"></i>
+                  {{ form.email }}
+                </div>
+                {% if form.email.errors %}
+                <div class="invalid-feedback d-block">{{ form.email.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.phone.id_for_label }}">Téléphone</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-telephone-fill"></i>
+                  {{ form.phone }}
+                </div>
+                {% if form.phone.errors %}
+                <div class="invalid-feedback d-block">{{ form.phone.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Password (create only) -->
+            {% if form.password1 %}
+            <div class="section-divider"></div>
+            <div class="form-section-title">Mot de passe</div>
+            <div class="row g-3 mb-4">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.password1.id_for_label }}">Mot de passe *</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-lock-fill"></i>
+                  {{ form.password1 }}
+                </div>
+                {% if form.password1.errors %}
+                <div class="invalid-feedback d-block">{{ form.password1.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.password2.id_for_label }}">Confirmer *</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-lock-fill"></i>
+                  {{ form.password2 }}
+                </div>
+                {% if form.password2.errors %}
+                <div class="invalid-feedback d-block">{{ form.password2.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- Non-field errors -->
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-3">
+              <i class="bi bi-exclamation-circle-fill"></i>
+              <div>{{ form.non_field_errors|join:"<br>" }}</div>
+            </div>
+            {% endif %}
+
+            {# Hidden role field — synced from the visual select in the right column #}
+            <input type="hidden" name="role" id="id_role_hidden">
+
+            <div class="d-flex gap-2 pt-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i> {{ action }} l'utilisateur
+              </button>
+              <a href="{% url 'accounts:user_list' %}" class="btn btn-ghost">Annuler</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column: Role & Status -->
+    <div class="col-lg-4">
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-shield-fill"></i></div>
+          <h3>Rôle & Accès</h3>
+        </div>
+        <div class="isi-card-body">
+          <label class="form-label" for="id_role_display">Rôle *</label>
+          <select id="id_role_display" class="form-select">
+            {% for val, lbl in form.role.field.choices %}
+            <option value="{{ val }}" {% if form.role.value == val %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+          {% if form.role.errors %}
+          <div class="invalid-feedback d-block">{{ form.role.errors|join:", " }}</div>
+          {% endif %}
+
+          <!-- Role descriptions -->
+          <div id="role-desc-admin" class="role-desc mt-3 p-3" style="background:rgba(245,158,11,.08);border-radius:8px;display:none;">
+            <div style="font-weight:600;font-size:13px;color:#92400e;margin-bottom:4px;">
+              <i class="bi bi-shield-fill-check"></i> Administrateur
+            </div>
+            <p style="font-size:12.5px;color:#78350f;margin:0;line-height:1.5;">
+              Accès complet : facturation, dépenses, rapports, configuration et gestion des utilisateurs.
+            </p>
+          </div>
+          <div id="role-desc-receptionist" class="role-desc mt-3 p-3" style="background:rgba(59,130,246,.08);border-radius:8px;display:none;">
+            <div style="font-weight:600;font-size:13px;color:#1e40af;margin-bottom:4px;">
+              <i class="bi bi-person-fill"></i> Réceptionniste
+            </div>
+            <p style="font-size:12.5px;color:#1e3a8a;margin:0;line-height:1.5;">
+              Saisie des données : clients, participants, inscriptions. Pas d'accès financier.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {% if form.is_active_profile is not None %}
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon green"><i class="bi bi-toggle-on"></i></div>
+          <h3>Statut du compte</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="form-check form-switch" style="padding-left:0;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              {{ form.is_active_profile }}
+              <label class="form-check-label" for="{{ form.is_active_profile.id_for_label }}" style="font-weight:500;font-size:14px;">
+                Compte actif
+              </label>
+            </div>
+            <p style="font-size:12px;color:#64748b;margin:8px 0 0;line-height:1.5;">
+              Un compte inactif ne peut plus se connecter au système.
+            </p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  // Ensure form fields get proper classes (includes fields linked via form= attribute)
+  document.querySelectorAll('#user-form input, #user-form select, #user-form textarea, [form="user-form"]').forEach(el => {
+    if (!el.classList.contains('form-control') && !el.classList.contains('form-select') && el.type !== 'checkbox') {
+      el.classList.add(el.tagName === 'SELECT' ? 'form-select' : 'form-control');
+    }
+  });
+  // Fix checkbox for is_active_profile
+  document.querySelectorAll('input[type="checkbox"]').forEach(el => {
+    el.classList.add('form-check-input');
+  });
+
+  // Sync visual role select -> hidden input inside the main form
+  const roleDisplay = document.getElementById('id_role_display');
+  const roleHidden  = document.getElementById('id_role_hidden');
+  function syncRole() {
+    if (roleDisplay && roleHidden) roleHidden.value = roleDisplay.value;
+  }
+  roleDisplay?.addEventListener('change', syncRole);
+  syncRole(); // run once on load
+
+  // Role description toggle
+  function updateRoleDesc() {
+    const val = roleDisplay?.value;
+    document.querySelectorAll('.role-desc').forEach(d => d.style.display = 'none');
+    if (val === 'admin') document.getElementById('role-desc-admin').style.display = 'block';
+    if (val === 'receptionist') document.getElementById('role-desc-receptionist').style.display = 'block';
+  }
+  roleDisplay?.addEventListener('change', updateRoleDesc);
+  updateRoleDesc();
+</script>
+{% endblock %}

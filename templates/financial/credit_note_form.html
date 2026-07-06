@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Créer un avoir{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:invoice_list' %}" style="color:var(--text-muted);text-decoration:none;">Factures</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:invoice_detail' invoice.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ invoice.reference }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Nouvel avoir{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Créer un avoir</h1>
+      <p>Facture {{ invoice.reference }} — {{ invoice.client.name }}</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <div class="col-lg-7">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon purple"><i class="bi bi-arrow-return-left"></i></div>
+          <h3>Avoir</h3>
+        </div>
+        <div class="isi-card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row g-3">
+
+              <div class="col-12">
+                <label class="form-label">{{ form.reason.label }}</label>
+                {{ form.reason }}
+                {% if form.reason.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.reason.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">{{ form.amount_ht.label }}</label>
+                {{ form.amount_ht }}
+                {% if form.amount_ht.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.amount_ht.errors|join:", " }}</div>
+                {% endif %}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  Maximum : {{ invoice.amount_ht|floatformat:2 }} DA HT
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex align-items-center" style="height:38px;gap:8px;">
+                  {{ form.is_full_reversal }}
+                  <label for="{{ form.is_full_reversal.id_for_label }}"
+                         style="font-size:13px;font-weight:500;margin:0;cursor:pointer;">
+                    {{ form.is_full_reversal.label }}
+                  </label>
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  Annule entièrement la facture.
+                </div>
+              </div>
+
+              {% if form.non_field_errors %}
+              <div class="col-12">
+                {% for error in form.non_field_errors %}
+                <div style="color:var(--danger);font-size:13px;display:flex;gap:8px;align-items:flex-start;">
+                  <i class="bi bi-exclamation-circle-fill" style="margin-top:2px;flex-shrink:0;"></i>
+                  {{ error }}
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i> Émettre l'avoir
+              </button>
+              <a href="{% url 'financial:invoice_detail' invoice.pk %}" class="btn btn-ghost">
+                <i class="bi bi-x-lg"></i> Annuler
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <!-- Invoice summary -->
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-receipt-cutoff"></i></div>
+          <h3>Facture d'origine</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="stat-label mb-1">Référence</div>
+              <div style="font-family:var(--font-head);font-size:16px;font-weight:700;">
+                {{ invoice.reference }}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Client</div>
+              <div style="font-weight:600;font-size:13.5px;">{{ invoice.client.name }}</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Montant HT</div>
+              <div style="font-family:var(--font-head);font-size:16px;font-weight:700;">
+                {{ invoice.amount_ht|floatformat:2 }} DA
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Total TTC</div>
+              <div style="font-family:var(--font-head);font-size:16px;font-weight:700;color:var(--accent);">
+                {{ invoice.amount_ttc|floatformat:2 }} DA
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

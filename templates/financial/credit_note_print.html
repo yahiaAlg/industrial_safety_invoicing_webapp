@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Avoir {{ credit_note.reference }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --accent: #f59e0b;
+      --danger: #ef4444;
+      --text-primary: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --font-head: 'Barlow Condensed', sans-serif;
+      --font-body: 'Barlow', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--text-primary);
+      background: #fff;
+      line-height: 1.5;
+    }
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 16mm 18mm;
+      display: flex;
+      flex-direction: column;
+    }
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid var(--danger);
+    }
+    .brand-logo { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 44px; height: 44px;
+      background: var(--danger);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; color: #fff;
+    }
+    .brand-name {
+      font-family: var(--font-head);
+      font-size: 22px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+    .brand-sub { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+    .doc-title-block { text-align: right; }
+    .doc-title {
+      font-family: var(--font-head);
+      font-size: 32px; font-weight: 700;
+      color: var(--danger);
+      text-transform: uppercase; letter-spacing: 1px; line-height: 1;
+    }
+    .doc-ref {
+      font-family: var(--font-head);
+      font-size: 18px; font-weight: 600;
+      color: var(--text-primary); margin-top: 4px;
+    }
+    .doc-date { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .parties-row { display: flex; gap: 24px; margin-bottom: 24px; }
+    .party-block { flex: 1; }
+    .party-label {
+      font-family: var(--font-head);
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.2px;
+      color: var(--text-muted); margin-bottom: 8px;
+      padding-bottom: 4px; border-bottom: 1px solid var(--border);
+    }
+    .party-name {
+      font-family: var(--font-head);
+      font-size: 16px; font-weight: 700; margin-bottom: 4px;
+    }
+    .party-detail { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+    .origin-box {
+      padding: 12px 16px;
+      background: rgba(239,68,68,.06);
+      border: 1px solid rgba(239,68,68,.2);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 12.5px;
+    }
+    .origin-box-label {
+      font-family: var(--font-head);
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--danger); margin-bottom: 4px;
+    }
+    .reason-box {
+      padding: 14px 16px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .reason-label {
+      font-family: var(--font-head);
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--text-muted); margin-bottom: 6px;
+    }
+    .totals-block { display: flex; justify-content: flex-end; margin-bottom: 24px; }
+    .totals-inner { min-width: 240px; }
+    .totals-row {
+      display: flex; justify-content: space-between;
+      padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12.5px;
+    }
+    .totals-row:last-child { border-bottom: none; }
+    .totals-row.grand {
+      background: var(--danger); padding: 10px 12px;
+      border-radius: 6px; margin-top: 6px;
+    }
+    .totals-row.grand span {
+      font-family: var(--font-head);
+      font-size: 18px; font-weight: 700; color: #fff;
+    }
+    .totals-row span:first-child { color: var(--text-muted); }
+    .totals-row.grand span:first-child { color: #fff; }
+    .doc-footer {
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 11px; color: var(--text-muted); line-height: 1.7;
+    }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
+      .page { padding: 10mm 14mm; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="no-print" style="position:fixed;top:16px;right:16px;display:flex;gap:8px;z-index:100;">
+  <a href="{% url 'financial:credit_note_detail' credit_note.pk %}"
+     style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
+            background:#fff;border:1px solid #e2e8f0;border-radius:8px;
+            font-family:'Barlow',sans-serif;font-size:13px;color:#64748b;text-decoration:none;">
+    ← Retour
+  </a>
+  <button onclick="window.print()"
+          style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
+                 background:#ef4444;border:none;border-radius:8px;cursor:pointer;
+                 font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;color:#fff;">
+    🖨 Imprimer
+  </button>
+</div>
+
+<div class="page">
+
+  <div class="doc-header">
+    <div class="brand-logo">
+      {% if institute.logo %}
+      <img src="{{ institute.logo.url }}" alt="Logo"
+           style="height:50px;max-width:120px;object-fit:contain;">
+      {% else %}
+      <div class="brand-icon">↩</div>
+      {% endif %}
+      <div>
+        <div class="brand-name">{{ institute.name|default:"ISI" }}</div>
+        <div class="brand-sub">Institut de Sécurité Industrielle</div>
+        {% if institute.address %}
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+          {{ institute.address }} — {{ institute.city }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="doc-title-block">
+      <div class="doc-title">Note de crédit</div>
+      <div class="doc-ref">{{ credit_note.reference }}</div>
+      <div class="doc-date">Émise le {{ credit_note.created_at|date:"d/m/Y" }}</div>
+      {% if credit_note.is_full_reversal %}
+      <div style="margin-top:8px;">
+        <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;
+                     border-radius:20px;font-size:11px;font-weight:600;
+                     background:rgba(239,68,68,.12);color:#991b1b;">
+          ✕ Annulation totale
+        </span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Parties -->
+  <div class="parties-row">
+    <div class="party-block">
+      <div class="party-label">Émetteur</div>
+      <div class="party-name">{{ institute.name }}</div>
+      <div class="party-detail">
+        {{ institute.address }}<br>
+        {{ institute.postal_code }} {{ institute.city }}<br>
+        {% if institute.phone %}Tél : {{ institute.phone }}<br>{% endif %}
+        {{ institute.email }}
+      </div>
+    </div>
+    <div class="party-block">
+      <div class="party-label">Client</div>
+      <div class="party-name">{{ credit_note.invoice.client.name }}</div>
+      <div class="party-detail">
+        {% if credit_note.invoice.client.address %}{{ credit_note.invoice.client.address }}<br>{% endif %}
+        {% if credit_note.invoice.client.postal_code or credit_note.invoice.client.city %}
+          {{ credit_note.invoice.client.postal_code }} {{ credit_note.invoice.client.city }}<br>
+        {% endif %}
+        {% if credit_note.invoice.client.phone %}Tél : {{ credit_note.invoice.client.phone }}{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Origin invoice -->
+  <div class="origin-box">
+    <div class="origin-box-label">En référence à la facture</div>
+    <strong>{{ credit_note.invoice.reference }}</strong>
+    du {{ credit_note.invoice.invoice_date|date:"d/m/Y" }} —
+    montant TTC : {{ credit_note.invoice.amount_ttc|floatformat:2 }} DA
+  </div>
+
+  <!-- Reason -->
+  {% if credit_note.reason %}
+  <div class="reason-box">
+    <div class="reason-label">Motif</div>
+    <div>{{ credit_note.reason }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Totals -->
+  <div class="totals-block">
+    <div class="totals-inner">
+      <div class="totals-row">
+        <span>Montant HT</span>
+        <span style="font-weight:600;color:var(--danger);">-{{ credit_note.amount_ht|floatformat:2 }} DA</span>
+      </div>
+      <div class="totals-row">
+        <span>TVA</span>
+        <span style="font-weight:600;color:var(--danger);">-{{ credit_note.amount_tva|floatformat:2 }} DA</span>
+      </div>
+      <div class="totals-row grand">
+        <span>Net à créditer TTC</span>
+        <span>-{{ credit_note.amount_ttc|floatformat:2 }} DA</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    {{ institute.invoice_footer_text|linebreaksbr }}
+    {% if institute.director_name %}
+    <div style="text-align:right;margin-top:32px;">
+      {% if institute.director_signature %}
+      <img src="{{ institute.director_signature.url }}" alt="Signature"
+           style="height:50px;max-width:120px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;">
+      {% else %}
+      <div style="height:40px;"></div>
+      {% endif %}
+      <div style="font-weight:600;color:var(--text-primary);">{{ institute.director_name }}</div>
+      <div style="font-size:11px;color:var(--text-muted);">{{ institute.director_title }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+</body>
+</html>

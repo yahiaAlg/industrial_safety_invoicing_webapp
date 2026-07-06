@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Clients inactifs{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:top_clients_report' %}" style="color:var(--text-muted);text-decoration:none;">Clients</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Inactifs{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Clients inactifs</h1><p>Clients sans activité depuis {{ months }} mois (depuis {{ cutoff|date:"d/m/Y" }})</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Inactifs depuis (mois)</label><input type="number" name="months" value="{{ months }}" class="form-control" style="width:100px;min-width:80px;" min="1" max="60"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="isi-card fade-up-delay-1">
+    <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-building-fill"></i></div><h3>{{ clients.count }} client(s) inactif(s)</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>Client</th><th>Secteur</th><th>Dernière session</th><th>Dernier projet</th><th>Dernière facture</th><th style="text-align:right;">Actions</th></tr></thead>
+        <tbody>
+          {% for c in clients %}
+          <tr>
+            <td><a href="{% url 'clients:client_detail' c.pk %}" style="font-weight:600;color:var(--text-primary);text-decoration:none;">{{ c.name|truncatechars:28 }}</a><div style="font-size:12px;color:#64748b;">{{ c.city|default:"" }}</div></td>
+            <td style="color:#64748b;font-size:13px;">{{ c.activity_sector|default:"—"|truncatechars:22 }}</td>
+            <td style="color:#94a3b8;font-size:13px;">{{ c.last_session|date:"d/m/Y"|default:"Jamais" }}</td>
+            <td style="color:#94a3b8;font-size:13px;">{{ c.last_project|date:"d/m/Y"|default:"Jamais" }}</td>
+            <td style="color:#94a3b8;font-size:13px;">{{ c.last_invoice|date:"d/m/Y"|default:"Jamais" }}</td>
+            <td style="text-align:right;"><a href="{% url 'clients:client_detail' c.pk %}" class="btn btn-ghost btn-sm"><i class="bi bi-eye-fill"></i></a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6"><div class="text-center" style="padding:40px;"><div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-check-circle"></i></div><p style="color:#64748b;margin:0;">Aucun client inactif trouvé.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

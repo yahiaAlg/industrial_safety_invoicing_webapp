@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} — Ligne de facturation{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:invoice_list' %}" style="color:var(--text-muted);text-decoration:none;">Factures</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:invoice_detail' invoice.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ invoice.reference|default:invoice.proforma_reference }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ action }}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ action }}</h1>
+      <p style="display:flex;align-items:center;gap:8px;">
+        {{ invoice.reference|default:invoice.proforma_reference }} — {{ invoice.client.name }}
+        {% if invoice.invoice_type == 'formation' %}
+          <span class="badge badge-blue"><i class="bi bi-mortarboard"></i> Facturation Formation</span>
+        {% else %}
+          <span class="badge badge-purple"><i class="bi bi-diagram-3"></i> Facturation Étude</span>
+        {% endif %}
+      </p>
+    </div>
+    <a href="{% url 'financial:invoice_detail' invoice.pk %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ── Main column ───────────────────────────────────── -->
+    <div class="col-lg-7">
+
+      <!-- Source Selector -->
+      <div class="isi-card mb-4" id="source-card">
+        <div class="isi-card-header">
+          <div class="card-icon {% if invoice.invoice_type == 'formation' %}blue{% else %}purple{% endif %}">
+            <i class="bi bi-{% if invoice.invoice_type == 'formation' %}mortarboard{% else %}diagram-3{% endif %}"></i>
+          </div>
+          <h3>
+            {% if invoice.invoice_type == 'formation' %}Choisir une formation du catalogue
+            {% else %}Choisir un projet d'étude{% endif %}
+          </h3>
+        </div>
+        <div class="isi-card-body">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+            Sélectionnez {% if invoice.invoice_type == 'formation' %}une formation{% else %}un projet{% endif %}
+            pour préremplir la désignation et le prix. Vous pouvez tout modifier après.
+          </p>
+
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+
+            <!-- ── Dropdown select (populated server-side) ── -->
+            <div style="flex:1;">
+              <select id="source-select" class="form-control" style="width:100%;">
+                <option value="">— Sélectionner {% if invoice.invoice_type == 'formation' %}une formation{% else %}un projet{% endif %} —</option>
+                {% if invoice.invoice_type == 'formation' %}
+                  {% for f in source_list %}
+                  <option value="{{ f.pk }}"
+                          data-title="{{ f.title|escapejs }}"
+                          data-price="{{ f.base_price|default:'0' }}"
+                          data-days="{{ f.duration_days|default:'1' }}"
+                  >{{ f.title }}{% if f.base_price and f.base_price > 0 %} — {{ f.base_price|floatformat:0 }} DA{% endif %}</option>
+                  {% empty %}
+                  <option disabled>Aucune formation active</option>
+                  {% endfor %}
+                {% else %}
+                  {% for p in source_list %}
+                  <option value="{{ p.pk }}"
+                          data-title="{{ p.title|escapejs }}"
+                          data-budget="{{ p.budget|default:'0' }}"
+                          data-type="{{ p.project_type|default:''|escapejs }}"
+                  >{{ p.title }}{% if p.client %} ({{ p.client.name }}){% endif %}</option>
+                  {% empty %}
+                  <option disabled>Aucun projet actif</option>
+                  {% endfor %}
+                {% endif %}
+              </select>
+            </div>
+
+            <!-- ── Create new button ── -->
+            {% if invoice.invoice_type == 'formation' %}
+            <a href="{% url 'formations:formation_create' %}" target="_blank" class="btn btn-ghost" style="white-space:nowrap;">
+              <i class="bi bi-plus-lg"></i> Nouvelle formation
+            </a>
+            {% else %}
+            <a href="{% url 'etudes:project_create' %}" target="_blank" class="btn btn-ghost" style="white-space:nowrap;">
+              <i class="bi bi-plus-lg"></i> Nouveau projet
+            </a>
+            {% endif %}
+          </div>
+
+          <!-- Selected badge -->
+          <div id="selected-source" style="display:none;margin-top:10px;">
+            <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;
+                        background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);
+                        border-radius:20px;font-size:12.5px;font-weight:600;">
+              <i class="bi bi-check-circle-fill" style="color:var(--accent);"></i>
+              <span id="selected-label"></span>
+              <button type="button" id="clear-source"
+                      style="background:none;border:none;cursor:pointer;color:#64748b;font-size:14px;line-height:1;padding:0 0 0 4px;">×</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Item Form -->
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-list-ul"></i></div>
+          <h3>Détails de la ligne</h3>
+        </div>
+        <div class="isi-card-body">
+          <form method="post" novalidate id="item-form">
+            {% csrf_token %}
+            <div class="row g-3">
+
+              <div class="col-12">
+                <label class="form-label" for="{{ form.description.id_for_label }}">Désignation de la prestation *</label>
+                {{ form.description }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  {% if invoice.invoice_type == 'formation' %}
+                    Ex. : Formation Sécurité Incendie – Module de base &nbsp;|&nbsp; Formation Travaux en Hauteur – 3 jours
+                  {% else %}
+                    Ex. : Audit SST – Site Sonatrach Arzew &nbsp;|&nbsp; Étude de risques ATEX – Phase diagnostic
+                  {% endif %}
+                </div>
+                {% if form.description.errors %}<div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.description.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="{{ form.pricing_mode.id_for_label }}">Mode de tarification *</label>
+                {{ form.pricing_mode }}
+                {% if form.pricing_mode.errors %}<div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.pricing_mode.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-6" id="row-nb-persons">
+                <label class="form-label" id="label-nb-persons" for="{{ form.nb_persons.id_for_label }}">Nombre de personnes *</label>
+                {{ form.nb_persons }}
+                {% if form.nb_persons.errors %}<div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.nb_persons.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-6" id="row-nb-days">
+                <label class="form-label" for="{{ form.nb_days.id_for_label }}">Nombre de jours *</label>
+                {{ form.nb_days }}
+                {% if form.nb_days.errors %}<div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.nb_days.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.unit_price_ht.id_for_label }}">Prix unitaire HT (DA) *</label>
+                {{ form.unit_price_ht }}
+                <div id="unit-hint" style="font-size:11.5px;color:#94a3b8;margin-top:4px;"></div>
+                {% if form.unit_price_ht.errors %}<div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.unit_price_ht.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.discount_percent.id_for_label }}">Remise (%)</label>
+                {{ form.discount_percent }}
+                {% if form.discount_percent.errors %}<div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.discount_percent.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.order.id_for_label }}">Ordre d'affichage</label>
+                {{ form.order }}
+              </div>
+
+              <!-- Live total preview -->
+              <div class="col-12">
+                <div style="padding:14px 16px;background:var(--accent-soft);border-radius:8px;
+                            border:1px solid rgba(245,158,11,.25);display:flex;align-items:center;justify-content:space-between;">
+                  <div>
+                    <div class="stat-label mb-1">Total HT estimé</div>
+                    <div style="font-size:11.5px;color:#92400e;" id="formula-display">—</div>
+                  </div>
+                  <div id="total-preview" style="font-family:var(--font-head);font-size:26px;font-weight:700;color:var(--accent);">—</div>
+                </div>
+              </div>
+
+              {% if form.non_field_errors %}
+              <div class="col-12">
+                {% for error in form.non_field_errors %}
+                <div style="color:var(--danger);font-size:13px;display:flex;gap:8px;align-items:flex-start;">
+                  <i class="bi bi-exclamation-circle-fill" style="margin-top:2px;flex-shrink:0;"></i> {{ error }}
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i>
+                {% if item %}Enregistrer les modifications{% else %}Ajouter la ligne{% endif %}
+              </button>
+              <a href="{% url 'financial:invoice_detail' invoice.pk %}" class="btn btn-ghost">
+                <i class="bi bi-x-lg"></i> Annuler
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sidebar ───────────────────────────────────────── -->
+    <div class="col-lg-5">
+
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon green"><i class="bi bi-bar-chart-fill"></i></div>
+          <h3>Totaux de la facture</h3>
+        </div>
+        <div class="isi-card-body">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 12px;background:#f8fafc;border-radius:8px;">
+              <span style="color:var(--text-muted);">Total HT actuel</span>
+              <span style="font-weight:600;">{{ invoice.amount_ht|floatformat:2 }} DA</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 12px;background:#f8fafc;border-radius:8px;">
+              <span style="color:var(--text-muted);">TVA ({% widthratio invoice.tva_rate 1 100 %}%)</span>
+              <span style="font-weight:600;">{{ invoice.amount_tva|floatformat:2 }} DA</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:15px;padding:10px 12px;
+                        background:var(--accent-soft);border-radius:8px;border:1px solid rgba(245,158,11,.25);">
+              <span style="font-family:var(--font-head);font-weight:700;">Total TTC</span>
+              <span style="font-family:var(--font-head);font-weight:700;color:var(--accent);">{{ invoice.amount_ttc|floatformat:2 }} DA</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-info-circle-fill"></i></div>
+          <h3>Comment remplir une ligne ?</h3>
+        </div>
+        <div class="isi-card-body">
+          <div style="padding:10px 12px;background:rgba(245,158,11,.08);border-radius:8px;margin-bottom:12px;font-size:12.5px;">
+            <i class="bi bi-lightbulb-fill" style="color:var(--accent);"></i>
+            <strong> Principe</strong><br>
+            Chaque ligne représente <strong>une prestation distincte</strong> facturée au client — une formation, un module, un livrable d'étude…
+            Une facture peut contenir <strong>plusieurs lignes</strong>.
+          </div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Modes de tarification</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="padding:8px 12px;background:#f8fafc;border-radius:8px;">
+              <div style="font-weight:600;font-size:12.5px;"><i class="bi bi-person"></i> Par personne</div>
+              <div style="font-size:11.5px;color:var(--text-muted);">PU × Nb participants</div>
+              <div style="font-size:11px;color:#94a3b8;font-style:italic;">Formation SST — 15 participants à 3 500 DA</div>
+            </div>
+            <div style="padding:8px 12px;background:#f8fafc;border-radius:8px;">
+              <div style="font-weight:600;font-size:12.5px;"><i class="bi bi-calendar-day"></i> Par jour</div>
+              <div style="font-size:11.5px;color:var(--text-muted);">PU × Nb jours</div>
+              <div style="font-size:11px;color:#94a3b8;font-style:italic;">Mission audit — 5 jours à 45 000 DA/j</div>
+            </div>
+            <div style="padding:8px 12px;background:#f8fafc;border-radius:8px;">
+              <div style="font-weight:600;font-size:12.5px;"><i class="bi bi-person"></i>×<i class="bi bi-calendar-day"></i> Pers. × Jours</div>
+              <div style="font-size:11.5px;color:var(--text-muted);">(PU ÷ Nb personnes) × Nb jours</div>
+              <div style="font-size:11px;color:#94a3b8;font-style:italic;">Ex. tarif groupe 24 000 DA, 12 pers, 3j → (24 000 ÷ 12) × 3</div>
+            </div>
+            <div style="padding:8px 12px;background:#f8fafc;border-radius:8px;">
+              <div style="font-weight:600;font-size:12.5px;"><i class="bi bi-tag"></i> Forfait</div>
+              <div style="font-size:11.5px;color:var(--text-muted);">Prix fixe global</div>
+              <div style="font-size:11px;color:#94a3b8;font-style:italic;">Étude de risques ATEX — forfait 280 000 DA</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  const modeSelect     = document.getElementById('id_pricing_mode');
+  const personsRow     = document.getElementById('row-nb-persons');
+  const daysRow        = document.getElementById('row-nb-days');
+  const personsInput   = document.getElementById('id_nb_persons');
+  const daysInput      = document.getElementById('id_nb_days');
+  const priceInput     = document.getElementById('id_unit_price_ht');
+  const discountInput  = document.getElementById('id_discount_percent');
+  const descInput      = document.getElementById('id_description');
+  const totalPreview   = document.getElementById('total-preview');
+  const formulaDisplay = document.getElementById('formula-display');
+  const unitHint       = document.getElementById('unit-hint');
+
+  const sourceSelect  = document.getElementById('source-select');
+  const selectedBadge = document.getElementById('selected-source');
+  const selectedLabel = document.getElementById('selected-label');
+  const clearBtn      = document.getElementById('clear-source');
+
+  const personsLabel  = document.getElementById('label-nb-persons');
+
+  const invoiceType = '{{ invoice.invoice_type }}';
+
+  // ── Visibility ─────────────────────────────────────────────────────────
+  const hints = {
+    per_person:         'Prix par participant',
+    per_day:            'Prix par journée',
+    per_person_per_day: 'Prix par participant et par jour',
+    per_unit:           'Prix par unité (étude réalisée)',
+    forfait:            'Prix forfaitaire global',
+  };
+
+  function updateVisibility() {
+    const mode = modeSelect.value;
+    personsRow.style.display = (mode === 'per_person' || mode === 'per_person_per_day' || mode === 'per_unit') ? '' : 'none';
+    daysRow.style.display    = (mode === 'per_day'    || mode === 'per_person_per_day') ? '' : 'none';
+    if (personsLabel) {
+      personsLabel.textContent = (mode === 'per_unit') ? "Nombre d'unités (études) *" : 'Nombre de personnes *';
+    }
+    unitHint.textContent     = hints[mode] || '';
+    recalculate();
+  }
+
+  // ── Calculator ─────────────────────────────────────────────────────────
+  function fmt(n) { return n.toLocaleString('fr-DZ', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+  function recalculate() {
+    const mode     = modeSelect.value;
+    const price    = parseFloat(priceInput.value)    || 0;
+    const persons  = parseInt(personsInput.value)  || 1;
+    const days     = parseInt(daysInput.value)     || 1;
+    const discount = parseFloat(discountInput.value) || 0;
+    let base = 0, formula = '';
+    if (mode === 'per_person')              { base = price * persons;        formula = `${fmt(price)} × ${persons} pers.`; }
+    else if (mode === 'per_day')            { base = price * days;           formula = `${fmt(price)} × ${days} j.`; }
+    else if (mode === 'per_person_per_day') { base = (price / persons) * days; formula = `(${fmt(price)} ÷ ${persons} pers.) × ${days} j.`; }
+    else if (mode === 'per_unit')           { base = price * persons;        formula = `${fmt(price)} × ${persons} unité(s)`; }
+    else                                    { base = price;                  formula = `Forfait : ${fmt(price)}`; }
+    const total = base * (1 - discount / 100);
+    if (discount > 0) formula += ` − ${discount}%`;
+    totalPreview.textContent   = isNaN(total) ? '—' : fmt(total) + ' DA';
+    formulaDisplay.textContent = formula;
+  }
+
+  // ── Source select — apply selection ────────────────────────────────────
+  sourceSelect.addEventListener('change', function () {
+    const opt = this.options[this.selectedIndex];
+    if (!opt || !opt.value) {
+      selectedBadge.style.display = 'none';
+      return;
+    }
+
+    if (invoiceType === 'formation') {
+      const title = opt.dataset.title || opt.text;
+      const price = parseFloat(opt.dataset.price) || 0;
+      const days  = parseInt(opt.dataset.days)    || 1;
+
+      if (descInput) descInput.value = title;
+      if (days > 1) {
+        modeSelect.value = 'per_person_per_day';
+        if (daysInput) daysInput.value = days;
+      } else {
+        modeSelect.value = 'per_person';
+      }
+      if (price > 0) priceInput.value = price.toFixed(2);
+
+    } else {
+      // étude / project
+      const title  = opt.dataset.title  || opt.text;
+      const budget = parseFloat(opt.dataset.budget) || 0;
+
+      if (descInput) descInput.value = title;
+      modeSelect.value = 'forfait';
+      if (budget > 0) priceInput.value = budget.toFixed(2);
+    }
+
+    updateVisibility();
+    selectedLabel.textContent   = opt.dataset.title || opt.text;
+    selectedBadge.style.display = 'block';
+  });
+
+  // ── Clear button ────────────────────────────────────────────────────────
+  clearBtn.addEventListener('click', () => {
+    sourceSelect.value          = '';
+    selectedBadge.style.display = 'none';
+  });
+
+  // ── Init ───────────────────────────────────────────────────────────────
+  modeSelect.addEventListener('change', updateVisibility);
+  [priceInput, personsInput, daysInput, discountInput].forEach(el => el && el.addEventListener('input', recalculate));
+  updateVisibility();
+})();
+</script>
+{% endblock %}

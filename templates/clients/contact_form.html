@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'clients:client_list' %}" style="color:var(--text-muted);text-decoration:none;">Clients</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'clients:client_detail' client.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ client.name }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ action }}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ action }}</h1>
+      <p>Client : <strong>{{ client.name }}</strong></p>
+    </div>
+    <a href="{% url 'clients:client_detail' client.pk %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-person-fill"></i></div>
+          <h3>Informations du contact</h3>
+        </div>
+        <div class="isi-card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-section-title">Identité</div>
+            <div class="row g-3 mb-4">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.first_name.id_for_label }}">Prénom</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-person"></i>
+                  <input type="text" name="{{ form.first_name.html_name }}"
+                         id="{{ form.first_name.id_for_label }}"
+                         class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
+                         value="{{ form.first_name.value|default:'' }}">
+                </div>
+                {% if form.first_name.errors %}
+                <div class="invalid-feedback d-block">{{ form.first_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.last_name.id_for_label }}">Nom</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-person"></i>
+                  <input type="text" name="{{ form.last_name.html_name }}"
+                         id="{{ form.last_name.id_for_label }}"
+                         class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
+                         value="{{ form.last_name.value|default:'' }}">
+                </div>
+                {% if form.last_name.errors %}
+                <div class="invalid-feedback d-block">{{ form.last_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="{{ form.job_title.id_for_label }}">Fonction</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-briefcase-fill"></i>
+                  <input type="text" name="{{ form.job_title.html_name }}"
+                         id="{{ form.job_title.id_for_label }}"
+                         class="form-control"
+                         value="{{ form.job_title.value|default:'' }}"
+                         placeholder="Ex. Directeur technique, Responsable HSE…">
+                </div>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="form-section-title">Coordonnées</div>
+            <div class="row g-3 mb-4">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.phone.id_for_label }}">Téléphone</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-telephone-fill"></i>
+                  <input type="text" name="{{ form.phone.html_name }}"
+                         id="{{ form.phone.id_for_label }}"
+                         class="form-control"
+                         value="{{ form.phone.value|default:'' }}">
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-envelope-fill"></i>
+                  <input type="email" name="{{ form.email.html_name }}"
+                         id="{{ form.email.id_for_label }}"
+                         class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                         value="{{ form.email.value|default:'' }}">
+                </div>
+                {% if form.email.errors %}
+                <div class="invalid-feedback d-block">{{ form.email.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="form-section-title">Notes</div>
+            <div class="mb-4">
+              <textarea name="{{ form.notes.html_name }}" id="{{ form.notes.id_for_label }}"
+                        class="form-control" rows="3"
+                        placeholder="Informations complémentaires sur ce contact…">{{ form.notes.value|default:'' }}</textarea>
+            </div>
+
+            <!-- Primary contact toggle -->
+            <div class="mb-4 p-3" style="background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);">
+              <div class="form-check form-switch" style="padding-left:0;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <input class="form-check-input" type="checkbox"
+                         name="{{ form.is_primary.html_name }}"
+                         id="{{ form.is_primary.id_for_label }}"
+                         {% if form.is_primary.value %}checked{% endif %}
+                         style="width:40px;height:22px;">
+                  <label class="form-check-label" for="{{ form.is_primary.id_for_label }}"
+                         style="font-weight:600;font-size:14px;">
+                    <i class="bi bi-star-fill" style="color:var(--accent);font-size:13px;"></i>
+                    Contact principal
+                  </label>
+                </div>
+                <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;line-height:1.5;">
+                  Un seul contact principal par client. Activer ceci désactivera l'éventuel contact principal actuel.
+                </p>
+              </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-4">
+              <i class="bi bi-exclamation-circle-fill"></i>
+              <div>{{ form.non_field_errors|join:"<br>" }}</div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i>
+                {% if form.instance.pk %}Enregistrer les modifications{% else %}Ajouter le contact{% endif %}
+              </button>
+              <a href="{% url 'clients:client_detail' client.pk %}" class="btn btn-ghost">Annuler</a>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

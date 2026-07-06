@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Occupation des salles{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:dashboard' %}" style="color:var(--text-muted);text-decoration:none;">Rapports</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Salles{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Taux d'occupation des salles</h1><p>Utilisation des salles de formation sur la période</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="isi-card mb-4">
+    <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-bar-chart-fill"></i></div><h3>Occupation par salle</h3></div>
+    <div class="isi-card-body"><div style="position:relative;height:220px;"><canvas id="chartRooms"></canvas></div></div>
+  </div>
+  <div class="isi-card">
+    <div class="isi-card-header"><div class="card-icon blue"><i class="bi bi-door-open-fill"></i></div><h3>Détail — Période de {{ period_days }} jours</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>Salle</th><th style="text-align:center;">Sessions</th><th style="text-align:center;">Jours réservés</th><th style="text-align:right;">Taux d'occupation</th></tr></thead>
+        <tbody>
+          {% for r in data %}
+          <tr>
+            <td><a href="{% url 'resources:room_detail' r.room.pk %}" style="font-weight:600;color:var(--text-primary);text-decoration:none;">{{ r.room.name|truncatechars:30 }}</a><div style="font-size:12px;color:#64748b;">Capacité : {{ r.room.capacity }} pers.</div></td>
+            <td style="text-align:center;font-weight:600;">{{ r.session_count }}</td>
+            <td style="text-align:center;">{{ r.booked_days }} / {{ period_days }}</td>
+            <td style="text-align:right;">
+              <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;">
+                <div style="width:80px;height:6px;background:#e2e8f0;border-radius:3px;"><div style="width:{% if r.occupancy_rate > 100 %}100{% else %}{{ r.occupancy_rate|floatformat:0 }}{% endif %}%;height:6px;background:{% if r.occupancy_rate >= 70 %}#10b981{% elif r.occupancy_rate >= 40 %}#f59e0b{% else %}#94a3b8{% endif %};border-radius:3px;"></div></div>
+                <span class="isi-badge {% if r.occupancy_rate >= 70 %}green{% elif r.occupancy_rate >= 40 %}amber{% else %}gray{% endif %}" style="min-width:46px;justify-content:center;">{{ r.occupancy_rate }}%</span>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4"><div class="text-center" style="padding:40px;"><div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-door-open"></i></div><p style="color:#64748b;margin:0;">Aucune salle trouvée.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+const roomData = [{% for r in data %}{ name: "{{ r.room.name|truncatechars:18|escapejs }}", rate: {{ r.occupancy_rate|default:0|stringformat:".2f" }} },{% endfor %}];
+if (roomData.length) {
+  new Chart(document.getElementById('chartRooms'), {
+    type: 'bar',
+    data: {
+      labels: roomData.map(d => d.name),
+      datasets: [{ label: "Taux d'occupation (%)", data: roomData.map(d => d.rate), backgroundColor: roomData.map(d => d.rate >= 70 ? 'rgba(16,185,129,.3)' : d.rate >= 40 ? 'rgba(245,158,11,.3)' : 'rgba(148,163,184,.3)'), borderColor: roomData.map(d => d.rate >= 70 ? '#10b981' : d.rate >= 40 ? '#f59e0b' : '#94a3b8'), borderWidth: 2, borderRadius: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` Occupation : ${ctx.raw}%` } } }, scales: { x: { grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Barlow', size: 11 } } }, y: { max: 100, grid: { color: '#e2e8f0' }, ticks: { color: '#64748b', font: { family: 'Barlow', size: 11 }, callback: v => `${v}%` } } } }
+  });
+}
+</script>
+{% endblock %}

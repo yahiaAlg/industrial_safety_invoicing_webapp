@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}{% if equipment %}Modifier {{ equipment.name }}{% else %}Nouvel équipement{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'resources:equipment_list' %}" style="color:var(--text-muted);text-decoration:none;">Équipements</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{% if equipment %}Modifier{% else %}Nouvel équipement{% endif %}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{% if equipment %}Modifier l'équipement{% else %}Nouvel équipement{% endif %}</h1>
+      <p>{% if equipment %}{{ equipment.name }} — {{ equipment.category }}{% else %}Ajouter un équipement à l'inventaire{% endif %}</p>
+    </div>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="row g-4">
+
+      <!-- ── Main form ──────────────────────────────────────── -->
+      <div class="col-lg-8">
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-tools"></i></div>
+            <h3>Informations générales</h3>
+          </div>
+          <div class="isi-card-body">
+
+            <div class="form-section-title">Identification</div>
+            <div class="row g-3 mb-3">
+              <div class="col-sm-8">
+                <label class="form-label" for="{{ form.name.id_for_label }}">Nom de l'équipement *</label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.category.id_for_label }}">Catégorie *</label>
+                {{ form.category }}
+                {% if form.category.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.category.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.condition.id_for_label }}">État</label>
+                {{ form.condition }}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.status.id_for_label }}">Statut</label>
+                {{ form.status }}
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="{{ form.location.id_for_label }}">Emplacement</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-geo-alt-fill"></i>
+                  {{ form.location }}
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Pièce ou lieu de stockage habituel de cet équipement.</div>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title">Achat & valeur</div>
+            <div class="row g-3 mb-3">
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.purchase_date.id_for_label }}">Date d'achat *</label>
+                {{ form.purchase_date }}
+                {% if form.purchase_date.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.purchase_date.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.purchase_cost.id_for_label }}">Coût d'achat (DA) *</label>
+                {{ form.purchase_cost }}
+                {% if form.purchase_cost.errors %}
+                  <div class="text-danger" style="font-size:12px;margin-top:4px;">{{ form.purchase_cost.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="{{ form.current_value.id_for_label }}">Valeur actuelle (DA)</label>
+                {{ form.current_value }}
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title">Maintenance</div>
+            <div class="row g-3 mb-3">
+              <div class="col-sm-6">
+                <label class="form-label" for="{{ form.maintenance_interval_days.id_for_label }}">Intervalle de maintenance (jours)</label>
+                {{ form.maintenance_interval_days }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Ex. 180 = maintenance tous les 6 mois.</div>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title">Notes</div>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.notes.id_for_label }}">Notes internes</label>
+                {{ form.notes }}
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Save bar -->
+          <div style="padding:16px 24px;border-top:1px solid var(--card-border);">
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i> {% if equipment %}Enregistrer les modifications{% else %}Créer l'équipement{% endif %}
+              </button>
+              <a href="{% if equipment %}{% url 'resources:equipment_detail' equipment.pk %}{% else %}{% url 'resources:equipment_list' %}{% endif %}"
+                 class="btn btn-ghost">
+                <i class="bi bi-x-lg"></i> Annuler
+              </a>
+            </div>
+          </div>
+        </div>
+      </div><!-- /col-lg-8 -->
+
+      <!-- ── Sidebar ──────────────────────────────────────── -->
+      <div class="col-lg-4">
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-info-circle-fill"></i></div>
+            <h3>Aide</h3>
+          </div>
+          <div class="isi-card-body">
+            <p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0 0 8px;">
+              <strong style="color:var(--text-primary);">État</strong> reflète la condition physique de l'équipement.
+            </p>
+            <p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0 0 8px;">
+              <strong style="color:var(--text-primary);">Statut</strong> reflète sa disponibilité opérationnelle.
+            </p>
+            <p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0;">
+              L'intervalle de maintenance détermine quand une alerte est générée automatiquement.
+            </p>
+          </div>
+        </div>
+
+        {% if equipment %}
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon purple"><i class="bi bi-bar-chart-fill"></i></div>
+            <h3>Statistiques</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-6">
+                <div class="stat-label mb-1">Utilisations</div>
+                <div class="stat-value" style="font-size:18px;">{{ equipment.usage_count }}</div>
+              </div>
+              <div class="col-6">
+                <div class="stat-label mb-1">Heures totales</div>
+                <div class="stat-value" style="font-size:18px;">{{ equipment.total_usage_hours }}</div>
+              </div>
+              <div class="col-12">
+                <div class="stat-label mb-1">Dernière utilisation</div>
+                <div style="font-size:13.5px;font-weight:500;">
+                  {% if equipment.last_used_date %}{{ equipment.last_used_date|date:"d/m/Y" }}{% else %}—{% endif %}
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="stat-label mb-1">Prochaine maintenance</div>
+                <div style="font-size:13.5px;font-weight:500;
+                            color:{% if equipment.is_maintenance_due %}var(--danger){% else %}var(--text-primary){% endif %};">
+                  {{ equipment.next_maintenance_due|date:"d/m/Y" }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div><!-- /col-lg-4 -->
+
+    </div><!-- /row -->
+  </form>
+</div>
+{% endblock %}

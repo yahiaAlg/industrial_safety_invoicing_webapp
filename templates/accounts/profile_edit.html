@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier le profil{% endblock %}
+{% block breadcrumb_active %}Modifier le profil{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Modifier le profil</h1>
+      <p>Mettez à jour vos informations personnelles</p>
+    </div>
+    <a href="{% url 'accounts:profile' %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-person-fill"></i></div>
+          <h3>Informations personnelles</h3>
+        </div>
+        <div class="isi-card-body">
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <div class="form-section-title">Identité</div>
+            <div class="row g-3 mb-4">
+              <div class="col-sm-6">
+                <label class="form-label">Prénom</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-person"></i>
+                  <input type="text" name="first_name" id="id_first_name"
+                         class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
+                         value="{{ form.first_name.value|default:'' }}">
+                </div>
+                {% if form.first_name.errors %}<div class="invalid-feedback d-block">{{ form.first_name.errors|join:", " }}</div>{% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Nom</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-person"></i>
+                  <input type="text" name="last_name" id="id_last_name"
+                         class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
+                         value="{{ form.last_name.value|default:'' }}">
+                </div>
+                {% if form.last_name.errors %}<div class="invalid-feedback d-block">{{ form.last_name.errors|join:", " }}</div>{% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Email</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-envelope-fill"></i>
+                  <input type="email" name="email" id="id_email"
+                         class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                         value="{{ form.email.value|default:'' }}">
+                </div>
+                {% if form.email.errors %}<div class="invalid-feedback d-block">{{ form.email.errors|join:", " }}</div>{% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Téléphone</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-telephone-fill"></i>
+                  <input type="text" name="phone" id="id_phone"
+                         class="form-control {% if form.phone.errors %}is-invalid{% endif %}"
+                         value="{{ form.phone.value|default:'' }}">
+                </div>
+                {% if form.phone.errors %}<div class="invalid-feedback d-block">{{ form.phone.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="form-section-title">Préférences</div>
+            <div class="row g-3 mb-4">
+              <div class="col-sm-6">
+                <label class="form-label">Langue</label>
+                <select name="language" id="id_language"
+                        class="form-select {% if form.language.errors %}is-invalid{% endif %}">
+                  <option value="fr" {% if form.language.value == 'fr' %}selected{% endif %}>🇫🇷 Français</option>
+                  <option value="en" {% if form.language.value == 'en' %}selected{% endif %}>🇬🇧 English</option>
+                  <option value="ar" {% if form.language.value == 'ar' %}selected{% endif %}>🇩🇿 العربية</option>
+                </select>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Photo de profil</label>
+                <input type="file" name="avatar" id="id_avatar"
+                       class="form-control {% if form.avatar.errors %}is-invalid{% endif %}"
+                       accept="image/*">
+                {% if form.avatar.errors %}<div class="invalid-feedback d-block">{{ form.avatar.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-3">
+              <i class="bi bi-exclamation-circle-fill"></i>
+              <div>{{ form.non_field_errors|join:"<br>" }}</div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2 pt-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i> Enregistrer les modifications
+              </button>
+              <a href="{% url 'accounts:profile' %}" class="btn btn-ghost">Annuler</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick links -->
+    <div class="col-lg-4">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-shield-fill"></i></div>
+          <h3>Sécurité</h3>
+        </div>
+        <div class="isi-card-body">
+          <p style="font-size:13.5px;color:#64748b;margin-bottom:16px;">
+            Pour changer votre mot de passe, utilisez la page dédiée.
+          </p>
+          <a href="{% url 'accounts:change_password' %}" class="btn btn-ghost w-100">
+            <i class="bi bi-key-fill"></i> Changer le mot de passe
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

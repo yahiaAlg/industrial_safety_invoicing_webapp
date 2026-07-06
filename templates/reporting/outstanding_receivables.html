@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Créances impayées{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:dashboard' %}" style="color:var(--text-muted);text-decoration:none;">Rapports</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Créances impayées{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'reporting:invoice_aging_report' %}" class="topbar-btn"><i class="bi bi-bar-chart-fill"></i> Analyse aging</a>
+{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Créances impayées</h1><p>Factures en attente de paiement</p></div></div>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon red" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-clock-fill"></i></div>
+      <div><div class="stat-value">{{ total_outstanding|floatformat:0 }} DA</div><div class="stat-label">Total impayé</div></div>
+    </div></div></div>
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-mortarboard-fill"></i></div>
+      <div><div class="stat-value">{{ total_formation|floatformat:0 }} DA</div><div class="stat-label">Formations</div></div>
+    </div></div></div>
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon blue" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-diagram-3-fill"></i></div>
+      <div><div class="stat-value">{{ total_etude|floatformat:0 }} DA</div><div class="stat-label">Études</div></div>
+    </div></div></div>
+  </div>
+  {% if overdue_invoices %}
+  <div class="alert alert-danger mb-4"><i class="bi bi-exclamation-circle-fill"></i><div><strong>{{ overdue_invoices.count }} facture(s) en retard</strong> — Total : {{ overdue_total|floatformat:0 }} DA</div></div>
+  {% endif %}
+  <div class="isi-card">
+    <div class="isi-card-header"><div class="card-icon red"><i class="bi bi-receipt-cutoff"></i></div><h3>Factures impayées</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>Référence</th><th>Client</th><th>Type</th><th>Date</th><th>Échéance</th><th>Statut</th><th style="text-align:right;">Restant dû</th></tr></thead>
+        <tbody>
+          {% for inv in invoices %}
+          <tr>
+            <td><a href="{% url 'financial:invoice_detail' inv.pk %}" style="font-weight:600;color:var(--accent);text-decoration:none;">{{ inv.reference }}</a></td>
+            <td style="font-weight:500;">{{ inv.client.name }}</td>
+            <td>{% if inv.invoice_type == 'formation' %}<span class="isi-badge amber">Formations</span>{% else %}<span class="isi-badge blue">Études</span>{% endif %}</td>
+            <td style="color:#64748b;white-space:nowrap;">{{ inv.invoice_date|date:"d/m/Y" }}</td>
+            <td style="white-space:nowrap;">{% if inv.due_date %}{% if inv.due_date < today %}<span class="isi-badge red"><i class="bi bi-clock-fill"></i> {{ inv.due_date|date:"d/m/Y" }}</span>{% else %}<span style="font-size:13px;">{{ inv.due_date|date:"d/m/Y" }}</span>{% endif %}{% else %}—{% endif %}</td>
+            <td>{% if inv.status == 'partially_paid' %}<span class="isi-badge amber">Partiel</span>{% else %}<span class="isi-badge red">Impayée</span>{% endif %}</td>
+            <td style="text-align:right;font-weight:700;color:#ef4444;">{{ inv.amount_remaining|floatformat:0 }} DA</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7"><div class="text-center" style="padding:40px;"><div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-check-circle"></i></div><p style="color:#64748b;margin:0;">Aucune créance impayée.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

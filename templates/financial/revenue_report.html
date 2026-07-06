@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}Rapport de revenus{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:analytics' %}" style="color:var(--text-muted);text-decoration:none;">Analytique</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Rapport de revenus{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Rapport de revenus</h1>
+      <p>
+        {% if date_from and date_to %}
+        {{ date_from|date:"d/m/Y" }} — {{ date_to|date:"d/m/Y" }}
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Filter bar ─────────────────────────────────────────── -->
+  <div class="isi-card mb-4">
+    <div class="isi-card-body" style="padding:16px 24px;">
+      <form method="get" novalidate>
+        <div class="row g-3 align-items-end">
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">{{ form.period.label }}</label>
+            {{ form.period }}
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label">{{ form.date_from.label }}</label>
+            {{ form.date_from }}
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label">{{ form.date_to.label }}</label>
+            {{ form.date_to }}
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label">{{ form.invoice_type.label }}</label>
+            {{ form.invoice_type }}
+          </div>
+          <div class="col-lg-3 col-md-3 col-sm-6">
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber flex-grow-1">
+                <i class="bi bi-funnel-fill"></i> Appliquer
+              </button>
+              <a href="{% url 'financial:revenue_report' %}" class="btn btn-ghost" title="Réinitialiser">
+                <i class="bi bi-x-lg"></i>
+              </a>
+            </div>
+          </div>
+
+          {% if form.non_field_errors %}
+          <div class="col-12">
+            {% for error in form.non_field_errors %}
+            <div style="color:var(--danger);font-size:12.5px;">
+              <i class="bi bi-exclamation-circle-fill"></i> {{ error }}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── KPI row ─────────────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-xl-2 col-sm-4 col-6">
+      <div class="isi-card">
+        <div class="isi-card-body" style="padding:16px 18px;">
+          <div class="stat-label mb-1">CA HT</div>
+          <div class="stat-value" style="font-size:20px;">{{ summary.invoiced_ht|floatformat:0 }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">DA</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-2 col-sm-4 col-6">
+      <div class="isi-card">
+        <div class="isi-card-body" style="padding:16px 18px;">
+          <div class="stat-label mb-1">CA TTC</div>
+          <div class="stat-value" style="font-size:20px;">{{ summary.invoiced_ttc|floatformat:0 }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">DA</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-2 col-sm-4 col-6">
+      <div class="isi-card">
+        <div class="isi-card-body" style="padding:16px 18px;">
+          <div class="stat-label mb-1">Encaissé</div>
+          <div class="stat-value" style="font-size:20px;color:var(--success);">{{ summary.collected|floatformat:0 }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">DA</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-2 col-sm-4 col-6">
+      <div class="isi-card">
+        <div class="isi-card-body" style="padding:16px 18px;">
+          <div class="stat-label mb-1">Impayés</div>
+          <div class="stat-value" style="font-size:20px;color:{% if summary.outstanding > 0 %}var(--danger){% else %}var(--success){% endif %};">{{ summary.outstanding|floatformat:0 }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">DA</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-2 col-sm-4 col-6">
+      <div class="isi-card">
+        <div class="isi-card-body" style="padding:16px 18px;">
+          <div class="stat-label mb-1">Dépenses</div>
+          <div class="stat-value" style="font-size:20px;color:var(--danger);">{{ summary.expenses|floatformat:0 }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">DA</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-2 col-sm-4 col-6">
+      <div class="isi-card">
+        <div class="isi-card-body" style="padding:16px 18px;">
+          <div class="stat-label mb-1">Marge brute</div>
+          <div class="stat-value" style="font-size:20px;color:{% if summary.margin_rate >= 0 %}var(--success){% else %}var(--danger){% endif %};">{{ summary.margin_rate }}%</div>
+          <div style="font-size:11px;color:var(--text-muted);">Taux</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Monthly chart -->
+    <div class="col-lg-8">
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon purple"><i class="bi bi-bar-chart-fill"></i></div>
+          <h3>Revenus mensuels</h3>
+        </div>
+        <div class="isi-card-body" style="padding:20px 24px;">
+          {% if monthly %}
+          <canvas id="monthlyChart" height="110"></canvas>
+          {% else %}
+          <div class="text-center" style="padding:40px 0;">
+            <i class="bi bi-bar-chart" style="font-size:40px;color:#e2e8f0;"></i>
+            <p style="color:var(--text-muted);margin:10px 0 0;font-size:14px;">
+              Aucune donnée pour la période sélectionnée.
+            </p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Business line comparison -->
+      <div class="isi-card fade-up-delay-1">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-table"></i></div>
+          <h3>Comparaison par ligne métier</h3>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead>
+              <tr>
+                <th>Ligne</th>
+                <th style="text-align:right;">CA HT</th>
+                <th style="text-align:right;">Encaissé</th>
+                <th style="text-align:right;">Dépenses</th>
+                <th style="text-align:right;">Marge</th>
+                <th style="text-align:right;">Taux</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span class="isi-badge blue"><i class="bi bi-mortarboard-fill"></i> Formation</span>
+                </td>
+                <td style="text-align:right;font-weight:600;">{{ summary_formation.invoiced_ht|floatformat:0 }} DA</td>
+                <td style="text-align:right;color:var(--success);font-weight:600;">{{ summary_formation.collected|floatformat:0 }} DA</td>
+                <td style="text-align:right;color:var(--danger);font-weight:600;">{{ summary_formation.expenses|floatformat:0 }} DA</td>
+                <td style="text-align:right;font-weight:700;">{{ summary_formation.gross_margin|floatformat:0 }} DA</td>
+                <td style="text-align:right;">
+                  <span class="isi-badge {% if summary_formation.margin_rate >= 20 %}green{% elif summary_formation.margin_rate >= 0 %}amber{% else %}red{% endif %}">
+                    {{ summary_formation.margin_rate }}%
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="isi-badge purple"><i class="bi bi-diagram-3-fill"></i> Études</span>
+                </td>
+                <td style="text-align:right;font-weight:600;">{{ summary_etude.invoiced_ht|floatformat:0 }} DA</td>
+                <td style="text-align:right;color:var(--success);font-weight:600;">{{ summary_etude.collected|floatformat:0 }} DA</td>
+                <td style="text-align:right;color:var(--danger);font-weight:600;">{{ summary_etude.expenses|floatformat:0 }} DA</td>
+                <td style="text-align:right;font-weight:700;">{{ summary_etude.gross_margin|floatformat:0 }} DA</td>
+                <td style="text-align:right;">
+                  <span class="isi-badge {% if summary_etude.margin_rate >= 20 %}green{% elif summary_etude.margin_rate >= 0 %}amber{% else %}red{% endif %}">
+                    {{ summary_etude.margin_rate }}%
+                  </span>
+                </td>
+              </tr>
+              <tr style="background:#f8fafc;font-weight:700;">
+                <td><strong>Total</strong></td>
+                <td style="text-align:right;">{{ summary.invoiced_ht|floatformat:0 }} DA</td>
+                <td style="text-align:right;color:var(--success);">{{ summary.collected|floatformat:0 }} DA</td>
+                <td style="text-align:right;color:var(--danger);">{{ summary.expenses|floatformat:0 }} DA</td>
+                <td style="text-align:right;">{{ summary.gross_margin|floatformat:0 }} DA</td>
+                <td style="text-align:right;">
+                  <span class="isi-badge {% if summary.margin_rate >= 20 %}green{% elif summary.margin_rate >= 0 %}amber{% else %}red{% endif %}">
+                    {{ summary.margin_rate }}%
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top clients -->
+    <div class="col-lg-4">
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-trophy-fill"></i></div>
+          <h3>Top 10 clients</h3>
+        </div>
+        {% if top_clients %}
+        {% for client in top_clients %}
+        <div style="padding:12px 20px;border-bottom:1px solid var(--card-border);
+                    display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+            <div style="width:22px;height:22px;border-radius:5px;
+                        background:var(--accent-soft);color:var(--accent-dark);
+                        display:flex;align-items:center;justify-content:center;
+                        font-family:var(--font-head);font-size:12px;font-weight:700;flex-shrink:0;">
+              {{ forloop.counter }}
+            </div>
+            <span style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              {{ client.name }}
+            </span>
+          </div>
+          <div style="font-family:var(--font-head);font-weight:700;font-size:13px;
+                      color:var(--accent-dark);flex-shrink:0;white-space:nowrap;">
+            {{ client.total_paid|floatformat:0 }} DA
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div style="padding:32px 20px;text-align:center;">
+          <p style="color:var(--text-muted);font-size:13px;margin:0;">Aucune donnée.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if monthly %}
+<script>
+  const labels = [{% for m in monthly %}"{{ m.month }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+  const form   = [{% for m in monthly %}{{ m.formation_ht }}{% if not forloop.last %},{% endif %}{% endfor %}];
+  const etude  = [{% for m in monthly %}{{ m.etude_ht }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+  new Chart(document.getElementById('monthlyChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Formation HT (DA)', data: form, backgroundColor: 'rgba(59,130,246,.7)', borderRadius: 4 },
+        { label: 'Étude HT (DA)', data: etude, backgroundColor: 'rgba(139,92,246,.7)', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top', labels: { font: { family: "'Barlow',sans-serif", size: 12 }, boxWidth: 14, boxHeight: 10 } },
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y.toLocaleString('fr-DZ')} DA` } }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { family: "'Barlow',sans-serif", size: 11 } } },
+        y: { stacked: true, grid: { color: '#f1f5f9' }, ticks: { font: { family: "'Barlow',sans-serif", size: 11 }, callback: v => v.toLocaleString('fr-DZ') + ' DA' } }
+      }
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

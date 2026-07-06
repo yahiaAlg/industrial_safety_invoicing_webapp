@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Rapport des impayés{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:analytics' %}" style="color:var(--text-muted);text-decoration:none;">Analytique</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Impayés{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Rapport des impayés</h1>
+      <p>Toutes les factures non soldées, les plus anciennes en premier</p>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon red" style="background:rgba(239,68,68,.12);color:var(--danger);
+                    width:48px;height:48px;font-size:22px;border-radius:12px;">
+            <i class="bi bi-exclamation-circle-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value" style="color:var(--danger);">{{ total_outstanding|floatformat:0 }}</div>
+            <div class="stat-label">Total impayé (DA)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon amber" style="width:48px;height:48px;font-size:22px;border-radius:12px;">
+            <i class="bi bi-receipt-cutoff"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ invoices|length }}</div>
+            <div class="stat-label">Factures en attente</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon green" style="width:48px;height:48px;font-size:22px;border-radius:12px;">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ invoices|length }}</div>
+            <div class="stat-label">Clients concernés</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon red" style="background:rgba(239,68,68,.12);color:var(--danger);">
+        <i class="bi bi-clock-fill"></i>
+      </div>
+      <h3>Factures impayées ou partiellement payées</h3>
+    </div>
+
+    {% if invoices %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Référence</th>
+            <th>Client</th>
+            <th>Type</th>
+            <th>Date facture</th>
+            <th>Échéance</th>
+            <th style="text-align:right;">Montant TTC</th>
+            <th style="text-align:right;">Payé</th>
+            <th style="text-align:right;">Solde dû</th>
+            <th>Statut</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inv in invoices %}
+          <tr {% if inv.due_date and inv.due_date < today %}style="background:rgba(239,68,68,.04);"{% endif %}>
+            <td>
+              <a href="{% url 'financial:invoice_detail' inv.pk %}"
+                 style="font-family:var(--font-head);font-weight:700;font-size:14px;
+                        color:var(--text-primary);text-decoration:none;">
+                {{ inv.reference }}
+              </a>
+            </td>
+            <td>
+              <a href="{% url 'clients:client_detail' inv.client.pk %}"
+                 style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                {{ inv.client.name }}
+              </a>
+            </td>
+            <td>
+              {% if inv.invoice_type == 'formation' %}
+                <span class="isi-badge blue" style="font-size:10px;"><i class="bi bi-mortarboard-fill"></i> Form.</span>
+              {% else %}
+                <span class="isi-badge purple" style="font-size:10px;"><i class="bi bi-diagram-3-fill"></i> Étude</span>
+              {% endif %}
+            </td>
+            <td>
+              <span style="font-size:13px;color:var(--text-muted);">{{ inv.invoice_date|date:"d/m/Y" }}</span>
+            </td>
+            <td>
+              {% if inv.due_date %}
+              <span style="font-size:13px;
+                {% if inv.due_date < today %}color:var(--danger);font-weight:700;{% else %}color:var(--text-muted);{% endif %}">
+                {{ inv.due_date|date:"d/m/Y" }}
+                {% if inv.due_date < today %}
+                <span class="isi-badge red" style="font-size:9px;padding:1px 5px;margin-left:4px;">EN RETARD</span>
+                {% endif %}
+              </span>
+              {% else %}
+                <span style="color:var(--text-muted);font-size:13px;">—</span>
+              {% endif %}
+            </td>
+            <td style="text-align:right;font-weight:600;">{{ inv.amount_ttc|floatformat:2 }} DA</td>
+            <td style="text-align:right;color:var(--success);font-weight:600;">{{ inv.amount_paid|floatformat:2 }} DA</td>
+            <td style="text-align:right;">
+              <span style="font-family:var(--font-head);font-weight:700;font-size:15px;color:var(--danger);">
+                {{ inv.amount_remaining|floatformat:2 }} DA
+              </span>
+            </td>
+            <td>
+              {% if inv.status == 'partially_paid' %}
+                <span class="isi-badge amber"><i class="bi bi-circle-half"></i> Part.</span>
+              {% else %}
+                <span class="isi-badge red"><i class="bi bi-clock-fill"></i> Impayée</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                <a href="{% url 'financial:invoice_detail' inv.pk %}"
+                   class="btn btn-ghost btn-sm" title="Voir">
+                  <i class="bi bi-eye-fill"></i>
+                </a>
+                <a href="{% url 'financial:payment_add' inv.pk %}"
+                   class="btn btn-ghost btn-sm" title="Enregistrer un paiement">
+                  <i class="bi bi-cash-coin"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Total footer -->
+    <div style="padding:14px 24px;border-top:1px solid var(--card-border);
+                display:flex;justify-content:flex-end;gap:32px;background:#fff8f0;">
+      <div style="text-align:right;">
+        <div class="stat-label mb-1">Total impayé</div>
+        <div style="font-family:var(--font-head);font-size:22px;font-weight:700;color:var(--danger);">
+          {{ total_outstanding|floatformat:2 }} DA
+        </div>
+      </div>
+    </div>
+
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;">
+        <i class="bi bi-check-circle"></i>
+      </div>
+      <p style="color:var(--text-muted);font-size:15px;margin:0;">
+        Aucune facture impayée. Toutes les factures sont soldées.
+      </p>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

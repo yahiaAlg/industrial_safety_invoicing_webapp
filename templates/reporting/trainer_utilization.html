@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Utilisation formateurs{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:dashboard' %}" style="color:var(--text-muted);text-decoration:none;">Rapports</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Formateurs{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'reporting:trainer_cost_analysis' %}?date_from={{ date_from }}&date_to={{ date_to }}" class="topbar-btn"><i class="bi bi-cash-coin"></i> Analyse coûts</a>
+{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Utilisation des formateurs</h1><p>Charge et activité par formateur pour la période</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="row g-4 mb-4">
+    <div class="col-lg-7">
+      <div class="isi-card">
+        <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-bar-chart-fill"></i></div><h3>Charge par formateur</h3></div>
+        <div class="isi-card-body"><div style="position:relative;height:260px;"><canvas id="chartTrainer"></canvas></div></div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="isi-card">
+        <div class="isi-card-header"><div class="card-icon blue"><i class="bi bi-person-fill-check"></i></div><h3>Classement</h3></div>
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead><tr><th>Formateur</th><th style="text-align:center;">Sessions</th><th>Type</th></tr></thead>
+            <tbody>
+              {% for t in trainers %}
+              <tr>
+                <td><div style="font-weight:600;">{{ t.full_name }}</div><div style="font-size:12px;color:#94a3b8;">{{ t.email|default:"" }}</div></td>
+                <td style="text-align:center;font-weight:700;font-family:var(--font-head);font-size:18px;">{{ t.period_sessions }}</td>
+                <td>{% if t.trainer_type == 'internal' %}<span class="isi-badge green"><i class="bi bi-building" style="font-size:9px;"></i> Interne</span>{% else %}<span class="isi-badge purple"><i class="bi bi-person-workspace" style="font-size:9px;"></i> Externe</span>{% endif %}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3"><div class="text-center" style="padding:30px;"><p style="color:#64748b;margin:0;">Aucun formateur.</p></div></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+const tData = [{% for t in trainers %}{ name: "{{ t.full_name|truncatechars:20 }}", sessions: {{ t.period_sessions }} },{% endfor %}];
+if (tData.length) {
+  new Chart(document.getElementById('chartTrainer'), {
+    type: 'bar',
+    data: { labels: tData.map(d=>d.name), datasets: [{ label: 'Sessions', data: tData.map(d=>d.sessions), backgroundColor: 'rgba(245,158,11,.3)', borderColor: '#f59e0b', borderWidth: 2, borderRadius: 4 }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b', font: { family: 'Barlow', size: 11 } } }, y: { grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Barlow', size: 11 } } } } }
+  });
+}
+</script>
+{% endblock %}

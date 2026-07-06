@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Avoirs{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:invoice_list' %}" style="color:var(--text-muted);text-decoration:none;">Factures</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Avoirs{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Avoirs</h1>
+      <p>Historique des notes de crédit émises</p>
+    </div>
+  </div>
+
+  <div class="isi-card fade-up-delay-1">
+    <div class="isi-card-header">
+      <div class="card-icon purple"><i class="bi bi-arrow-return-left"></i></div>
+      <h3>
+        Liste des avoirs
+        {% if credit_notes %}
+        <span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">
+          — {{ credit_notes|length }} avoir{{ credit_notes|length|pluralize }}
+        </span>
+        {% endif %}
+      </h3>
+    </div>
+
+    {% if credit_notes %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Référence</th>
+            <th>Facture d'origine</th>
+            <th>Client</th>
+            <th>Date</th>
+            <th style="text-align:right;">Montant HT</th>
+            <th>Type</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cn in credit_notes %}
+          <tr>
+            <td>
+              <a href="{% url 'financial:credit_note_detail' cn.pk %}"
+                 style="font-family:var(--font-head);font-weight:700;font-size:15px;
+                        color:var(--text-primary);text-decoration:none;letter-spacing:.3px;">
+                {{ cn.reference }}
+              </a>
+            </td>
+            <td>
+              <a href="{% url 'financial:invoice_detail' cn.invoice.pk %}"
+                 style="color:var(--accent);text-decoration:none;font-weight:500;">
+                {{ cn.invoice.reference }}
+              </a>
+            </td>
+            <td>
+              <span style="font-weight:500;">{{ cn.invoice.client.name }}</span>
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">{{ cn.created_at|date:"d/m/Y" }}</span>
+            </td>
+            <td style="text-align:right;">
+              <span style="font-weight:700;font-family:var(--font-head);font-size:15px;color:var(--danger);">
+                -{{ cn.amount_ht|floatformat:2 }}
+              </span>
+              <span style="font-size:11px;color:var(--text-muted);"> DA</span>
+            </td>
+            <td>
+              {% if cn.is_full_reversal %}
+                <span class="isi-badge red">Annulation totale</span>
+              {% else %}
+                <span class="isi-badge amber">Partiel</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                <a href="{% url 'financial:credit_note_detail' cn.pk %}"
+                   class="btn btn-ghost btn-sm" title="Voir le détail">
+                  <i class="bi bi-eye-fill"></i>
+                </a>
+                <a href="{% url 'financial:credit_note_print' cn.pk %}"
+                   class="btn btn-ghost btn-sm" title="Imprimer" target="_blank">
+                  <i class="bi bi-printer-fill"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;">
+        <i class="bi bi-arrow-return-left"></i>
+      </div>
+      <p style="color:var(--text-muted);font-size:15px;margin:0;">
+        Aucun avoir émis pour le moment.
+      </p>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

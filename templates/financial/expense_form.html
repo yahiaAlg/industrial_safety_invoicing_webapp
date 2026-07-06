@@ -1,0 +1,1369 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} — Dépense{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:expense_list' %}" style="color:var(--text-muted);text-decoration:none;">Dépenses</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ action }}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ action }}</h1>
+      <p>{% if expense %}Modification de la dépense — {{ expense.description|truncatechars:50 }}{% else %}Enregistrement d'une nouvelle dépense{% endif %}</p>
+    </div>
+    <a href="{% url 'financial:expense_list' %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate id="expense-form">
+    {% csrf_token %}
+    <div class="row g-4">
+
+      <!-- ── Main column ─────────────────────────────────────── -->
+      <div class="col-lg-8">
+
+        <!-- ① Informations générales -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon red"><i class="bi bi-credit-card-fill"></i></div>
+            <h3>Informations générales</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.date.id_for_label }}">Date *</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-calendar-fill"></i>
+                  {{ form.date }}
+                </div>
+                {% if form.date.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.date.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-8">
+                <label class="form-label" for="{{ form.category.id_for_label }}">Catégorie *</label>
+                {{ form.category }}
+                {% if form.category.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.category.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="{{ form.description.id_for_label }}">Description *</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.description.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ② Bénéficiaire & Paiement -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-person-fill"></i></div>
+            <h3>Bénéficiaire &amp; Paiement</h3>
+          </div>
+          <div class="isi-card-body">
+
+            <div class="form-section-title">Bénéficiaire enregistré</div>
+            <div style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px;">
+              <i class="bi bi-info-circle" style="color:var(--accent);"></i>
+              Sélectionnez un bénéficiaire enregistré — le taux IRG et les comptes de paiement seront remplis automatiquement.
+              Si le bénéficiaire n'est pas encore dans l'annuaire, utilisez le champ libre ci-dessous.
+            </div>
+
+            <div class="row g-3 mb-3">
+
+              <div class="col-12">
+                <label class="form-label" for="{{ form.beneficiary.id_for_label }}">Bénéficiaire</label>
+                <div style="display:flex;gap:8px;align-items:flex-start;">
+                  <div style="flex:1;">
+                    {{ form.beneficiary }}
+                    {# URL template for the JS AJAX call — pk=0 is replaced client-side #}
+                    <input type="hidden" id="accounts-url-tpl"
+                           value="{% url 'financial:beneficiary_accounts_json' pk=0 %}">
+                    {% if form.beneficiary.errors %}
+                    <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.beneficiary.errors|join:", " }}</div>
+                    {% endif %}
+                  </div>
+                  <button type="button"
+                     class="btn btn-ghost btn-sm"
+                     style="white-space:nowrap;margin-top:2px;"
+                     id="btn-quick-add-beneficiary"
+                     title="Ajouter un nouveau bénéficiaire">
+                    <i class="bi bi-plus-lg"></i> Nouveau
+                  </button>
+                </div>
+              </div>
+
+              <div class="col-12" id="payment-account-row">
+                <label class="form-label" for="{{ form.payment_account.id_for_label }}">Compte de paiement</label>
+                <div style="display:flex;gap:8px;align-items:flex-start;">
+                  <div style="flex:1;">
+                    {{ form.payment_account }}
+                    {% if form.payment_account.errors %}
+                    <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.payment_account.errors|join:", " }}</div>
+                    {% endif %}
+                    <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                      Les comptes disponibles se filtrent selon le bénéficiaire sélectionné.
+                    </div>
+                  </div>
+                  <button type="button"
+                     class="btn btn-ghost btn-sm"
+                     style="white-space:nowrap;margin-top:2px;"
+                     id="btn-quick-add-account"
+                     title="Ajouter un compte de paiement">
+                    <i class="bi bi-plus-lg"></i> Nouveau
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="section-divider"></div>
+            <div class="form-section-title">Fournisseur libre <span style="font-size:11px;font-weight:400;color:#94a3b8;">(si non enregistré)</span></div>
+
+            <div class="row g-3">
+              <div class="col-md-7">
+                <label class="form-label" for="{{ form.supplier.id_for_label }}">Fournisseur / bénéficiaire libre</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-shop"></i>
+                  {{ form.supplier }}
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  {{ form.supplier.help_text }}
+                </div>
+              </div>
+
+              <div class="col-md-5">
+                <label class="form-label" for="{{ form.payment_reference.id_for_label }}">Référence de paiement</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-hash"></i>
+                  {{ form.payment_reference }}
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">N° virement, chèque, OP…</div>
+              </div>
+
+              <div class="col-md-5">
+                <label class="form-label" for="{{ form.payment_date.id_for_label }}">Date de règlement</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-calendar-check-fill"></i>
+                  {{ form.payment_date }}
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Date effective du virement / paiement.</div>
+                {% if form.payment_date.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.payment_date.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ③ Montants & IRG -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-cash-coin"></i></div>
+            <h3>Montants &amp; IRG</h3>
+          </div>
+          <div class="isi-card-body">
+
+            <div class="row g-3">
+
+              <!-- Amount field with HT/TTC toggle -->
+              <div class="col-md-5">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+                  <label class="form-label mb-0" for="{{ form.gross_amount.id_for_label }}" id="gross-amount-label">
+                    Montant HT (DA) *
+                  </label>
+                  <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;
+                                color:var(--text-muted);user-select:none;">
+                    {{ form.amount_is_ttc }}
+                    <span id="ttc-toggle-label">saisie TTC</span>
+                  </label>
+                </div>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-cash-coin"></i>
+                  {{ form.gross_amount }}
+                </div>
+                <div id="gross-amount-hint" style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  Entrez le montant HT — la TVA sera calculée automatiquement.
+                </div>
+                {% if form.gross_amount.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.gross_amount.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.irg_rate.id_for_label }}">Taux IRG</label>
+                {{ form.irg_rate }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">{{ form.irg_rate.help_text }}</div>
+                {% if form.irg_rate.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.irg_rate.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <!-- TVA rate field -->
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.tva_rate.id_for_label }}">Taux TVA</label>
+                {{ form.tva_rate }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">{{ form.tva_rate.help_text }}</div>
+                {% if form.tva_rate.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.tva_rate.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <!-- Live-computed preview (HT/TTC toggle + IRG + TVA) -->
+              <div class="col-md-12">
+                <div style="background:#f8fafc;border:1px solid var(--card-border);border-radius:10px;
+                            padding:10px 16px;display:flex;flex-wrap:wrap;gap:0;">
+
+                  <!-- HT -->
+                  <div style="flex:1;min-width:120px;padding:4px 12px 4px 0;border-right:1px solid var(--card-border);">
+                    <div id="preview-ht-label" style="font-size:11px;color:#94a3b8;margin-bottom:2px;">Montant HT</div>
+                    <div id="preview-ht" style="font-weight:700;font-size:14px;color:var(--text);">— DA</div>
+                  </div>
+
+                  <!-- TVA -->
+                  <div style="flex:1;min-width:120px;padding:4px 12px;border-right:1px solid var(--card-border);">
+                    <div style="font-size:11px;color:#94a3b8;margin-bottom:2px;">TVA (<span id="preview-tva-pct">0</span>%)</div>
+                    <div id="preview-tva" style="font-weight:600;font-size:14px;color:#3b82f6;">0,00 DA</div>
+                  </div>
+
+                  <!-- TTC -->
+                  <div style="flex:1;min-width:120px;padding:4px 12px;border-right:1px solid var(--card-border);">
+                    <div id="preview-ttc-label" style="font-size:11px;color:#94a3b8;margin-bottom:2px;">Montant TTC</div>
+                    <div id="preview-ttc" style="font-weight:700;font-size:14px;color:var(--accent);">— DA</div>
+                  </div>
+
+                  <!-- IRG -->
+                  <div style="flex:1;min-width:120px;padding:4px 12px 4px 12px;border-right:1px solid var(--card-border);">
+                    <div style="font-size:11px;color:#94a3b8;margin-bottom:2px;">IRG État (<span id="preview-irg-pct">0</span>%)</div>
+                    <div id="preview-irg" style="font-weight:600;font-size:14px;color:var(--warning);">0,00 DA</div>
+                  </div>
+
+                  <!-- Coût total -->
+                  <div style="flex:1;min-width:120px;padding:4px 0 4px 12px;">
+                    <div style="font-size:11px;color:#94a3b8;margin-bottom:2px;">Coût total organisme</div>
+                    <div id="preview-net" style="font-weight:700;font-size:14px;color:var(--success);">— DA</div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+            {% if form.non_field_errors %}
+            <div style="margin-top:12px;">
+              {% for error in form.non_field_errors %}
+              <div style="color:var(--danger);font-size:13px;display:flex;gap:8px;align-items:flex-start;
+                          padding:10px 12px;background:rgba(239,68,68,.06);border-radius:8px;
+                          border-left:3px solid var(--danger);">
+                <i class="bi bi-exclamation-circle-fill" style="margin-top:1px;flex-shrink:0;"></i>
+                {{ error }}
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+
+        <!-- ④ Formateur (collapsible, shown via JS when is_trainer beneficiary) -->
+        <div class="isi-card mb-4" id="trainer-section" style="display:none;">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-person-workspace"></i></div>
+            <h3>Paiement formateur</h3>
+          </div>
+          <div class="isi-card-body">
+
+            <div style="font-size:12.5px;color:var(--text-muted);margin-bottom:16px;">
+              <i class="bi bi-info-circle" style="color:var(--accent);"></i>
+              Ces champs sont destinés aux dépenses liées à la rémunération d'un formateur.
+            </div>
+
+            <div class="row g-3">
+
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.trainer_payment_mode.id_for_label }}">Mode de paiement</label>
+                {{ form.trainer_payment_mode }}
+                {% if form.trainer_payment_mode.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.trainer_payment_mode.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6" id="linked-formation-row">
+                <label class="form-label" for="{{ form.linked_formation.id_for_label }}">Formation liée <span style="font-size:11px;color:#94a3b8;">(mode forfait)</span></label>
+                {{ form.linked_formation }}
+                {% if form.linked_formation.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.linked_formation.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.training_period_label.id_for_label }}">Période couverte</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-calendar-range"></i>
+                  {{ form.training_period_label }}
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">{{ form.training_period_label.help_text }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.daily_rate_snapshot.id_for_label }}">Tarif journalier (snapshot)</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-currency-exchange"></i>
+                  {{ form.daily_rate_snapshot }}
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Tarif appliqué au moment de la saisie.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.monthly_rate_snapshot.id_for_label }}">Tarif mensuel (snapshot)</label>
+                <div class="input-icon-wrap">
+                  <i class="bi bi-currency-exchange"></i>
+                  {{ form.monthly_rate_snapshot }}
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Pour les contrats au forfait mensuel.</div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑤ Imputation -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon purple"><i class="bi bi-diagram-3-fill"></i></div>
+            <h3>Imputation</h3>
+          </div>
+          <div class="isi-card-body">
+
+            <div style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px;">
+              <i class="bi bi-info-circle" style="color:var(--accent);"></i>
+              Imputez la dépense à <strong>un seul</strong> centre de coût — session, projet ou frais généraux.
+            </div>
+
+            <div class="row g-3">
+
+              <div class="col-md-5">
+                <label class="form-label">
+                  <i class="bi bi-book-fill" style="color:#3b82f6;margin-right:4px;"></i> Formation
+                </label>
+                <select id="formation-filter" class="form-select">
+                  <option value="">— Toutes les formations —</option>
+                </select>
+              </div>
+
+              <div class="col-md-5">
+                <label class="form-label" for="{{ form.allocated_to_session.id_for_label }}">
+                  <i class="bi bi-mortarboard-fill" style="color:#3b82f6;margin-right:4px;"></i> Session
+                </label>
+                {{ form.allocated_to_session }}
+                {% if form.allocated_to_session.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.allocated_to_session.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-5">
+                <label class="form-label" for="{{ form.allocated_to_project.id_for_label }}">
+                  <i class="bi bi-diagram-3-fill" style="color:#8b5cf6;margin-right:4px;"></i> Projet d'étude
+                </label>
+                {{ form.allocated_to_project }}
+                {% if form.allocated_to_project.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.allocated_to_project.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;
+                            background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);">
+                  {{ form.is_overhead }}
+                  <label for="{{ form.is_overhead.id_for_label }}"
+                         style="font-size:13px;font-weight:500;margin:0;cursor:pointer;white-space:nowrap;">
+                    <i class="bi bi-building-fill" style="color:var(--text-muted);margin-right:2px;"></i> Généraux
+                  </label>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ⑥ Période fiscale G50 -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon teal"><i class="bi bi-calendar2-check-fill"></i></div>
+            <h3>Période fiscale</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.g50_month.id_for_label }}">Mois / Année G50 <span style="font-size:11px;font-weight:400;color:#94a3b8;">(déclaration fiscale)</span></label>
+                {{ form.g50_month }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  Premier jour du mois de déclaration — ex. 01/01/2024 pour G50 Janvier 2024.
+                </div>
+                {% if form.g50_month.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.g50_month.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑦ Justificatif -->
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-file-earmark-fill"></i></div>
+            <h3>Justificatif</h3>
+          </div>
+          <div class="isi-card-body">
+
+            {% if expense and expense.receipt %}
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;
+                        background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);
+                        margin-bottom:16px;">
+              <i class="bi bi-file-earmark-fill" style="font-size:20px;color:var(--accent);flex-shrink:0;"></i>
+              <div style="flex:1;">
+                <div style="font-weight:600;font-size:13.5px;">Justificatif existant</div>
+                <div style="font-size:12px;color:var(--text-muted);">Remplacez en uploadant un nouveau fichier ci-dessous.</div>
+              </div>
+              <a href="{{ expense.receipt.url }}" target="_blank" class="btn btn-ghost btn-sm">
+                <i class="bi bi-eye-fill"></i> Voir
+              </a>
+            </div>
+            {% endif %}
+
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label" for="{{ form.receipt.id_for_label }}">Fichier justificatif</label>
+                {{ form.receipt }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">PDF, JPG ou PNG — max 5 Mo.</div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">&nbsp;</label>
+                <div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;
+                            background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);">
+                  {{ form.receipt_missing }}
+                  <label for="{{ form.receipt_missing.id_for_label }}"
+                         style="font-size:13px;font-weight:500;margin:0;cursor:pointer;white-space:nowrap;">
+                    Justificatif manquant
+                  </label>
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  Cochez si le reçu ne peut pas être fourni.
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="{{ form.notes.id_for_label }}">Notes</label>
+                {{ form.notes }}
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ⑧ Approbation (visible uniquement en modification) -->
+        {% if expense %}
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-shield-check"></i></div>
+            <h3>Approbation</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+
+              <div class="col-md-5">
+                <label class="form-label" for="{{ form.approval_status.id_for_label }}">Décision</label>
+                {{ form.approval_status }}
+                {% if form.approval_status.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.approval_status.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-7">
+                <label class="form-label" for="{{ form.approval_notes.id_for_label }}">Notes d'approbation</label>
+                {{ form.approval_notes }}
+              </div>
+
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Submit -->
+        <div class="d-flex gap-2 mb-4">
+          <button type="submit" class="btn btn-amber">
+            <i class="bi bi-check-lg"></i>
+            {% if expense %}Enregistrer les modifications{% else %}Créer la dépense{% endif %}
+          </button>
+          <a href="{% url 'financial:expense_list' %}" class="btn btn-ghost">
+            <i class="bi bi-x-lg"></i> Annuler
+          </a>
+        </div>
+
+      </div><!-- /col-lg-8 -->
+
+      <!-- ── Side panel ──────────────────────────────────── -->
+      <div class="col-lg-4">
+
+        <!-- IRG summary card -->
+        <div class="isi-card mb-4" id="irg-summary-card">
+          <div class="isi-card-header">
+            <div class="card-icon red"><i class="bi bi-percent"></i></div>
+            <h3>Récapitulatif IRG</h3>
+          </div>
+          <div class="isi-card-body">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:13px;color:var(--text-muted);">Montant brut</span>
+              <span id="side-gross" style="font-weight:600;font-size:13.5px;">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:13px;color:var(--text-muted);">Taux IRG</span>
+              <span id="side-irg-rate" style="font-weight:600;font-size:13.5px;">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:13px;color:var(--text-muted);">IRG versé à l'État</span>
+              <span id="side-irg-amount" style="font-weight:600;font-size:13.5px;color:var(--warning);">—</span>
+            </div>
+            <div style="border-top:1px solid var(--card-border);padding-top:10px;margin-top:4px;
+                        display:flex;justify-content:space-between;">
+              <span style="font-size:14px;font-weight:700;">Coût total organisme</span>
+              <span id="side-net" style="font-weight:700;font-size:16px;color:var(--success);">—</span>
+            </div>
+            <div style="margin-top:12px;font-size:11.5px;color:#94a3b8;line-height:1.5;">
+              <i class="bi bi-info-circle"></i>
+              IRG = impôt versé en sus à l'État (10% pour les formateurs contractuels externes).
+            </div>
+          </div>
+        </div>
+
+        <!-- Statut (edit mode) -->
+        {% if expense %}
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon amber"><i class="bi bi-shield-check"></i></div>
+            <h3>Statut actuel</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="row g-3">
+
+              <div class="col-12">
+                <div class="stat-label mb-1">Décision</div>
+                {% if expense.approval_status == 'approved' %}
+                  <span class="isi-badge green" style="font-size:13px;padding:5px 12px;">
+                    <i class="bi bi-check-circle-fill"></i> Approuvée
+                  </span>
+                {% elif expense.approval_status == 'rejected' %}
+                  <span class="isi-badge red" style="font-size:13px;padding:5px 12px;">
+                    <i class="bi bi-x-circle-fill"></i> Refusée
+                  </span>
+                {% else %}
+                  <span class="isi-badge amber" style="font-size:13px;padding:5px 12px;">
+                    <i class="bi bi-clock-fill"></i> En attente
+                  </span>
+                {% endif %}
+              </div>
+
+              <div class="col-12">
+                <div class="stat-label mb-1">Montant brut</div>
+                <div class="stat-value" style="font-size:22px;">{{ expense.gross_amount|default:expense.amount|floatformat:2 }}</div>
+                <div style="font-size:11px;color:var(--text-muted);">DA</div>
+              </div>
+
+              {% if expense.irg_amount %}
+              <div class="col-12">
+                <div class="stat-label mb-1">IRG versé à l'État ({{ expense.irg_rate|floatformat:0 }}%)</div>
+                <div style="font-weight:700;font-size:16px;color:var(--warning);">
+                  + {{ expense.irg_amount|floatformat:2 }} DA
+                </div>
+              </div>
+              {% endif %}
+
+              <div class="col-12">
+                <div class="stat-label mb-1">Coût total organisme</div>
+                <div class="stat-value" style="font-size:22px;color:var(--success);">{{ expense.amount|floatformat:2 }}</div>
+                <div style="font-size:11px;color:var(--text-muted);">DA</div>
+              </div>
+
+              {% if expense.beneficiary %}
+              <div class="col-12">
+                <div class="stat-label mb-1">Bénéficiaire</div>
+                <div style="font-weight:500;font-size:13.5px;">{{ expense.beneficiary.name }}</div>
+                <div style="font-size:12px;color:var(--text-muted);">{{ expense.beneficiary.beneficiary_type }}</div>
+              </div>
+              {% endif %}
+
+            </div>
+
+            <!-- Quick approve/reject buttons -->
+            {% if expense.approval_status == 'pending' %}
+            <div class="section-divider"></div>
+            <div class="d-flex gap-2">
+              <form method="post" action="{% url 'financial:expense_approve' expense.pk %}" style="flex:1;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-ghost w-100"
+                        style="color:var(--success);border-color:rgba(16,185,129,.3);"
+                        onclick="return confirm('Approuver cette dépense ?')">
+                  <i class="bi bi-check-lg"></i> Approuver
+                </button>
+              </form>
+              <form method="post" action="{% url 'financial:expense_reject' expense.pk %}" style="flex:1;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger-soft w-100"
+                        onclick="return confirm('Refuser cette dépense ?')">
+                  <i class="bi bi-x-lg"></i> Refuser
+                </button>
+              </form>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Dates de saisie (read-only) -->
+        {% if expense %}
+        <div class="isi-card mb-4">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-clock-history"></i></div>
+            <h3>Dates de saisie</h3>
+          </div>
+          <div class="isi-card-body">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;
+                          padding:8px 12px;background:#f8fafc;border-radius:8px;
+                          border:1px solid var(--card-border);">
+                <div>
+                  <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;
+                              letter-spacing:.5px;font-weight:600;">Saisie le</div>
+                  <div style="font-size:13.5px;font-weight:600;margin-top:2px;">
+                    {{ expense.created_at|date:"d/m/Y" }}
+                  </div>
+                  <div style="font-size:11.5px;color:var(--text-muted);">
+                    {{ expense.created_at|date:"H:i" }}
+                  </div>
+                </div>
+                <i class="bi bi-pencil-square" style="font-size:18px;color:var(--accent);opacity:.6;"></i>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;
+                          padding:8px 12px;background:#f8fafc;border-radius:8px;
+                          border:1px solid var(--card-border);">
+                <div>
+                  <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;
+                              letter-spacing:.5px;font-weight:600;">Mis à jour le</div>
+                  <div style="font-size:13.5px;font-weight:600;margin-top:2px;">
+                    {{ expense.updated_at|date:"d/m/Y" }}
+                  </div>
+                  <div style="font-size:11.5px;color:var(--text-muted);">
+                    {{ expense.updated_at|date:"H:i" }}
+                  </div>
+                </div>
+                <i class="bi bi-arrow-repeat" style="font-size:18px;color:var(--accent);opacity:.6;"></i>
+              </div>
+            </div>
+            <div style="margin-top:10px;font-size:11.5px;color:#94a3b8;line-height:1.5;">
+              <i class="bi bi-lock-fill" style="font-size:10px;"></i>
+              Ces dates sont gérées automatiquement par le système.
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Help card -->
+        <div class="isi-card">
+          <div class="isi-card-header">
+            <div class="card-icon blue"><i class="bi bi-info-circle-fill"></i></div>
+            <h3>Aide — Imputation</h3>
+          </div>
+          <div class="isi-card-body">
+            <div class="mb-3 p-3" style="background:rgba(59,130,246,.08);border-radius:8px;">
+              <div style="font-weight:600;font-size:13px;color:#1e40af;margin-bottom:4px;">
+                <i class="bi bi-mortarboard-fill"></i> Session
+              </div>
+              <p style="font-size:12px;color:#1e3a8a;margin:0;line-height:1.5;">
+                Dépense directement liée à une session de formation (formateur, location salle, matériel…).
+              </p>
+            </div>
+            <div class="mb-3 p-3" style="background:rgba(139,92,246,.08);border-radius:8px;">
+              <div style="font-weight:600;font-size:13px;color:#5b21b6;margin-bottom:4px;">
+                <i class="bi bi-diagram-3-fill"></i> Projet d'étude
+              </div>
+              <p style="font-size:12px;color:#4c1d95;margin:0;line-height:1.5;">
+                Dépense imputable à un projet d'étude spécifique (déplacements, expertise externe…).
+              </p>
+            </div>
+            <div class="p-3" style="background:rgba(100,116,139,.08);border-radius:8px;">
+              <div style="font-weight:600;font-size:13px;color:#334155;margin-bottom:4px;">
+                <i class="bi bi-building-fill"></i> Frais généraux
+              </div>
+              <p style="font-size:12px;color:#475569;margin:0;line-height:1.5;">
+                Coût non imputable à un service précis (loyer, électricité, fournitures de bureau…).
+              </p>
+            </div>
+            <p style="font-size:12px;color:var(--danger);margin:12px 0 0;font-weight:600;">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              Une seule imputation par dépense.
+            </p>
+          </div>
+        </div>
+
+      </div><!-- /col-lg-4 -->
+
+    </div>
+  </form>
+
+  <!-- ── Modal: Quick-add Beneficiary ──────────────────────────────── -->
+  <div id="modal-beneficiary" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;
+       background:rgba(0,0,0,.6);align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px;box-sizing:border-box;">
+    <div style="background:var(--card-bg,#1e293b);border-radius:12px;width:100%;max-width:540px;
+                margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.5);
+                display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:18px 20px;border-bottom:1px solid var(--card-border);
+                  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:32px;height:32px;border-radius:8px;background:rgba(59,130,246,.12);
+                      display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-person-plus-fill" style="color:#3b82f6;"></i>
+          </div>
+          <h5 style="margin:0;font-size:15px;font-weight:700;">Nouveau bénéficiaire</h5>
+        </div>
+        <button type="button" id="modal-beneficiary-close"
+                style="background:none;border:none;cursor:pointer;padding:4px;line-height:1;
+                       color:var(--text-muted);font-size:18px;">&times;</button>
+      </div>
+      <div style="overflow-y:auto;flex:1;">
+        <form id="form-quick-beneficiary" novalidate style="padding:20px;">
+          {% csrf_token %}
+          <div id="modal-beneficiary-errors" style="display:none;margin-bottom:12px;padding:10px 12px;
+               background:rgba(239,68,68,.08);border-radius:8px;border-left:3px solid var(--danger);
+               font-size:12.5px;color:var(--danger);"></div>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Nom / Raison sociale *</label>
+              <input type="text" name="name" class="form-control" placeholder="Ex: Mohamed Karim" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Type *</label>
+              <select name="beneficiary_type" class="form-select">
+                <option value="">— Sélectionner —</option>
+                {% for bt in beneficiary_types %}
+                <option value="{{ bt.pk }}">{{ bt.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Taux IRG</label>
+              <input type="number" name="irg_rate" class="form-control" value="0"
+                     step="0.01" min="0" max="1" placeholder="0.10 = 10%">
+              <div style="font-size:11px;color:#94a3b8;margin-top:3px;">0 = aucun · 0.10 = 10%</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Téléphone</label>
+              <input type="text" name="phone" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">NIF</label>
+              <input type="text" name="nif" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">RIB</label>
+              <input type="text" name="rib" class="form-control">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--card-border);
+                  display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;">
+        <button type="button" id="modal-beneficiary-cancel" class="btn btn-ghost btn-sm">Annuler</button>
+        <button type="button" id="modal-beneficiary-submit" class="btn btn-amber btn-sm">
+          <i class="bi bi-check-lg"></i> Créer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal: Quick-add Payment Account ──────────────────────────── -->
+  <div id="modal-account" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;
+       background:rgba(0,0,0,.6);align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px;box-sizing:border-box;">
+    <div style="background:var(--card-bg,#1e293b);border-radius:12px;width:100%;max-width:460px;
+                margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.5);
+                display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:18px 20px;border-bottom:1px solid var(--card-border);
+                  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:32px;height:32px;border-radius:8px;background:rgba(59,130,246,.12);
+                      display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-credit-card-fill" style="color:#3b82f6;"></i>
+          </div>
+          <h5 style="margin:0;font-size:15px;font-weight:700;">Nouveau compte de paiement</h5>
+        </div>
+        <button type="button" id="modal-account-close"
+                style="background:none;border:none;cursor:pointer;padding:4px;line-height:1;
+                       color:var(--text-muted);font-size:18px;">&times;</button>
+      </div>
+      <div style="overflow-y:auto;flex:1;">
+        <form id="form-quick-account" novalidate style="padding:20px;">
+          {% csrf_token %}
+          <div id="modal-account-errors" style="display:none;margin-bottom:12px;padding:10px 12px;
+               background:rgba(239,68,68,.08);border-radius:8px;border-left:3px solid var(--danger);
+               font-size:12.5px;color:var(--danger);"></div>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Type de compte *</label>
+              <select name="account_type" class="form-select">
+                <option value="">— Sélectionner —</option>
+                <option value="bank">Compte bancaire (virement)</option>
+                <option value="cash">Espèces</option>
+                <option value="check">Chèque</option>
+                <option value="ccp">CCP</option>
+                <option value="other">Autre</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Libellé</label>
+              <input type="text" name="label" class="form-control" placeholder="Ex: Compte CPA principal">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Numéro / Code</label>
+              <input type="text" name="account_number" id="modal-account-number" class="form-control">
+              <div id="modal-account-number-hint" style="display:none;font-size:11.5px;margin-top:4px;
+                   color:var(--warning,#f59e0b);display:flex;align-items:center;gap:4px;">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span id="modal-account-number-hint-text"></span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Banque / Établissement</label>
+              <input type="text" name="bank_name" class="form-control">
+            </div>
+            <div class="col-12">
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;
+                          background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);">
+                <input type="checkbox" name="is_default" id="modal-account-default" style="width:16px;height:16px;">
+                <label for="modal-account-default" style="margin:0;font-size:13px;cursor:pointer;">
+                  Définir comme compte par défaut
+                </label>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--card-border);
+                  display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;">
+        <button type="button" id="modal-account-cancel" class="btn btn-ghost btn-sm">Annuler</button>
+        <button type="button" id="modal-account-submit" class="btn btn-amber btn-sm">
+          <i class="bi bi-check-lg"></i> Créer
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  'use strict';
+
+  /* ── Element refs ──────────────────────────────────────── */
+  const beneficiarySelect  = document.getElementById('id_beneficiary');
+  const paymentAccountSel  = document.getElementById('id_payment_account');
+  const irgRateInput       = document.getElementById('id_irg_rate');
+  const grossAmountInput   = document.getElementById('id_gross_amount');
+  const dailyRateInput     = document.getElementById('id_daily_rate_snapshot');
+  const monthlyRateInput   = document.getElementById('id_monthly_rate_snapshot');
+  const trainerSection     = document.getElementById('trainer-section');
+  const trainerModeSelect  = document.getElementById('id_trainer_payment_mode');
+  const linkedFormationRow = document.getElementById('linked-formation-row');
+
+  const sessionSel   = document.getElementById('id_allocated_to_session');
+  const projectSel   = document.getElementById('id_allocated_to_project');
+  const overheadChk  = document.getElementById('id_is_overhead');
+
+  /* ── Helpers ────────────────────────────────────────────── */
+  function getCsrf() {
+    const el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+  }
+
+  function openModal(modalEl) {
+    // Teleport to body to escape any stacking context from .fade-up animations/transforms
+    if (modalEl.parentElement !== document.body) {
+      modalEl._origParent = modalEl.parentElement;
+      modalEl._origNext   = modalEl.nextSibling;
+      document.body.appendChild(modalEl);
+    }
+    modalEl.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal(modalEl) {
+    modalEl.style.display = 'none';
+    document.body.style.overflow = '';
+    if (modalEl._origParent) {
+      modalEl._origParent.insertBefore(modalEl, modalEl._origNext || null);
+      modalEl._origParent = null;
+    }
+  }
+
+  /* ── Bidirectional HT ↔ TTC preview ─────────────────────── */
+  const tvaRateInput  = document.getElementById('id_tva_rate');
+  const ttcCheckbox   = document.getElementById('id_amount_is_ttc');
+  const amountLabel   = document.getElementById('gross-amount-label');
+  const amountHint    = document.getElementById('gross-amount-hint');
+
+  function updateAmountLabel() {
+    const isTTC = ttcCheckbox && ttcCheckbox.checked;
+    if (amountLabel) amountLabel.textContent = isTTC ? 'Montant TTC (DA) *' : 'Montant HT (DA) *';
+    if (amountHint) amountHint.textContent = isTTC
+      ? 'Montant TTC — la TVA et le HT seront calculés automatiquement.'
+      : 'Montant HT — la TVA et le TTC seront calculés automatiquement.';
+  }
+
+  function updateIRGPreview() {
+    const entered  = parseFloat(grossAmountInput ? grossAmountInput.value : 0) || 0;
+    const irgRate  = parseFloat(irgRateInput ? irgRateInput.value : 0) || 0;
+    const tvaRate  = parseFloat(tvaRateInput ? tvaRateInput.value : 0) || 0;
+    const isTTC    = ttcCheckbox && ttcCheckbox.checked;
+    const fmt      = n => n.toLocaleString('fr-DZ', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' DA';
+
+    let ht, tva, ttc;
+    if (isTTC) {
+      // User entered TTC — extract HT and TVA
+      ttc = entered;
+      tva = tvaRate > 0 ? Math.round(ttc * tvaRate / (1 + tvaRate) * 100) / 100 : 0;
+      ht  = Math.round((ttc - tva) * 100) / 100;
+    } else {
+      // User entered HT — compute TTC and TVA
+      ht  = entered;
+      tva = tvaRate > 0 ? Math.round(ht * tvaRate * 100) / 100 : 0;
+      ttc = Math.round((ht + tva) * 100) / 100;
+    }
+
+    // IRG applied on TTC (amount actually paid)
+    const irg = Math.round(ttc * irgRate * 100) / 100;
+    const net = Math.round((ttc + irg) * 100) / 100;  // total org cost
+
+    // Update preview bar
+    const el = id => document.getElementById(id);
+    el('preview-ht')      && (el('preview-ht').textContent      = entered > 0 ? fmt(ht)  : '— DA');
+    el('preview-tva')     && (el('preview-tva').textContent     = fmt(tva));
+    el('preview-tva-pct') && (el('preview-tva-pct').textContent = tvaRate > 0 ? (tvaRate * 100).toFixed(0) : '0');
+    el('preview-ttc')     && (el('preview-ttc').textContent     = entered > 0 ? fmt(ttc) : '— DA');
+    el('preview-irg')     && (el('preview-irg').textContent     = irg > 0 ? fmt(irg) : '0,00 DA');
+    el('preview-irg-pct') && (el('preview-irg-pct').textContent = irgRate > 0 ? (irgRate * 100).toFixed(0) : '0');
+    el('preview-net')     && (el('preview-net').textContent     = entered > 0 ? fmt(net) : '— DA');
+
+    // Side panel (if present)
+    el('side-gross')      && (el('side-gross').textContent      = entered > 0 ? fmt(isTTC ? ttc : ht) : '—');
+    el('side-irg-rate')   && (el('side-irg-rate').textContent   = irgRate > 0 ? (irgRate * 100).toFixed(0) + ' %' : '0 %');
+    el('side-irg-amount') && (el('side-irg-amount').textContent = irg > 0 ? fmt(irg) : '0,00 DA');
+    el('side-net')        && (el('side-net').textContent        = entered > 0 ? fmt(net) : '—');
+  }
+
+  if (ttcCheckbox) ttcCheckbox.addEventListener('change', () => { updateAmountLabel(); updateIRGPreview(); });
+  if (grossAmountInput) grossAmountInput.addEventListener('input', updateIRGPreview);
+  if (irgRateInput)     irgRateInput.addEventListener('input', updateIRGPreview);
+  if (tvaRateInput)     tvaRateInput.addEventListener('input', updateIRGPreview);
+
+  // Init
+  updateAmountLabel();
+  updateIRGPreview();
+
+  /* ── Beneficiary → accounts + IRG + trainer ─────────────── */
+  // Read URL template from a hidden input rendered by Django — no string manipulation needed
+  const _accountsUrlTpl = (document.getElementById('accounts-url-tpl') || {}).value || '';
+  const buildAccountsUrl = pk => _accountsUrlTpl.replace('/0/', '/' + pk + '/');
+
+  // Store original session options to restore when switching away from trainer
+  let _originalSessionOptions = null;
+
+  function captureOriginalSessionOptions() {
+    if (!_originalSessionOptions && sessionSel) {
+      _originalSessionOptions = Array.from(sessionSel.options).map(o => ({
+        value: o.value, text: o.textContent, selected: o.selected
+      }));
+    }
+  }
+
+  function restoreOriginalSessionOptions() {
+    if (!sessionSel || !_originalSessionOptions) return;
+    sessionSel.innerHTML = '';
+    _originalSessionOptions.forEach(o => {
+      const opt = new Option(o.text, o.value, false, o.selected);
+      sessionSel.appendChild(opt);
+    });
+  }
+
+  function populateLinkedFormationFromSessions(sessions) {
+    const sel = document.getElementById('id_linked_formation');
+    if (!sel) return;
+    const currentVal = sel.value;
+    // Remove dynamically added session options (marked with data-dynamic)
+    Array.from(sel.options).forEach(o => { if (o.dataset.dynamic) o.remove(); });
+    sessions.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.label;
+      opt.dataset.dynamic = '1';
+      if (String(s.id) === currentVal) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  function filterSessionsForTrainer(trainerSessions) {
+    if (!sessionSel) return;
+    captureOriginalSessionOptions();
+    const current = sessionSel.value;
+
+    // Build a set of trainer session ids
+    const ids = new Set(trainerSessions.map(s => String(s.id)));
+
+    // Hide/disable options not belonging to this trainer; keep blank option
+    Array.from(sessionSel.options).forEach(opt => {
+      if (!opt.value) return; // keep blank placeholder
+      opt.style.display = ids.has(opt.value) ? '' : 'none';
+      opt.disabled = !ids.has(opt.value);
+    });
+
+    // If current selection is no longer valid, reset
+    if (current && !ids.has(current)) sessionSel.value = '';
+  }
+
+  async function onBeneficiaryChange() {
+    if (!beneficiarySelect) return;
+    const pk = beneficiarySelect.value;
+
+    if (!pk) {
+      if (paymentAccountSel) paymentAccountSel.innerHTML = '<option value="">— Sélectionner un compte —</option>';
+      if (trainerSection) trainerSection.style.display = 'none';
+      restoreOriginalSessionOptions();
+      return;
+    }
+
+    try {
+      const resp = await fetch(buildAccountsUrl(pk));
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+
+      // Payment accounts
+      if (paymentAccountSel) {
+        paymentAccountSel.innerHTML = '<option value="">— Sélectionner un compte —</option>';
+        data.accounts.forEach(acc => {
+          const opt = new Option(acc.label, acc.id, false, acc.is_default);
+          paymentAccountSel.appendChild(opt);
+        });
+      }
+
+      // IRG rate auto-fill:
+      // Force 0.10 for trainers; use stored rate for others (editable either way)
+      if (irgRateInput) {
+        const isTrainerForIRG = data.is_trainer === true;
+        if (isTrainerForIRG) {
+          irgRateInput.value = '0.1';
+        } else if (data.irg_rate !== undefined) {
+          irgRateInput.value = data.irg_rate;
+        }
+        updateIRGPreview();
+      }
+
+      // Rate snapshots
+      if (dailyRateInput && data.daily_rate) dailyRateInput.value = data.daily_rate;
+      if (monthlyRateInput && data.monthly_rate) monthlyRateInput.value = data.monthly_rate;
+
+      // Trainer section
+      const isTrainer = data.is_trainer === true;
+      if (trainerSection) trainerSection.style.display = isTrainer ? '' : 'none';
+
+      // Filter sessions if trainer
+      if (isTrainer && data.trainer_sessions && data.trainer_sessions.length) {
+        filterSessionsForTrainer(data.trainer_sessions);
+        populateLinkedFormationFromSessions(data.trainer_sessions);
+      } else {
+        restoreOriginalSessionOptions();
+        populateLinkedFormationFromSessions([]);
+      }
+
+    } catch (e) {
+      console.error('[ISI] Beneficiary accounts fetch failed:', e);
+      // Reset dropdown so stale accounts from a previous selection are not shown
+      if (paymentAccountSel) {
+        paymentAccountSel.innerHTML = '<option value="">— Sélectionner un compte —</option>';
+      }
+      if (irgRateInput) { irgRateInput.value = '0'; updateIRGPreview(); }
+      if (trainerSection) trainerSection.style.display = 'none';
+    }
+  }
+
+  if (beneficiarySelect) {
+    beneficiarySelect.addEventListener('change', onBeneficiaryChange);
+    if (beneficiarySelect.value) onBeneficiaryChange();
+  }
+
+  /* ── Trainer payment mode ───────────────────────────────── */
+  function onTrainerModeChange() {
+    if (!trainerModeSelect || !linkedFormationRow) return;
+    linkedFormationRow.style.display = trainerModeSelect.value === 'per_formation' ? '' : 'none';
+  }
+  if (trainerModeSelect) {
+    trainerModeSelect.addEventListener('change', onTrainerModeChange);
+    onTrainerModeChange();
+  }
+
+  /* ── Imputation mutual exclusion ────────────────────────── */
+  function clearOthers(changed) {
+    if (changed === 'session' || changed === 'project') {
+      if (overheadChk) overheadChk.checked = false;
+      if (changed === 'session' && projectSel) projectSel.value = '';
+      if (changed === 'project' && sessionSel) sessionSel.value = '';
+    } else {
+      if (sessionSel) sessionSel.value = '';
+      if (projectSel) projectSel.value = '';
+    }
+  }
+
+  if (sessionSel)  sessionSel.addEventListener('change',  () => { if (sessionSel.value)    clearOthers('session');  });
+  if (projectSel)  projectSel.addEventListener('change',  () => { if (projectSel.value)    clearOthers('project');  });
+  if (overheadChk) overheadChk.addEventListener('change', () => { if (overheadChk.checked) clearOthers('overhead'); });
+
+  /* ── Formation filter (client-side, populates from session options) ── */
+  const formationFilter = document.getElementById('formation-filter');
+
+  function buildFormationFilter() {
+    if (!formationFilter || !sessionSel) return;
+    // Session option text format: "Formation Name — YYYY-MM-DD"
+    const seen = new Set();
+    Array.from(sessionSel.options).forEach(o => {
+      if (!o.value) return;
+      // Split on " — " and take everything before the last " — DATE"
+      const parts = o.textContent.split(' — ');
+      const name = parts.slice(0, parts.length - 1).join(' — ').trim();
+      if (name && !seen.has(name)) {
+        seen.add(name);
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        formationFilter.appendChild(opt);
+      }
+    });
+    // Pre-select formation matching current session value
+    if (sessionSel.value) {
+      const sel = sessionSel.options[sessionSel.selectedIndex];
+      if (sel) {
+        const parts = sel.textContent.split(' — ');
+        const name = parts.slice(0, parts.length - 1).join(' — ').trim();
+        formationFilter.value = name;
+      }
+    }
+  }
+
+  function applyFormationFilter() {
+    if (!sessionSel) return;
+    const chosen = formationFilter ? formationFilter.value : '';
+    Array.from(sessionSel.options).forEach(o => {
+      if (!o.value) { o.style.display = ''; return; }
+      if (!chosen) { o.style.display = ''; o.disabled = false; return; }
+      const parts = o.textContent.split(' — ');
+      const name = parts.slice(0, parts.length - 1).join(' — ').trim();
+      const match = name === chosen;
+      o.style.display = match ? '' : 'none';
+      o.disabled = !match;
+    });
+    // Reset session if no longer visible
+    if (sessionSel.value) {
+      const cur = sessionSel.options[sessionSel.selectedIndex];
+      if (cur && cur.disabled) { sessionSel.value = ''; clearOthers('session'); }
+    }
+  }
+
+  if (formationFilter) {
+    buildFormationFilter();
+    formationFilter.addEventListener('change', applyFormationFilter);
+  }
+
+  /* ── Date pre-fill ──────────────────────────────────────── */
+  function todayISO() {
+    const t = new Date();
+    return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+  }
+  const dateInput = document.getElementById('id_date');
+  if (dateInput && !dateInput.value) dateInput.value = todayISO();
+
+  const paymentDateInput = document.getElementById('id_payment_date');
+  if (paymentDateInput && !paymentDateInput.value) paymentDateInput.value = todayISO();
+
+  /* ── Modal: Quick-add Beneficiary ───────────────────────── */
+  const modalBenef   = document.getElementById('modal-beneficiary');
+  const formBenef    = document.getElementById('form-quick-beneficiary');
+  const errBenef     = document.getElementById('modal-beneficiary-errors');
+  const btnOpenBenef = document.getElementById('btn-quick-add-beneficiary');
+
+  function openBeneficiaryModal() {
+    formBenef.reset();
+    errBenef.style.display = 'none';
+    openModal(modalBenef);
+    formBenef.querySelector('[name=name]').focus();
+  }
+
+  if (btnOpenBenef) btnOpenBenef.addEventListener('click', openBeneficiaryModal);
+  document.getElementById('modal-beneficiary-close')  && document.getElementById('modal-beneficiary-close').addEventListener('click',  () => closeModal(modalBenef));
+  document.getElementById('modal-beneficiary-cancel') && document.getElementById('modal-beneficiary-cancel').addEventListener('click', () => closeModal(modalBenef));
+
+  // Close on backdrop click
+  modalBenef && modalBenef.addEventListener('click', e => { if (e.target === modalBenef) closeModal(modalBenef); });
+
+  document.getElementById('modal-beneficiary-submit') && document.getElementById('modal-beneficiary-submit').addEventListener('click', async () => {
+    const submitBtn = document.getElementById('modal-beneficiary-submit');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    const fd = new FormData(formBenef);
+    try {
+      const resp = await fetch("{% url 'financial:beneficiary_quick_add' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCsrf() },
+        body: fd,
+      });
+      const data = await resp.json();
+
+      if (data.success) {
+        // Add new option and select it
+        const opt = new Option(data.name, data.id, true, true);
+        beneficiarySelect.appendChild(opt);
+        beneficiarySelect.value = data.id;
+        closeModal(modalBenef);
+        // Trigger account/IRG refresh
+        await onBeneficiaryChange();
+      } else {
+        const msgs = [];
+        Object.entries(data.errors || {}).forEach(([f, errs]) => {
+          const label = f === '__all__' ? '' : (f + ': ');
+          msgs.push(label + (Array.isArray(errs) ? errs.join(', ') : errs));
+        });
+        errBenef.textContent = msgs.join(' · ');
+        errBenef.style.display = 'block';
+      }
+    } catch (e) {
+      errBenef.textContent = 'Erreur réseau. Veuillez réessayer.';
+      errBenef.style.display = 'block';
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Créer';
+  });
+
+  /* ── Modal: Quick-add Payment Account ───────────────────── */
+  const modalAcct   = document.getElementById('modal-account');
+  const formAcct    = document.getElementById('form-quick-account');
+  const errAcct     = document.getElementById('modal-account-errors');
+  const btnOpenAcct = document.getElementById('btn-quick-add-account');
+
+  if (btnOpenAcct) btnOpenAcct.addEventListener('click', () => {
+    if (!beneficiarySelect || !beneficiarySelect.value) {
+      alert('Sélectionnez d\'abord un bénéficiaire enregistré.');
+      return;
+    }
+    formAcct.reset();
+    errAcct.style.display = 'none';
+    openModal(modalAcct);
+  });
+
+  document.getElementById('modal-account-close')  && document.getElementById('modal-account-close').addEventListener('click',  () => closeModal(modalAcct));
+  document.getElementById('modal-account-cancel') && document.getElementById('modal-account-cancel').addEventListener('click', () => closeModal(modalAcct));
+  modalAcct && modalAcct.addEventListener('click', e => { if (e.target === modalAcct) closeModal(modalAcct); });
+
+  document.getElementById('modal-account-submit') && document.getElementById('modal-account-submit').addEventListener('click', async () => {
+    if (!beneficiarySelect || !beneficiarySelect.value) return;
+    const submitBtn = document.getElementById('modal-account-submit');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    const fd = new FormData(formAcct);
+    fd.set('beneficiary_id', beneficiarySelect.value);
+
+    try {
+      const resp = await fetch("{% url 'financial:payment_account_quick_add' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCsrf() },
+        body: fd,
+      });
+      const data = await resp.json();
+
+      if (data.success) {
+        if (paymentAccountSel) {
+          const opt = new Option(data.label, data.id, true, true);
+          paymentAccountSel.appendChild(opt);
+          paymentAccountSel.value = data.id;
+        }
+        closeModal(modalAcct);
+      } else {
+        const msgs = [];
+        Object.entries(data.errors || {}).forEach(([f, errs]) => {
+          const label = f === '__all__' ? '' : (f + ': ');
+          msgs.push(label + (Array.isArray(errs) ? errs.join(', ') : errs));
+        });
+        errAcct.textContent = msgs.join(' · ');
+        errAcct.style.display = 'block';
+      }
+    } catch (e) {
+      errAcct.textContent = 'Erreur réseau. Veuillez réessayer.';
+      errAcct.style.display = 'block';
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Créer';
+  });
+
+  /* ── Payment account number: 20-char soft validation ─────── */
+  /* Applies to: CCP, Virement bancaire, Chèque                 */
+  (function () {
+    const TYPES_20 = new Set(['ccp', 'bank', 'check', 'cheque']);
+    const acctTypeSel  = formAcct && formAcct.querySelector('[name="account_type"]');
+    const acctNumInput = document.getElementById('modal-account-number');
+    const hint         = document.getElementById('modal-account-number-hint');
+    const hintTxt      = document.getElementById('modal-account-number-hint-text');
+
+    function validateAcctNum() {
+      if (!acctTypeSel || !acctNumInput || !hint || !hintTxt) return;
+      const type = acctTypeSel.value;
+      const val  = acctNumInput.value.replace(/\s/g, '');
+      if (TYPES_20.has(type) && val.length > 0 && val.length !== 20) {
+        hintTxt.textContent =
+          'Ce type de compte requiert exactement 20 caractères (' + val.length + '/20).';
+        hint.style.display = 'flex';
+      } else {
+        hint.style.display = 'none';
+      }
+    }
+
+    if (acctTypeSel)  acctTypeSel.addEventListener('change', validateAcctNum);
+    if (acctNumInput) acctNumInput.addEventListener('input',  validateAcctNum);
+  }());
+
+})();
+</script>
+{% endblock %}

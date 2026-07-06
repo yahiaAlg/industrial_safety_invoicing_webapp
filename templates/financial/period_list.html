@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Périodes financières{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Périodes financières{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'financial:period_create' %}" class="topbar-btn primary">
+  <i class="bi bi-plus-lg"></i> Nouvelle période
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Périodes financières</h1>
+      <p>Gérez vos exercices et périodes d'analyse</p>
+    </div>
+  </div>
+
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon blue"><i class="bi bi-calendar3-fill"></i></div>
+      <h3>Liste des périodes</h3>
+    </div>
+
+    {% if periods %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Période</th>
+            <th>Type</th>
+            <th>Début</th>
+            <th>Fin</th>
+            <th>Statut</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for period in periods %}
+          <tr>
+            <td>
+              <a href="{% url 'financial:period_detail' period.pk %}"
+                 style="font-weight:700;font-family:var(--font-head);font-size:15px;
+                        color:var(--text-primary);text-decoration:none;">
+                {{ period.name }}
+              </a>
+            </td>
+            <td>
+              <span class="isi-badge blue">{{ period.get_period_type_display }}</span>
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">
+                {{ period.date_start|date:"d/m/Y" }}
+              </span>
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">
+                {{ period.date_end|date:"d/m/Y" }}
+              </span>
+            </td>
+            <td>
+              {% if period.is_closed %}
+                <span class="isi-badge gray"><i class="bi bi-lock-fill"></i> Clôturée</span>
+              {% else %}
+                <span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Ouverte</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                <a href="{% url 'financial:period_detail' period.pk %}"
+                   class="btn btn-ghost btn-sm" title="Voir le détail">
+                  <i class="bi bi-eye-fill"></i>
+                </a>
+                {% if not period.is_closed %}
+                <a href="{% url 'financial:period_edit' period.pk %}"
+                   class="btn btn-ghost btn-sm" title="Modifier">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+                <form method="post" action="{% url 'financial:period_close' period.pk %}"
+                      style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-ghost btn-sm" title="Clôturer"
+                          onclick="return confirm('Clôturer cette période ? Cette action est irréversible.')">
+                    <i class="bi bi-lock-fill"></i>
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;">
+        <i class="bi bi-calendar3"></i>
+      </div>
+      <p style="color:var(--text-muted);font-size:15px;margin:0 0 16px;">
+        Aucune période financière définie.
+      </p>
+      <a href="{% url 'financial:period_create' %}" class="btn btn-amber">
+        <i class="bi bi-plus-lg"></i> Créer la première période
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

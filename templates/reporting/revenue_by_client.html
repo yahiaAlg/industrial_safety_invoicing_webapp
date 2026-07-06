@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Revenus par client{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:revenue_summary' %}" style="color:var(--text-muted);text-decoration:none;">Revenus</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Par client{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Revenus par client</h1><p>Classement des clients par chiffre d'affaires</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="isi-card">
+    <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-building-fill"></i></div><h3>Top clients</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>#</th><th>Client</th><th style="text-align:right;">CA payé (DA)</th><th style="text-align:right;">Factures</th><th style="text-align:right;">Solde impayé</th></tr></thead>
+        <tbody>
+          {% for c in clients %}
+          <tr>
+            <td style="color:#94a3b8;font-weight:700;font-family:var(--font-head);">{{ forloop.counter }}</td>
+            <td>
+              <a href="{% url 'clients:client_detail' c.pk %}" style="font-weight:600;color:var(--text-primary);text-decoration:none;">{{ c.name }}</a>
+              <div style="font-size:12px;color:#64748b;">{{ c.city|default:"" }}{% if c.activity_sector %} · {{ c.activity_sector }}{% endif %}</div>
+            </td>
+            <td style="text-align:right;font-weight:600;font-family:var(--font-head);font-size:16px;">{{ c.total_paid|default:0|floatformat:0 }} DA</td>
+            <td style="text-align:right;">{{ c.invoice_count }}</td>
+            <td style="text-align:right;">
+              {% if c.outstanding_balance > 0 %}
+                <span style="color:#ef4444;font-weight:600;">{{ c.outstanding_balance|floatformat:0 }} DA</span>
+              {% else %}<span class="isi-badge green">Soldé</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5"><div class="text-center" style="padding:40px;"><div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-building"></i></div><p style="color:#64748b;margin:0;">Aucun client trouvé.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

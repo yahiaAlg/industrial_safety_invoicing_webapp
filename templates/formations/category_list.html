@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Catégories de formations{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'formations:formation_list' %}" style="color:var(--text-muted);text-decoration:none;">Catalogue</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Catégories{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'formations:category_create' %}" class="topbar-btn primary">
+  <i class="bi bi-plus-lg"></i> Nouvelle catégorie
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Catégories de formations</h1>
+      <p>Organiser le catalogue par thématiques</p>
+    </div>
+    <a href="{% url 'formations:formation_list' %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour au catalogue
+    </a>
+  </div>
+
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-tags-fill"></i></div>
+      <h3>Catégories <span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">— {{ categories.count }} au total</span></h3>
+    </div>
+
+    {% if categories %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Catégorie</th>
+            <th>Description</th>
+            <th>Formations</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for category in categories %}
+          <tr>
+            <td>
+              <span style="font-family:var(--font-mono,monospace);font-size:12px;font-weight:700;
+                           background:{{ category.color|default:'#f59e0b' }}22;
+                           color:{{ category.color|default:'#f59e0b' }};
+                           border:1px solid {{ category.color|default:'#f59e0b' }}55;
+                           border-radius:5px;padding:2px 8px;letter-spacing:.5px;">
+                {{ category.code }}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:28px;height:28px;border-radius:7px;
+                            background:{{ category.color|default:'#f59e0b' }}22;
+                            border:2px solid {{ category.color|default:'#f59e0b' }};
+                            flex-shrink:0;">
+                </div>
+                <span style="font-weight:600;">{{ category.name }}</span>
+              </div>
+            </td>
+            <td>
+              <span style="color:var(--text-muted);font-size:13px;">
+                {{ category.description|default:"—"|truncatechars:60 }}
+              </span>
+            </td>
+            <td>
+              <span style="font-weight:600;">{{ category.formations.count }}</span>
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                <a href="{% url 'formations:category_edit' category.pk %}"
+                   class="btn btn-ghost btn-sm" title="Modifier">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+                <form method="post" action="{% url 'formations:category_delete' category.pk %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-danger-soft btn-sm" title="Supprimer"
+                          onclick="return confirm('Supprimer la catégorie « {{ category.name }} » ?')">
+                    <i class="bi bi-trash-fill"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;"><i class="bi bi-tags"></i></div>
+      <p style="color:var(--text-muted);font-size:15px;margin:0 0 16px;">Aucune catégorie créée pour le moment.</p>
+      <a href="{% url 'formations:category_create' %}" class="btn btn-amber">
+        <i class="bi bi-plus-lg"></i> Créer la première catégorie
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

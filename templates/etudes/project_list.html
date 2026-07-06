@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Projets d'étude{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Études{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'etudes:analytics' %}" class="topbar-btn">
+  <i class="bi bi-bar-chart-fill"></i> Analytiques
+</a>
+<a href="{% url 'etudes:project_create' %}" class="topbar-btn primary">
+  <i class="bi bi-plus-lg"></i> Nouveau projet
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Projets d'étude</h1>
+      <p>Suivi des missions de conseil et d'audit industriel</p>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="isi-card mb-4">
+    <div class="isi-card-body" style="padding:16px 24px;">
+      <form method="get" novalidate>
+        <div class="row g-3 align-items-end">
+          <div class="col-lg-4 col-md-6">
+            <label class="form-label">Recherche</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-search"></i>
+              <input type="text" name="q" class="form-control"
+                     value="{{ filter_form.q.value|default:'' }}"
+                     placeholder="Titre, client, type, référence…">
+            </div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label">Statut</label>
+            <select name="status" class="form-select">
+              {% for val, label in filter_form.status.field.choices %}
+              <option value="{{ val }}" {% if filter_form.status.value == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label">Priorité</label>
+            <select name="priority" class="form-select">
+              {% for val, label in filter_form.priority.field.choices %}
+              <option value="{{ val }}" {% if filter_form.priority.value == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label">&nbsp;</label>
+            <div class="form-check" style="padding-left:0;display:flex;align-items:center;gap:10px;height:38px;">
+              <input class="form-check-input" type="checkbox" name="overdue_only" id="id_overdue_only"
+                     {% if filter_form.overdue_only.value %}checked{% endif %}
+                     style="width:18px;height:18px;">
+              <label class="form-check-label" for="id_overdue_only" style="font-size:13px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--text-primary);">
+                En retard uniquement
+              </label>
+            </div>
+          </div>
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber flex-grow-1">
+                <i class="bi bi-funnel-fill"></i> Filtrer
+              </button>
+              <a href="{% url 'etudes:project_list' %}" class="btn btn-ghost" title="Réinitialiser">
+                <i class="bi bi-x-lg"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon blue"><i class="bi bi-diagram-3-fill"></i></div>
+      <h3>
+        Projets
+        {% if page_obj.paginator.count %}
+        <span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">
+          — {{ page_obj.paginator.count }} résultat{{ page_obj.paginator.count|pluralize }}
+        </span>
+        {% endif %}
+      </h3>
+    </div>
+
+    {% if page_obj.object_list %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Projet</th>
+            <th>Client</th>
+            <th>Type</th>
+            <th>Priorité</th>
+            <th>Avancement</th>
+            <th>Échéance</th>
+            <th>Statut</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for project in page_obj.object_list %}
+          <tr>
+            <td>
+              <div>
+                <a href="{% url 'etudes:project_detail' project.pk %}"
+                   style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                  {{ project.title }}
+                </a>
+                {% if project.reference %}
+                <div style="font-family:monospace;font-size:11px;color:var(--text-muted);margin-top:2px;">{{ project.reference }}</div>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              <a href="{% url 'clients:client_detail' project.client.pk %}"
+                 style="color:var(--text-muted);font-size:13px;text-decoration:none;">
+                {{ project.client.name }}
+              </a>
+            </td>
+            <td><span style="color:var(--text-muted);font-size:13px;">{{ project.project_type|default:"—"|truncatechars:25 }}</span></td>
+            <td>
+              {% if project.priority == 'urgent' %}
+                <span class="isi-badge red"><i class="bi bi-exclamation-circle-fill"></i> Urgente</span>
+              {% elif project.priority == 'high' %}
+                <span class="isi-badge amber"><i class="bi bi-arrow-up-circle-fill"></i> Haute</span>
+              {% elif project.priority == 'medium' %}
+                <span class="isi-badge blue">Normale</span>
+              {% else %}
+                <span class="isi-badge gray">Basse</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;min-width:100px;">
+                <div style="flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                  <div style="height:100%;width:{{ project.progress_percentage }}%;
+                              background:{% if project.progress_percentage == 100 %}var(--success){% elif project.progress_percentage >= 50 %}#3b82f6{% else %}var(--accent){% endif %};
+                              border-radius:3px;"></div>
+                </div>
+                <span style="font-size:12px;font-weight:600;color:var(--text-muted);white-space:nowrap;">{{ project.progress_percentage }}%</span>
+              </div>
+            </td>
+            <td>
+              {% if project.end_date %}
+              <span style="font-size:13px;color:{% if project.is_overdue %}var(--danger){% else %}var(--text-muted){% endif %};">
+                {{ project.end_date|date:"d/m/Y" }}
+                {% if project.is_overdue %}
+                <i class="bi bi-exclamation-triangle-fill" style="font-size:11px;"></i>
+                {% endif %}
+              </span>
+              {% else %}<span style="color:var(--text-muted);font-size:13px;">—</span>{% endif %}
+            </td>
+            <td>
+              {% if project.status == 'completed' %}
+                <span class="isi-badge green"><i class="bi bi-check-circle-fill"></i> Terminé</span>
+              {% elif project.status == 'in_progress' %}
+                <span class="isi-badge blue"><i class="bi bi-play-circle-fill"></i> En cours</span>
+              {% elif project.status == 'on_hold' %}
+                <span class="isi-badge amber"><i class="bi bi-pause-circle-fill"></i> En pause</span>
+              {% else %}
+                <span class="isi-badge gray"><i class="bi bi-x-circle-fill"></i> Annulé</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;gap:6px;">
+                <a href="{% url 'etudes:project_detail' project.pk %}" class="btn btn-ghost btn-sm" title="Détail">
+                  <i class="bi bi-eye-fill"></i>
+                </a>
+                <a href="{% url 'etudes:project_edit' project.pk %}" class="btn btn-ghost btn-sm" title="Modifier">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div style="padding:16px 24px;border-top:1px solid var(--card-border);
+                display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="font-size:13px;color:var(--text-muted);">
+        Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+      </div>
+      <div style="display:flex;gap:4px;">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-ghost btn-sm"><i class="bi bi-chevron-left"></i></a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+          <button class="btn btn-amber btn-sm" disabled>{{ num }}</button>
+          {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+          <a href="?page={{ num }}" class="btn btn-ghost btn-sm">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="btn btn-ghost btn-sm"><i class="bi bi-chevron-right"></i></a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;"><i class="bi bi-diagram-3"></i></div>
+      {% if filter_form.q.value or filter_form.status.value or filter_form.priority.value %}
+        <p style="color:var(--text-muted);font-size:15px;margin:0 0 16px;">Aucun projet ne correspond à vos critères.</p>
+        <a href="{% url 'etudes:project_list' %}" class="btn btn-ghost"><i class="bi bi-x-lg"></i> Réinitialiser</a>
+      {% else %}
+        <p style="color:var(--text-muted);font-size:15px;margin:0 0 16px;">Aucun projet d'étude enregistré.</p>
+        <a href="{% url 'etudes:project_create' %}" class="btn btn-amber"><i class="bi bi-plus-lg"></i> Créer le premier projet</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

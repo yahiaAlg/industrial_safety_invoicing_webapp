@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Catégories de formations{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:sessions_report' %}" style="color:var(--text-muted);text-decoration:none;">Formations</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Catégories{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Répartition par catégorie</h1><p>Analyse de l'activité formation par domaine</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="isi-card fade-up-delay-1">
+        <div class="isi-card-header"><div class="card-icon purple"><i class="bi bi-pie-chart-fill"></i></div><h3>Sessions par catégorie</h3></div>
+        <div class="isi-card-body"><div style="position:relative;height:280px;"><canvas id="chartCatSplit"></canvas></div></div>
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="isi-card fade-up-delay-2">
+        <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-collection-fill"></i></div><h3>Détail par catégorie</h3></div>
+        <div style="overflow-x:auto;">
+          <table class="isi-table">
+            <thead><tr><th>Catégorie</th><th style="text-align:center;">Formations</th><th style="text-align:center;">Sessions</th><th style="text-align:center;">Participants</th></tr></thead>
+            <tbody>
+              {% for c in categories %}
+              <tr>
+                <td style="font-weight:600;">{{ c.name }}</td>
+                <td style="text-align:center;">{{ c.formation_count }}</td>
+                <td style="text-align:center;font-weight:600;">{{ c.session_count }}</td>
+                <td style="text-align:center;color:#64748b;">{{ c.participant_count }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4"><div class="text-center" style="padding:40px;"><p style="color:#64748b;margin:0;">Aucune catégorie.</p></div></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+const catColors = ['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#f97316','#06b6d4'];
+const cats = [{% for c in categories %}{ label: "{{ c.name }}", count: {{ c.session_count }} },{% endfor %}];
+if (cats.length) {
+  new Chart(document.getElementById('chartCatSplit'), {
+    type: 'doughnut',
+    data: { labels: cats.map(d=>d.label), datasets: [{ data: cats.map(d=>d.count), backgroundColor: catColors.slice(0, cats.length), borderWidth: 0, hoverOffset: 5 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '58%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { family: 'Barlow', size: 11 }, padding: 12, boxWidth: 12 } } } }
+  });
+}
+</script>
+{% endblock %}

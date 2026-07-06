@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block title %}Analytiques — Études{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'etudes:project_list' %}" style="color:var(--text-muted);text-decoration:none;">Études</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Analytiques{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'etudes:project_create' %}" class="topbar-btn primary">
+  <i class="bi bi-plus-lg"></i> Nouveau projet
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Analytiques — Études</h1>
+      <p>Vue d'ensemble des projets de conseil</p>
+    </div>
+    <a href="{% url 'etudes:project_list' %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour à la liste
+    </a>
+  </div>
+
+  <!-- ── KPI Row ─────────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon blue" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-diagram-3-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ total }}</div>
+            <div class="stat-label">Total projets</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-play-circle-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">
+              {% for s in by_status %}{% if s.status == 'in_progress' %}{{ s.count }}{% endif %}{% endfor %}
+            </div>
+            <div class="stat-label">En cours</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon {% if overdue %}red{% else %}green{% endif %}"
+               style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-{% if overdue %}exclamation-triangle-fill{% else %}check-circle-fill{% endif %}"></i>
+          </div>
+          <div>
+            <div class="stat-value" style="color:{% if overdue %}var(--danger){% else %}var(--success){% endif %};">
+              {{ overdue|length }}
+            </div>
+            <div class="stat-label">En retard</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+          <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+            <i class="bi bi-bar-chart-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value" style="font-size:18px;">{{ budget_total|floatformat:0 }}</div>
+            <div class="stat-label">Budget total (DA)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Charts row ─────────────────────────────────────── -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-5 fade-up-delay-1">
+      <div class="isi-card" style="height:100%;">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-pie-chart-fill"></i></div>
+          <h3>Répartition par statut</h3>
+        </div>
+        <div class="isi-card-body" style="display:flex;align-items:center;justify-content:center;padding:24px;">
+          <div style="position:relative;width:220px;height:220px;">
+            <canvas id="statusChart"></canvas>
+          </div>
+        </div>
+        <!-- Legend -->
+        <div style="padding:0 24px 20px;display:flex;flex-wrap:wrap;gap:8px;">
+          {% for s in by_status %}
+          <div style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-muted);">
+            <div style="width:10px;height:10px;border-radius:50%;
+                        background:{% if s.status == 'in_progress' %}#3b82f6{% elif s.status == 'completed' %}#10b981{% elif s.status == 'on_hold' %}#f59e0b{% else %}#94a3b8{% endif %};
+                        flex-shrink:0;"></div>
+            {{ s.status|title }} ({{ s.count }})
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7 fade-up-delay-2">
+      <div class="isi-card" style="height:100%;">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-bar-chart-fill"></i></div>
+          <h3>Répartition par priorité</h3>
+        </div>
+        <div class="isi-card-body" style="padding:20px 24px;">
+          <canvas id="priorityChart" style="max-height:200px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Overdue projects ────────────────────────────────── -->
+  {% if overdue %}
+  <div class="isi-card mb-4 fade-up-delay-2">
+    <div class="isi-card-header">
+      <div class="card-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div>
+      <h3>Projets en retard <span style="font-size:13px;font-weight:400;color:var(--danger);">({{ overdue|length }})</span></h3>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Projet</th>
+            <th>Client</th>
+            <th>Priorité</th>
+            <th>Échéance</th>
+            <th>Retard</th>
+            <th>Avancement</th>
+            <th style="text-align:right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for project in overdue %}
+          <tr>
+            <td>
+              <a href="{% url 'etudes:project_detail' project.pk %}"
+                 style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                {{ project.title }}
+              </a>
+            </td>
+            <td><span style="color:var(--text-muted);font-size:13px;">{{ project.client.name }}</span></td>
+            <td>
+              {% if project.priority == 'urgent' %}
+                <span class="isi-badge red"><i class="bi bi-exclamation-circle-fill"></i> Urgente</span>
+              {% elif project.priority == 'high' %}
+                <span class="isi-badge amber"><i class="bi bi-arrow-up-circle-fill"></i> Haute</span>
+              {% else %}
+                <span class="isi-badge blue">Normale</span>
+              {% endif %}
+            </td>
+            <td><span style="color:var(--danger);font-size:13px;">{{ project.end_date|date:"d/m/Y" }}</span></td>
+            <td>
+              <span style="font-weight:700;color:var(--danger);font-size:13px;">
+                {{ project.days_overdue }} jour{{ project.days_overdue|pluralize }}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;min-width:100px;">
+                <div style="flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                  <div style="height:100%;width:{{ project.progress_percentage }}%;background:var(--accent);border-radius:3px;"></div>
+                </div>
+                <span style="font-size:12px;font-weight:600;color:var(--text-muted);">{{ project.progress_percentage }}%</span>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;">
+                <a href="{% url 'etudes:project_detail' project.pk %}" class="btn btn-ghost btn-sm">
+                  <i class="bi bi-eye-fill"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── All projects margin table ──────────────────────── -->
+  <div class="isi-card fade-up-delay-3">
+    <div class="isi-card-header">
+      <div class="card-icon green"><i class="bi bi-table"></i></div>
+      <h3>Tous les projets — Budget & Marge</h3>
+    </div>
+    {% if projects %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Projet</th>
+            <th>Client</th>
+            <th>Budget (DA)</th>
+            <th>Dépenses (DA)</th>
+            <th>Marge (DA)</th>
+            <th>Taux</th>
+            <th>Statut</th>
+            <th style="text-align:right;">Détail</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for project in projects %}
+          <tr>
+            <td>
+              <div style="font-weight:600;font-size:13.5px;">{{ project.title|truncatechars:35 }}</div>
+              {% if project.reference %}<div style="font-family:monospace;font-size:11px;color:var(--text-muted);">{{ project.reference }}</div>{% endif %}
+            </td>
+            <td><span style="color:var(--text-muted);font-size:13px;">{{ project.client.name }}</span></td>
+            <td style="font-weight:500;">{{ project.budget|floatformat:0 }}</td>
+            <td style="font-weight:500;">{{ project.total_expenses|floatformat:0 }}</td>
+            <td style="font-weight:700;color:{% if project.margin >= 0 %}var(--success){% else %}var(--danger){% endif %};">
+              {{ project.margin|floatformat:0 }}
+            </td>
+            <td>
+              <span style="font-size:13px;font-weight:700;
+                           color:{% if project.margin_rate >= 20 %}var(--success){% elif project.margin_rate >= 0 %}var(--accent){% else %}var(--danger){% endif %};">
+                {{ project.margin_rate }}%
+              </span>
+            </td>
+            <td>
+              {% if project.status == 'completed' %}
+                <span class="isi-badge green"><i class="bi bi-check-circle-fill"></i> Terminé</span>
+              {% elif project.status == 'in_progress' %}
+                <span class="isi-badge blue"><i class="bi bi-play-circle-fill"></i> En cours</span>
+              {% elif project.status == 'on_hold' %}
+                <span class="isi-badge amber"><i class="bi bi-pause-circle-fill"></i> En pause</span>
+              {% else %}
+                <span class="isi-badge gray"><i class="bi bi-x-circle-fill"></i> Annulé</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;justify-content:flex-end;">
+                <a href="{% url 'etudes:project_detail' project.pk %}" class="btn btn-ghost btn-sm">
+                  <i class="bi bi-eye-fill"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:48px 24px;">
+      <div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-diagram-3"></i></div>
+      <p style="color:var(--text-muted);font-size:14px;margin:0;">Aucun projet trouvé.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ── Status donut chart ─────────────────────────────────
+const statusData = {
+  labels: [{% for s in by_status %}'{{ s.status|title }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+  datasets: [{
+    data: [{% for s in by_status %}{{ s.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+    backgroundColor: [
+      {% for s in by_status %}
+      '{% if s.status == "in_progress" %}#3b82f6{% elif s.status == "completed" %}#10b981{% elif s.status == "on_hold" %}#f59e0b{% else %}#94a3b8{% endif %}'
+      {% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ],
+    borderWidth: 0,
+    hoverOffset: 6,
+  }]
+};
+
+new Chart(document.getElementById('statusChart'), {
+  type: 'doughnut',
+  data: statusData,
+  options: {
+    cutout: '70%',
+    plugins: { legend: { display: false }, tooltip: {
+      callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}` }
+    }},
+    animation: { animateScale: true }
+  }
+});
+
+// ── Priority bar chart ─────────────────────────────────
+const priorityLabels = {
+  'low': 'Basse', 'medium': 'Normale', 'high': 'Haute', 'urgent': 'Urgente'
+};
+const priorityColors = {
+  'low': '#94a3b8', 'medium': '#3b82f6', 'high': '#f59e0b', 'urgent': '#ef4444'
+};
+
+const pLabels  = [{% for p in by_priority %}'{{ p.priority }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+const pCounts  = [{% for p in by_priority %}{{ p.count }}{% if not forloop.last %},{% endif %}{% endfor %}];
+const pColors  = pLabels.map(k => priorityColors[k] || '#94a3b8');
+const pDisplay = pLabels.map(k => priorityLabels[k] || k);
+
+new Chart(document.getElementById('priorityChart'), {
+  type: 'bar',
+  data: {
+    labels: pDisplay,
+    datasets: [{
+      label: 'Projets',
+      data: pCounts,
+      backgroundColor: pColors,
+      borderRadius: 6,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { stepSize: 1, font: { family: 'Barlow', size: 12 } },
+        grid: { color: '#f1f5f9' }
+      },
+      x: {
+        ticks: { font: { family: 'Barlow', size: 12 } },
+        grid: { display: false }
+      }
+    }
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Phases de projets{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:project_overview_report' %}" style="color:var(--text-muted);text-decoration:none;">Projets</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Phases{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Phases de projets</h1>
+      <p>Avancement et blocages des phases sur tous les projets actifs</p>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-sm-3">
+      <div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+        <div class="card-icon blue" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-diagram-3-fill"></i></div>
+        <div><div class="stat-value">{{ total_phases }}</div><div class="stat-label">Total phases</div></div>
+      </div></div>
+    </div>
+    {% for s in by_status %}
+    <div class="col-sm-3">
+      <div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+        <div class="card-icon {% if s.status == 'completed' %}green{% elif s.status == 'in_progress' %}blue{% elif s.status == 'blocked' %}red{% else %}gray{% endif %}" style="width:44px;height:44px;font-size:20px;border-radius:12px;">
+          <i class="bi bi-{% if s.status == 'completed' %}check-circle-fill{% elif s.status == 'in_progress' %}play-circle-fill{% elif s.status == 'blocked' %}x-circle-fill{% else %}clock-fill{% endif %}"></i>
+        </div>
+        <div>
+          <div class="stat-value">{{ s.count }}</div>
+          <div class="stat-label">{% if s.status == 'completed' %}Terminées{% elif s.status == 'in_progress' %}En cours{% elif s.status == 'blocked' %}Bloquées{% else %}En attente{% endif %}</div>
+        </div>
+      </div></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="isi-card" style="height:100%;">
+        <div class="isi-card-header"><div class="card-icon purple"><i class="bi bi-pie-chart-fill"></i></div><h3>Répartition par statut</h3></div>
+        <div class="isi-card-body"><div style="position:relative;height:240px;"><canvas id="chartPhases"></canvas></div></div>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      {% if blocked_phases %}
+      <div class="isi-card mb-3">
+        <div class="isi-card-header"><div class="card-icon red"><i class="bi bi-x-circle-fill"></i></div><h3>Phases bloquées</h3></div>
+        <div style="overflow-x:auto;"><table class="isi-table">
+          <thead><tr><th>Phase</th><th>Projet</th><th>Client</th></tr></thead>
+          <tbody>{% for ph in blocked_phases %}<tr>
+            <td style="font-weight:600;">{{ ph.name|truncatechars:28 }}</td>
+            <td style="color:#64748b;font-size:13px;">{{ ph.project.title|truncatechars:22 }}</td>
+            <td style="color:#94a3b8;font-size:12px;">{{ ph.project.client.name|truncatechars:18 }}</td>
+          </tr>{% empty %}<tr><td colspan="3" style="text-align:center;padding:16px;color:#64748b;">Aucune phase bloquée.</td></tr>{% endfor %}</tbody>
+        </table></div>
+      </div>
+      {% endif %}
+
+      {% if overdue_phases %}
+      <div class="isi-card">
+        <div class="isi-card-header"><div class="card-icon red"><i class="bi bi-clock-fill"></i></div><h3>Phases en retard</h3></div>
+        <div style="overflow-x:auto;"><table class="isi-table">
+          <thead><tr><th>Phase</th><th>Projet</th><th>Échéance</th></tr></thead>
+          <tbody>{% for ph in overdue_phases %}<tr>
+            <td style="font-weight:600;">{{ ph.name|truncatechars:24 }}</td>
+            <td style="color:#64748b;font-size:13px;">{{ ph.project.title|truncatechars:22 }}</td>
+            <td><span class="isi-badge red"><i class="bi bi-clock-fill"></i> {{ ph.due_date|date:"d/m/Y" }}</span></td>
+          </tr>{% endfor %}</tbody>
+        </table></div>
+      </div>
+      {% endif %}
+
+      {% if not blocked_phases and not overdue_phases %}
+      <div class="isi-card">
+        <div class="isi-card-body" style="padding:40px;text-align:center;">
+          <div style="font-size:48px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-check2-all"></i></div>
+          <p style="color:#64748b;margin:0;">Aucune phase bloquée ou en retard.</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+const phaseData = [{% for s in by_status %}{ status: "{{ s.status }}", count: {{ s.count }} },{% endfor %}];
+const pLabels = { pending: 'En attente', in_progress: 'En cours', completed: 'Terminée', blocked: 'Bloquée' };
+const pColors = { pending: '#94a3b8', in_progress: '#3b82f6', completed: '#10b981', blocked: '#ef4444' };
+if (phaseData.length) {
+  new Chart(document.getElementById('chartPhases'), {
+    type: 'doughnut',
+    data: { labels: phaseData.map(d => pLabels[d.status] || d.status), datasets: [{ data: phaseData.map(d => d.count), backgroundColor: phaseData.map(d => pColors[d.status] || '#94a3b8'), borderWidth: 0, hoverOffset: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '58%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { family: 'Barlow', size: 11 }, padding: 10, boxWidth: 12 } } } }
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Dépenses par catégorie{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:expense_breakdown_report' %}" style="color:var(--text-muted);text-decoration:none;">Dépenses</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Par catégorie{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'reporting:export_expenses_csv' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}" class="topbar-btn primary"><i class="bi bi-download"></i> Exporter CSV</a>
+{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Dépenses par catégorie</h1>
+      <p>Ventilation des dépenses approuvées — {{ date_from|date:"d/m/Y" }} au {{ date_to|date:"d/m/Y" }}</p>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:14px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+      <a href="{% url 'reporting:expense_by_category' %}" class="btn btn-outline-secondary" style="font-size:13px;">Réinitialiser</a>
+    </form>
+  </div></div>
+
+  <!-- KPI summary -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon red" style="width:48px;height:48px;font-size:22px;border-radius:12px;flex-shrink:0;"><i class="bi bi-credit-card-fill"></i></div>
+      <div><div class="stat-value">{{ grand_total|default:0|floatformat:0 }} <span style="font-size:13px;font-weight:400;">DA</span></div><div class="stat-label">Total toutes catégories</div></div>
+    </div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon purple" style="width:48px;height:48px;font-size:22px;border-radius:12px;flex-shrink:0;"><i class="bi bi-tags-fill"></i></div>
+      <div><div class="stat-value">{{ rows|length }}</div><div class="stat-label">Catégories actives</div></div>
+    </div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon amber" style="width:48px;height:48px;font-size:22px;border-radius:12px;flex-shrink:0;"><i class="bi bi-trophy-fill"></i></div>
+      <div><div class="stat-value" style="font-size:14px;">{{ rows.0.category__name|default:"—"|truncatechars:16 }}</div><div class="stat-label">Catégorie principale</div></div>
+    </div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon" style="width:48px;height:48px;font-size:22px;border-radius:12px;flex-shrink:0;background:rgba(239,68,68,.12);color:#ef4444;"><i class="bi bi-percent"></i></div>
+      <div><div class="stat-value">{{ rows.0.pct|default:0 }}%</div><div class="stat-label">Part du top poste</div></div>
+    </div></div></div>
+  </div>
+
+  <!-- Charts -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-5">
+      <div class="isi-card h-100">
+        <div class="isi-card-header"><div class="card-icon red"><i class="bi bi-pie-chart-fill"></i></div><h3>Répartition</h3></div>
+        <div class="isi-card-body"><div style="position:relative;height:280px;"><canvas id="chartCat"></canvas></div></div>
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="isi-card h-100">
+        <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-bar-chart-fill"></i></div><h3>Comparaison par catégorie</h3></div>
+        <div class="isi-card-body"><div style="position:relative;height:280px;"><canvas id="chartCatBar"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly trend by category (line chart) -->
+  <div class="isi-card mb-4">
+    <div class="isi-card-header"><div class="card-icon" style="background:rgba(16,185,129,.15);color:#10b981;width:36px;height:36px;border-radius:10px;font-size:16px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-graph-up"></i></div><h3>Évolution mensuelle par catégorie</h3><span style="font-size:12px;color:#94a3b8;margin-left:8px;">(top 5 catégories)</span></div>
+    <div class="isi-card-body"><div style="position:relative;height:260px;"><canvas id="chartCatTrend"></canvas></div></div>
+  </div>
+
+  <!-- Detailed table -->
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-bar-chart-fill"></i></div>
+      <h3>Détail par catégorie</h3>
+      <div class="ms-auto" style="font-size:13px;color:#64748b;">Total : <strong>{{ grand_total|default:0|floatformat:0 }} DA</strong></div>
+    </div>
+    <div style="overflow-x:auto;"><table class="isi-table">
+      <thead><tr><th>#</th><th>Catégorie</th><th style="text-align:right;">Nb opérations</th><th style="text-align:right;">Montant</th><th style="text-align:right;">Moy. / opération</th><th>Part du total</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td style="color:#94a3b8;font-size:12px;">{{ forloop.counter }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:var(--cat-color-{{ forloop.counter0 }});display:inline-block;" class="cat-dot" data-idx="{{ forloop.counter0 }}"></span>
+              <strong>{{ r.category__name|default:"Sans catégorie" }}</strong>
+            </div>
+          </td>
+          <td style="text-align:right;">{{ r.count }}</td>
+          <td style="text-align:right;font-weight:600;">{{ r.total|floatformat:0 }} DA</td>
+          <td style="text-align:right;color:#64748b;">{% if r.count %}{{ r.total|divisibleby:r.count|yesno:"," }}{{ r.avg|default:0|floatformat:0 }} DA{% else %}—{% endif %}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;">
+              <div style="width:80px;height:6px;background:#e2e8f0;border-radius:3px;"><div style="width:{{ r.pct|stringformat:'.1f' }}%;height:6px;background:var(--accent);border-radius:3px;transition:width .4s;"></div></div>
+              <span style="font-size:12px;font-weight:700;min-width:34px;text-align:right;">{{ r.pct }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6"><div class="text-center" style="padding:40px;"><p style="color:#64748b;margin:0;">Aucune catégorie.</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const palette = ['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#f97316','#06b6d4','#84cc16','#ec4899','#6366f1'];
+/* Colour the legend dots */
+document.querySelectorAll('.cat-dot').forEach(el=>{
+  el.style.background = palette[parseInt(el.dataset.idx) % palette.length];
+});
+
+const catData = [{% for r in rows %}{
+  label: "{{ r.category__name|default:'Sans catégorie'|escapejs }}",
+  total: {{ r.total|default:0|stringformat:".2f" }},
+  count: {{ r.count|default:0 }},
+  pct:   {{ r.pct|default:0|stringformat:".1f" }}
+},{% endfor %}];
+
+const trendData = {
+  months: [{% for m in trend_months %}"{{ m|date:'m/Y' }}",{% endfor %}],
+  series: [{% for s in trend_series %}{
+    label: "{{ s.label|escapejs }}",
+    data:  [{% for v in s.values %}{{ v|default:0|stringformat:".2f" }},{% endfor %}]
+  },{% endfor %}]
+};
+
+const fmtDA = v => v.toLocaleString('fr-DZ') + ' DA';
+const base = {responsive:true,maintainAspectRatio:false};
+
+/* 1 — Doughnut */
+if(catData.length){
+  new Chart(document.getElementById('chartCat'),{
+    type:'doughnut',
+    data:{labels:catData.map(d=>d.label),datasets:[{data:catData.map(d=>d.total),backgroundColor:palette.slice(0,catData.length),borderWidth:0,hoverOffset:6}]},
+    options:{...base,cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:'#64748b',font:{family:'Barlow',size:11},padding:10,boxWidth:12}},tooltip:{callbacks:{label:ctx=>` ${fmtDA(ctx.parsed)} (${catData[ctx.dataIndex].pct}%)`}}}}
+  });
+}
+
+/* 2 — Horizontal bar comparison */
+if(catData.length){
+  new Chart(document.getElementById('chartCatBar'),{
+    type:'bar',
+    data:{labels:catData.map(d=>d.label),datasets:[{label:'Montant',data:catData.map(d=>d.total),backgroundColor:catData.map((_,i)=>palette[i%palette.length]+'bb'),borderColor:catData.map((_,i)=>palette[i%palette.length]),borderWidth:1,borderRadius:6}]},
+    options:{...base,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${fmtDA(ctx.parsed.x)}`}}},scales:{x:{grid:{color:'#e2e8f0'},ticks:{color:'#64748b',font:{family:'Barlow',size:11},callback:v=>v.toLocaleString('fr-DZ')}},y:{grid:{display:false},ticks:{color:'#475569',font:{family:'Barlow',size:11}}}}}
+  });
+}
+
+/* 3 — Multi-line trend (top 5 categories) */
+if(trendData.months.length && trendData.series.length){
+  const ds = trendData.series.slice(0,5).map((s,i)=>({
+    label: s.label,
+    data:  s.data,
+    borderColor: palette[i%palette.length],
+    backgroundColor: palette[i%palette.length]+'22',
+    tension: 0.4,
+    fill: false,
+    pointRadius: 3,
+    pointHoverRadius: 5,
+    borderWidth: 2
+  }));
+  new Chart(document.getElementById('chartCatTrend'),{
+    type:'line',
+    data:{labels:trendData.months, datasets:ds},
+    options:{...base,interaction:{mode:'index'},plugins:{legend:{position:'bottom',labels:{color:'#64748b',font:{family:'Barlow',size:11},padding:12,boxWidth:12}}},scales:{x:{grid:{display:false},ticks:{color:'#64748b',font:{family:'Barlow',size:11}}},y:{grid:{color:'#e2e8f0'},ticks:{color:'#64748b',font:{family:'Barlow',size:11},callback:v=>v.toLocaleString('fr-DZ')}}}}
+  });
+}
+</script>
+{% endblock %}

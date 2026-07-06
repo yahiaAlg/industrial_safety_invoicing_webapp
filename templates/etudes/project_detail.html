@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.title }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'etudes:project_list' %}" style="color:var(--text-muted);text-decoration:none;">Études</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ project.title|truncatechars:40 }}{% endblock %}
+
+{% block topbar_actions %}
+{% if request.user.profile.is_admin %}
+  <a href="{% url 'etudes:project_edit' project.pk %}" class="topbar-btn">
+    <i class="bi bi-pencil-fill"></i> Modifier
+  </a>
+  {% if project.status == 'in_progress' %}
+  <a href="{% url 'etudes:project_close' project.pk %}" class="topbar-btn">
+    <i class="bi bi-check-circle-fill"></i> Clôturer
+  </a>
+  {% endif %}
+ <a href="{% url 'etudes:project_print' project.pk %}"
+    class="topbar-btn" target="_blank">
+   <i class="bi bi-printer-fill"></i> Imprimer
+ </a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ project.title }}</h1>
+      <p>
+        <a href="{% url 'clients:client_detail' project.client.pk %}"
+           style="color:var(--text-muted);text-decoration:none;">
+          <i class="bi bi-building-fill" style="color:var(--accent);font-size:12px;"></i>
+          {{ project.client.name }}
+        </a>
+        {% if project.reference %}
+        <span style="margin-left:10px;font-family:monospace;font-size:12px;
+                     background:#f1f5f9;padding:2px 8px;border-radius:4px;color:var(--text-muted);">
+          {{ project.reference }}
+        </span>
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ── Left column ─────────────────────────────────────── -->
+    <div class="col-lg-4">
+
+      <!-- Status card -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-body" style="padding:24px;">
+
+          <!-- Progress ring-style indicator -->
+          <div style="text-align:center;margin-bottom:20px;">
+            <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;
+                        width:96px;height:96px;">
+              <svg viewBox="0 0 36 36" style="width:96px;height:96px;transform:rotate(-90deg);">
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e2e8f0" stroke-width="2.5"/>
+                <circle cx="18" cy="18" r="15.9" fill="none"
+                        stroke="{% if project.progress_percentage == 100 %}#10b981{% elif project.progress_percentage >= 50 %}#3b82f6{% else %}#f59e0b{% endif %}"
+                        stroke-width="2.5"
+                        stroke-dasharray="{{ project.progress_percentage }}, 100"
+                        stroke-linecap="round"/>
+              </svg>
+              <div style="position:absolute;text-align:center;">
+                <div style="font-family:var(--font-head);font-size:22px;font-weight:700;color:var(--text-primary);line-height:1;">
+                  {{ project.progress_percentage }}%
+                </div>
+                <div style="font-size:10px;color:var(--text-muted);letter-spacing:.5px;">PHASES</div>
+              </div>
+            </div>
+            <div style="margin-top:12px;font-size:13px;color:var(--text-muted);">
+              {{ project.completed_phase_count }} / {{ project.phase_count }} phases terminées
+            </div>
+          </div>
+
+          <div class="row g-2 text-center mb-4">
+            <div class="col-6">
+              <div style="padding:12px;background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);">
+                <div class="stat-value" style="font-size:18px;">
+                  {% if project.status == 'completed' %}
+                    <span class="isi-badge green"><i class="bi bi-check-circle-fill"></i> Terminé</span>
+                  {% elif project.status == 'in_progress' %}
+                    <span class="isi-badge blue"><i class="bi bi-play-circle-fill"></i> En cours</span>
+                  {% elif project.status == 'on_hold' %}
+                    <span class="isi-badge amber"><i class="bi bi-pause-circle-fill"></i> En pause</span>
+                  {% else %}
+                    <span class="isi-badge gray"><i class="bi bi-x-circle-fill"></i> Annulé</span>
+                  {% endif %}
+                </div>
+                <div class="stat-label mt-1">Statut</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div style="padding:12px;background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);">
+                <div style="margin-bottom:4px;">
+                  {% if project.priority == 'urgent' %}
+                    <span class="isi-badge red"><i class="bi bi-exclamation-circle-fill"></i> Urgente</span>
+                  {% elif project.priority == 'high' %}
+                    <span class="isi-badge amber"><i class="bi bi-arrow-up-circle-fill"></i> Haute</span>
+                  {% elif project.priority == 'medium' %}
+                    <span class="isi-badge blue">Normale</span>
+                  {% else %}
+                    <span class="isi-badge gray">Basse</span>
+                  {% endif %}
+                </div>
+                <div class="stat-label mt-1">Priorité</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick actions -->
+          {% if request.user.profile.is_admin %}
+          <div class="d-flex flex-column gap-2">
+            <a href="{% url 'etudes:project_edit' project.pk %}" class="btn btn-amber">
+              <i class="bi bi-pencil-fill"></i> Modifier le projet
+            </a>
+            {% if project.status == 'in_progress' %}
+            <a href="{% url 'etudes:project_close' project.pk %}" class="btn btn-ghost">
+              <i class="bi bi-check-circle-fill"></i> Clôturer le projet
+            </a>
+            <a href="{% url 'etudes:project_cancel' project.pk %}" class="btn btn-danger-soft">
+              <i class="bi bi-x-circle-fill"></i> Annuler le projet
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Info card -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-info-circle-fill"></i></div>
+          <h3>Informations</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            {% if project.project_type %}
+            <div class="col-12">
+              <div class="stat-label mb-1">Type de mission</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ project.project_type }}</div>
+            </div>
+            {% endif %}
+            <div class="col-6">
+              <div class="stat-label mb-1">Début</div>
+              <div style="font-weight:500;font-size:13.5px;">{{ project.start_date|date:"d/m/Y" }}</div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Fin prévue</div>
+              <div style="font-weight:500;font-size:13.5px;
+                          color:{% if project.is_overdue %}var(--danger){% else %}inherit{% endif %};">
+                {{ project.end_date|date:"d/m/Y"|default:"—" }}
+                {% if project.is_overdue %}
+                <span style="display:block;font-size:11px;font-weight:600;color:var(--danger);">
+                  <i class="bi bi-exclamation-triangle-fill"></i> {{ project.days_overdue }} j de retard
+                </span>
+                {% endif %}
+              </div>
+            </div>
+            {% if project.actual_end_date %}
+            <div class="col-12">
+              <div class="stat-label mb-1">Clôturé le</div>
+              <div style="font-weight:500;font-size:13.5px;color:var(--success);">
+                <i class="bi bi-check-circle-fill" style="font-size:12px;"></i>
+                {{ project.actual_end_date|date:"d/m/Y" }}
+              </div>
+            </div>
+            {% endif %}
+            {% if project.site_address %}
+            <div class="col-12">
+              <div class="stat-label mb-1">Site d'intervention</div>
+              <div style="font-weight:500;font-size:13px;line-height:1.5;white-space:pre-wrap;">{{ project.site_address }}</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Budget (admin) -->
+      {% if request.user.profile.is_admin %}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon green"><i class="bi bi-bar-chart-fill"></i></div>
+          <h3>Budget & Marge</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="stat-label mb-1">Budget contractuel</div>
+              <div class="stat-value" style="font-size:17px;">{{ project.budget|floatformat:0 }}<span style="font-size:11px;font-weight:400;color:var(--text-muted);"> DA</span></div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Dépenses</div>
+              <div class="stat-value" style="font-size:17px;">{{ project.total_expenses|floatformat:0 }}<span style="font-size:11px;font-weight:400;color:var(--text-muted);"> DA</span></div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Marge</div>
+              <div class="stat-value" style="font-size:17px;color:{% if project.margin >= 0 %}var(--success){% else %}var(--danger){% endif %};">
+                {{ project.margin|floatformat:0 }}<span style="font-size:11px;font-weight:400;color:var(--text-muted);"> DA</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-label mb-1">Taux de marge</div>
+              <div class="stat-value" style="font-size:17px;color:{% if project.margin_rate >= 0 %}var(--success){% else %}var(--danger){% endif %};">
+                {{ project.margin_rate }}%
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Meta -->
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon blue"><i class="bi bi-clock-history"></i></div>
+          <h3>Historique</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="row g-2">
+            <div class="col-12">
+              <div class="stat-label mb-1">Créé le</div>
+              <div style="font-size:13px;font-weight:500;">{{ project.created_at|date:"d/m/Y à H:i" }}</div>
+            </div>
+            <div class="col-12">
+              <div class="stat-label mb-1">Modifié le</div>
+              <div style="font-size:13px;font-weight:500;">{{ project.updated_at|date:"d/m/Y à H:i" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /col-lg-4 -->
+
+    <!-- ── Right column: phases ─────────────────────────────── -->
+    <div class="col-lg-8">
+
+      <!-- Description -->
+      {% if project.description %}
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon purple"><i class="bi bi-file-earmark-text-fill"></i></div>
+          <h3>Description</h3>
+        </div>
+        <div class="isi-card-body">
+          <p style="font-size:14px;line-height:1.7;margin:0;white-space:pre-wrap;color:var(--text-primary);">{{ project.description }}</p>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Phases -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header" style="justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="card-icon amber"><i class="bi bi-layers-fill"></i></div>
+            <h3>Phases du projet</h3>
+          </div>
+          {% if request.user.profile.is_admin and project.status != 'completed' and project.status != 'cancelled' %}
+          <a href="{% url 'etudes:phase_add' project.pk %}" class="btn btn-ghost btn-sm">
+            <i class="bi bi-plus-lg"></i> Ajouter une phase
+          </a>
+          {% endif %}
+        </div>
+
+        {% if phases %}
+        <div class="isi-card-body" style="padding:0;">
+          {% for phase in phases %}
+          <div class="phase-item" style="border-bottom:1px solid var(--card-border);padding:20px 24px;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+
+              <!-- Phase header -->
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+                  <div style="width:24px;height:24px;border-radius:50%;
+                              background:{% if phase.status == 'completed' %}rgba(16,185,129,.15){% elif phase.status == 'in_progress' %}rgba(59,130,246,.15){% elif phase.status == 'blocked' %}rgba(239,68,68,.15){% else %}#f1f5f9{% endif %};
+                              color:{% if phase.status == 'completed' %}var(--success){% elif phase.status == 'in_progress' %}#3b82f6{% elif phase.status == 'blocked' %}var(--danger){% else %}var(--text-muted){% endif %};
+                              display:flex;align-items:center;justify-content:center;
+                              font-family:var(--font-head);font-size:11px;font-weight:700;flex-shrink:0;">
+                    {{ phase.order }}
+                  </div>
+                  <span style="font-weight:700;font-size:14.5px;color:var(--text-primary);">{{ phase.name }}</span>
+                  {% if phase.status == 'completed' %}
+                    <span class="isi-badge green"><i class="bi bi-check-circle-fill"></i> Terminée</span>
+                  {% elif phase.status == 'in_progress' %}
+                    <span class="isi-badge blue"><i class="bi bi-play-circle-fill"></i> En cours</span>
+                  {% elif phase.status == 'blocked' %}
+                    <span class="isi-badge red"><i class="bi bi-x-octagon-fill"></i> Bloquée</span>
+                  {% else %}
+                    <span class="isi-badge gray"><i class="bi bi-clock"></i> En attente</span>
+                  {% endif %}
+                  {% if phase.is_overdue %}
+                  <span class="isi-badge red" style="font-size:10px;">
+                    <i class="bi bi-exclamation-triangle-fill"></i> En retard
+                  </span>
+                  {% endif %}
+                </div>
+
+                {% if phase.description %}
+                <p style="font-size:13px;color:var(--text-muted);margin:0 0 8px;line-height:1.5;">{{ phase.description }}</p>
+                {% endif %}
+
+                <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--text-muted);">
+                  {% if phase.due_date %}
+                  <span>
+                    <i class="bi bi-calendar-event-fill" style="color:var(--accent);font-size:11px;"></i>
+                    Échéance : {{ phase.due_date|date:"d/m/Y" }}
+                  </span>
+                  {% endif %}
+                  {% if phase.estimated_hours %}
+                  <span>
+                    <i class="bi bi-clock-fill" style="color:var(--accent);font-size:11px;"></i>
+                    Estimé : {{ phase.estimated_hours }}h
+                    {% if phase.actual_hours %} / Réel : {{ phase.actual_hours }}h{% endif %}
+                  </span>
+                  {% endif %}
+                  {% if phase.deliverable %}
+                  <span>
+                    <i class="bi bi-file-earmark-arrow-down-fill" style="color:var(--accent);font-size:11px;"></i>
+                    Livrable : {{ phase.deliverable }}
+                  </span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Phase actions (admin) -->
+              {% if request.user.profile.is_admin %}
+              <div style="display:flex;gap:6px;flex-shrink:0;">
+                {% if phase.status != 'completed' and phase.status != 'blocked' or phase.status == 'blocked' %}
+                <a href="{% url 'etudes:phase_update_status' project.pk phase.pk %}"
+                   class="btn btn-ghost btn-sm" title="Mettre à jour le statut">
+                  <i class="bi bi-arrow-repeat"></i>
+                </a>
+                {% endif %}
+                <a href="{% url 'etudes:phase_edit' project.pk phase.pk %}"
+                   class="btn btn-ghost btn-sm" title="Modifier">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+                <a href="{% url 'etudes:deliverable_add' project.pk phase.pk %}"
+                   class="btn btn-ghost btn-sm" title="Ajouter un livrable">
+                  <i class="bi bi-file-earmark-plus-fill"></i>
+                </a>
+                <form method="post" action="{% url 'etudes:phase_delete' project.pk phase.pk %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-danger-soft btn-sm"
+                          onclick="return confirm('Supprimer la phase « {{ phase.name }} » ?')"
+                          title="Supprimer">
+                    <i class="bi bi-trash-fill"></i>
+                  </button>
+                </form>
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- Deliverables sub-list -->
+            {% if phase.deliverables.all %}
+            <div style="margin-top:12px;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid var(--card-border);">
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.8px;
+                          text-transform:uppercase;margin-bottom:8px;">
+                Livrables ({{ phase.deliverables.count }})
+              </div>
+              {% for deliverable in phase.deliverables.all %}
+              <div style="display:flex;align-items:center;justify-content:space-between;
+                          padding:6px 0;border-bottom:1px solid var(--card-border);gap:8px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+                  <i class="bi bi-file-earmark-arrow-down-fill"
+                     style="color:var(--accent);font-size:14px;flex-shrink:0;"></i>
+                  <div>
+                    <a href="{{ deliverable.document.url }}" target="_blank"
+                       style="font-weight:600;font-size:13px;color:var(--text-primary);text-decoration:none;">
+                      {{ deliverable.title }}
+                    </a>
+                    <span style="font-size:11px;color:var(--text-muted);margin-left:6px;">v{{ deliverable.version }}</span>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  {% if deliverable.client_approved == True %}
+                    <span class="isi-badge green" style="font-size:10px;"><i class="bi bi-check-circle-fill"></i> Approuvé</span>
+                  {% elif deliverable.client_approved == False %}
+                    <span class="isi-badge red" style="font-size:10px;"><i class="bi bi-x-circle-fill"></i> Refusé</span>
+                  {% else %}
+                    <span class="isi-badge gray" style="font-size:10px;"><i class="bi bi-hourglass-split"></i> En attente</span>
+                  {% endif %}
+                  {% if request.user.profile.is_admin %}
+                  <a href="{% url 'etudes:deliverable_approve' project.pk phase.pk deliverable.pk %}"
+                     class="btn btn-ghost btn-sm" title="Décision client" style="padding:3px 8px;">
+                    <i class="bi bi-check2-square"></i>
+                  </a>
+                  <a href="{% url 'etudes:deliverable_edit' project.pk phase.pk deliverable.pk %}"
+                     class="btn btn-ghost btn-sm" style="padding:3px 8px;" title="Modifier">
+                    <i class="bi bi-pencil-fill"></i>
+                  </a>
+                  <form method="post" action="{% url 'etudes:deliverable_delete' project.pk phase.pk deliverable.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger-soft btn-sm"
+                            style="padding:3px 8px;"
+                            onclick="return confirm('Supprimer ce livrable ?')">
+                      <i class="bi bi-trash-fill"></i>
+                    </button>
+                  </form>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+
+          </div>
+          {% endfor %}
+        </div>
+
+        {% else %}
+        <div class="isi-card-body text-center" style="padding:48px 24px;">
+          <div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-layers"></i></div>
+          <p style="color:var(--text-muted);font-size:14px;margin:0 0 12px;">Aucune phase définie pour ce projet.</p>
+          {% if request.user.profile.is_admin %}
+          <a href="{% url 'etudes:phase_add' project.pk %}" class="btn btn-amber btn-sm">
+            <i class="bi bi-plus-lg"></i> Ajouter la première phase
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Notes -->
+      {% if project.notes %}
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon purple"><i class="bi bi-sticky-fill"></i></div>
+          <h3>Notes</h3>
+        </div>
+        <div class="isi-card-body">
+          <p style="font-size:14px;line-height:1.7;margin:0;white-space:pre-wrap;color:var(--text-primary);">{{ project.notes }}</p>
+        </div>
+      </div>
+      {% endif %}
+
+    </div><!-- /col-lg-8 -->
+  </div><!-- /row -->
+</div>
+{% endblock %}

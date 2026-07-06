@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} — Catégorie de dépense{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:expense_list' %}" style="color:var(--text-muted);text-decoration:none;">Dépenses</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:expense_category_list' %}" style="color:var(--text-muted);text-decoration:none;">Catégories</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ action }}{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>{{ action }}</h1>
+      <p>{% if category %}Modification — {{ category.name }}{% else %}Nouvelle catégorie de dépense{% endif %}</p>
+    </div>
+    <a href="{% url 'financial:expense_category_list' %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-tag-fill"></i></div>
+          <h3>{% if category %}Modifier la catégorie{% else %}Nouvelle catégorie{% endif %}</h3>
+        </div>
+        <div class="isi-card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row g-3">
+
+              <div class="col-12">
+                <label class="form-label" for="{{ form.name.id_for_label }}">Nom *</label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+              </div>
+
+              <div class="col-md-5">
+                <label class="form-label" for="{{ form.color.id_for_label }}">Couleur</label>
+                {{ form.color }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  Couleur d'identification dans les listes et graphiques.
+                </div>
+              </div>
+
+              <div class="col-md-7">
+                <label class="form-label">&nbsp;</label>
+                <div style="display:flex;align-items:center;gap:10px;height:40px;
+                            padding:0 16px;background:#f8fafc;border-radius:8px;
+                            border:1px solid var(--card-border);">
+                  {{ form.is_direct_cost }}
+                  <label for="{{ form.is_direct_cost.id_for_label }}"
+                         style="font-size:13.5px;font-weight:500;margin:0;cursor:pointer;line-height:1;">
+                    {{ form.is_direct_cost.label }}
+                  </label>
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  Les coûts directs sont imputés aux sessions et projets (calcul de marge).
+                </div>
+              </div>
+
+              {% if form.non_field_errors %}
+              <div class="col-12">
+                {% for error in form.non_field_errors %}
+                <div style="color:var(--danger);font-size:13px;display:flex;gap:8px;">
+                  <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;"></i> {{ error }}
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check-lg"></i>
+                {% if category %}Enregistrer les modifications{% else %}Créer la catégorie{% endif %}
+              </button>
+              <a href="{% url 'financial:expense_category_list' %}" class="btn btn-ghost">
+                <i class="bi bi-x-lg"></i> Annuler
+              </a>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

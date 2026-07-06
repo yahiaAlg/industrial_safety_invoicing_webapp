@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Flux de trésorerie{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'reporting:dashboard' %}" style="color:var(--text-muted);text-decoration:none;">Rapports</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Flux de trésorerie{% endblock %}
+{% block extra_head %}<style>
+.fade-up,.fade-up-delay-1,.fade-up-delay-2{opacity:1!important;animation-fill-mode:forwards!important;}
+</style>{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>Flux de trésorerie</h1><p>Encaissements vs dépenses par mois</p></div></div>
+  <div class="isi-card mb-4"><div class="isi-card-body" style="padding:16px 24px;">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+    </form>
+  </div></div>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-arrow-down-circle-fill"></i></div>
+      <div><div class="stat-value">{{ total_collected|floatformat:0 }} DA</div><div class="stat-label">Total encaissé</div></div>
+    </div></div></div>
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon red" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-arrow-up-circle-fill"></i></div>
+      <div><div class="stat-value">{{ total_expenses|floatformat:0 }} DA</div><div class="stat-label">Total dépensé</div></div>
+    </div></div></div>
+    <div class="col-sm-4"><div class="isi-card"><div class="isi-card-body" style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+      <div class="card-icon {% if net >= 0 %}blue{% else %}red{% endif %}" style="width:44px;height:44px;font-size:20px;border-radius:12px;"><i class="bi bi-graph-up-arrow"></i></div>
+      <div><div class="stat-value" style="color:{% if net >= 0 %}#10b981{% else %}#ef4444{% endif %};">{{ net|floatformat:0 }} DA</div><div class="stat-label">Net</div></div>
+    </div></div></div>
+  </div>
+  <div class="isi-card mb-4 fade-up-delay-1">
+    <div class="isi-card-header"><div class="card-icon blue"><i class="bi bi-graph-up-arrow"></i></div><h3>Évolution du flux</h3></div>
+    <div class="isi-card-body"><div style="position:relative;height:260px;"><canvas id="chartCF"></canvas></div></div>
+  </div>
+  <div class="isi-card fade-up-delay-2">
+    <div class="isi-card-header"><div class="card-icon purple"><i class="bi bi-table"></i></div><h3>Détail mensuel</h3></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr><th>Mois</th><th style="text-align:right;">Encaissé</th><th style="text-align:right;">Dépenses</th><th style="text-align:right;">Net</th><th style="text-align:right;">Solde cumulé</th></tr></thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td style="font-weight:600;">{{ r.month }}</td>
+            <td style="text-align:right;color:#10b981;font-weight:600;">{{ r.collected|floatformat:0 }} DA</td>
+            <td style="text-align:right;color:#ef4444;">{{ r.expenses|floatformat:0 }} DA</td>
+            <td style="text-align:right;font-weight:600;color:{% if r.net >= 0 %}#10b981{% else %}#ef4444{% endif %};">{{ r.net|floatformat:0 }} DA</td>
+            <td style="text-align:right;font-weight:700;font-family:var(--font-head);">{{ r.running_balance|floatformat:0 }} DA</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5"><div class="text-center" style="padding:40px;"><div style="font-size:40px;color:#e2e8f0;margin-bottom:12px;"><i class="bi bi-graph-up-arrow"></i></div><p style="color:#64748b;margin:0;">Aucune donnée.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+const cfData = [{% for r in rows %}{ m: "{{ r.month }}", collected: {{ r.collected|stringformat:".2f" }}, expenses: {{ r.expenses|stringformat:".2f" }}, balance: {{ r.running_balance|stringformat:".2f" }} },{% endfor %}];
+if (cfData.length) {
+  new Chart(document.getElementById('chartCF'), {
+    type: 'bar',
+    data: {
+      labels: cfData.map(d => d.m),
+      datasets: [
+        { label: 'Encaissé', data: cfData.map(d => d.collected), backgroundColor: 'rgba(16,185,129,.2)', borderColor: '#10b981', borderWidth: 2, borderRadius: 4 },
+        { label: 'Dépenses', data: cfData.map(d => d.expenses), backgroundColor: 'rgba(239,68,68,.2)', borderColor: '#ef4444', borderWidth: 2, borderRadius: 4 },
+        { label: 'Solde cumulé', data: cfData.map(d => d.balance), type: 'line', borderColor: '#3b82f6', borderWidth: 2.5, pointRadius: 4, fill: false, tension: 0.3, yAxisID: 'y' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#64748b', font: { family: 'Barlow', size: 12 } } } },
+      scales: { x: { grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Barlow', size: 11 } } }, y: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b', font: { family: 'Barlow', size: 11 }, callback: v => v.toLocaleString('fr-DZ') } } }
+    }
+  });
+}
+</script>
+{% endblock %}

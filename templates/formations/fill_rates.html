@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Taux de remplissage{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'formations:analytics' %}" style="color:var(--text-muted);text-decoration:none;">Analytique</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Taux de remplissage{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Taux de remplissage</h1>
+      <p>Capacité vs inscriptions par session</p>
+    </div>
+    <a href="{% url 'formations:analytics' %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <!-- Summary KPIs -->
+  {% if data %}
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:14px;padding:16px 18px;">
+          <div class="card-icon amber" style="width:44px;height:44px;font-size:20px;border-radius:12px;flex-shrink:0;">
+            <i class="bi bi-bar-chart-fill"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ data|length }}</div>
+            <div class="stat-label">Sessions analysées</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:14px;padding:16px 18px;">
+          <div class="card-icon blue" style="width:44px;height:44px;font-size:20px;border-radius:12px;flex-shrink:0;">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div>
+            {% with total_p=data|length %}
+            <div class="stat-value">
+              {% for d in data %}{% if forloop.last %}{{ d.participant_count }}{% endif %}{% endfor %}
+            </div>
+            {% endwith %}
+            <div class="stat-label">Dernière session</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="isi-card">
+        <div class="isi-card-body" style="display:flex;align-items:center;gap:14px;padding:16px 18px;">
+          <div class="card-icon green" style="width:44px;height:44px;font-size:20px;border-radius:12px;flex-shrink:0;">
+            <i class="bi bi-percent"></i>
+          </div>
+          <div>
+            <div class="stat-value">
+              {% if data %}
+                {% with total=0 %}
+                  {% for d in data %}{% endfor %}
+                {% endwith %}
+                — %
+              {% endif %}
+            </div>
+            <div class="stat-label">Taux moyen</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-bar-chart-fill"></i></div>
+      <h3>Détail par session</h3>
+    </div>
+
+    {% if data %}
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead>
+          <tr>
+            <th>Session</th>
+            <th>Dates</th>
+            <th>Participants</th>
+            <th>Capacité</th>
+            <th>Places dispo.</th>
+            <th>Taux</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in data %}
+          <tr>
+            <td>
+              <a href="{% url 'formations:session_detail' d.session.pk %}"
+                 style="font-weight:600;color:var(--text-primary);text-decoration:none;">
+                {{ d.session.formation.title|truncatechars:40 }}
+              </a>
+            </td>
+            <td style="font-size:13px;">
+              {{ d.session.date_start|date:"d/m/Y" }}
+              {% if d.session.date_end != d.session.date_start %}
+              <span style="color:var(--text-muted);"> → {{ d.session.date_end|date:"d/m/Y" }}</span>
+              {% endif %}
+            </td>
+            <td><span style="font-weight:600;">{{ d.participant_count }}</span></td>
+            <td><span style="color:var(--text-muted);">{{ d.session.capacity }}</span></td>
+            <td>
+              {% if d.available_spots == 0 %}
+              <span class="isi-badge red">Complet</span>
+              {% else %}
+              <span style="color:var(--text-muted);">{{ d.available_spots }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;min-width:100px;">
+                <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;">
+                  <div style="height:100%;width:{{ d.fill_rate|floatformat:0 }}%;
+                              background:{% if d.fill_rate >= 90 %}var(--success){% elif d.fill_rate >= 60 %}var(--accent){% else %}#94a3b8{% endif %};
+                              border-radius:4px;transition:width .4s;"></div>
+                </div>
+                <span style="font-weight:600;font-size:13px;min-width:38px;">{{ d.fill_rate|floatformat:0 }}%</span>
+              </div>
+            </td>
+            <td>
+              {% if d.session.status == 'planned' %}
+                <span class="isi-badge blue"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Planifiée</span>
+              {% elif d.session.status == 'in_progress' %}
+                <span class="isi-badge amber"><i class="bi bi-circle-fill" style="font-size:7px;"></i> En cours</span>
+              {% elif d.session.status == 'completed' %}
+                <span class="isi-badge green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Terminée</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="isi-card-body text-center" style="padding:60px 24px;">
+      <div style="font-size:52px;color:#e2e8f0;margin-bottom:16px;"><i class="bi bi-bar-chart"></i></div>
+      <p style="color:var(--text-muted);font-size:15px;">Aucune session à analyser pour le moment.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Finaliser — {{ invoice.proforma_reference }}{% endblock %}
+
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:invoice_list' %}" style="color:var(--text-muted);text-decoration:none;">Factures</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:invoice_detail' invoice.pk %}" style="color:var(--text-muted);text-decoration:none;">{{ invoice.proforma_reference }}</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}Finaliser{% endblock %}
+
+{% block content %}
+<div class="fade-up">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Finaliser la facture</h1>
+      <p>{{ invoice.proforma_reference }} → <strong>{{ next_reference }}</strong></p>
+    </div>
+    <a href="{% url 'financial:invoice_detail' invoice.pk %}" class="btn btn-ghost">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <!-- Blockers -->
+  {% if blockers %}
+  <div class="isi-card mb-4" style="border-left:4px solid var(--danger);">
+    <div class="isi-card-header">
+      <div class="card-icon red"><i class="bi bi-x-circle-fill"></i></div>
+      <h3>Impossible de finaliser</h3>
+    </div>
+    <div class="isi-card-body">
+      <p style="color:var(--text-muted);margin-bottom:12px;font-size:13.5px;">
+        Les conditions suivantes doivent être remplies avant la finalisation :
+      </p>
+      <ul style="padding-left:20px;margin:0;">
+        {% for b in blockers %}
+        <li style="color:var(--danger);font-size:13.5px;margin-bottom:6px;">
+          <i class="bi bi-x-circle-fill" style="margin-right:6px;"></i> {{ b }}
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="mt-3 d-flex gap-2">
+        <a href="{% url 'financial:invoice_record_bc' invoice.pk %}" class="btn btn-amber btn-sm">
+          <i class="bi bi-file-earmark-check-fill"></i> Enregistrer le BC
+        </a>
+        <a href="{% url 'clients:client_edit' invoice.client.pk %}" class="btn btn-ghost btn-sm">
+          <i class="bi bi-person-fill-gear"></i> Compléter le profil client
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+
+  <div class="row g-4">
+
+    <!-- Checklist & form -->
+    <div class="col-lg-7">
+
+      <!-- Checklist -->
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon green"><i class="bi bi-check2-all"></i></div>
+          <h3>Vérification pré-finalisation</h3>
+        </div>
+        <div class="isi-card-body">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;
+                        background:rgba(16,185,129,.08);border-radius:8px;">
+              <i class="bi bi-check-circle-fill" style="color:var(--success);font-size:18px;flex-shrink:0;"></i>
+              <div>
+                <div style="font-weight:600;font-size:13.5px;">N° Bon de Commande</div>
+                <div style="font-size:12px;color:var(--text-muted);">{{ invoice.bon_commande_number }}</div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;
+                        background:rgba(16,185,129,.08);border-radius:8px;">
+              <i class="bi bi-check-circle-fill" style="color:var(--success);font-size:18px;flex-shrink:0;"></i>
+              <div>
+                <div style="font-weight:600;font-size:13.5px;">Profil client complet</div>
+                <div style="font-size:12px;color:var(--text-muted);">{{ invoice.client.name }}</div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;
+                        background:rgba(16,185,129,.08);border-radius:8px;">
+              <i class="bi bi-check-circle-fill" style="color:var(--success);font-size:18px;flex-shrink:0;"></i>
+              <div>
+                <div style="font-weight:600;font-size:13.5px;">Montant de la facture</div>
+                <div style="font-size:12px;color:var(--text-muted);">{{ invoice.amount_ttc|floatformat:2 }} DA TTC</div>
+              </div>
+            </div>
+
+            {% if invoice.client.is_tva_exempt %}
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;
+                        background:rgba(245,158,11,.08);border-radius:8px;">
+              <i class="bi bi-info-circle-fill" style="color:var(--accent);font-size:18px;flex-shrink:0;"></i>
+              <div>
+                <div style="font-weight:600;font-size:13.5px;">Client exonéré de TVA</div>
+                <div style="font-size:12px;color:var(--text-muted);">Le taux TVA sera mis à 0% à la finalisation.</div>
+              </div>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Finalization form -->
+      <div class="isi-card">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-check2-circle"></i></div>
+          <h3>Confirmer la finalisation</h3>
+        </div>
+        <div class="isi-card-body">
+          <div class="alert alert-warning mb-4" style="border-radius:8px;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div style="font-size:13px;">
+              <strong>Action irréversible</strong> — Une fois finalisée, les lignes de facturation
+              ne peuvent plus être modifiées. Utilisez un avoir si une correction est nécessaire.
+            </div>
+          </div>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <!-- Amount in words -->
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.amount_in_words.id_for_label }}">Montant en lettres</label>
+              {{ form.amount_in_words }}
+              {% if form.amount_in_words.errors %}
+              <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.amount_in_words.errors|join:", " }}</div>
+              {% endif %}
+              <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                Généré automatiquement — vérifiez et corrigez si nécessaire.
+              </div>
+            </div>
+
+            <!-- Mode de règlement -->
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.mode_reglement.id_for_label }}">
+                Mode de règlement <span style="color:var(--danger);">*</span>
+              </label>
+              <div class="input-icon-wrap">
+                <i class="bi bi-credit-card-fill"></i>
+                {{ form.mode_reglement }}
+              </div>
+              {% if form.mode_reglement.errors %}
+              <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.mode_reglement.errors|join:", " }}</div>
+              {% endif %}
+              <!-- Timbre fiscal notice (shown live via JS) -->
+              <div id="timbre-notice" style="display:none;margin-top:6px;padding:8px 12px;
+                   background:rgba(245,158,11,.08);border-radius:6px;font-size:12px;color:#92400e;">
+                <i class="bi bi-info-circle-fill"></i>
+                <strong>Timbre fiscal applicable</strong> — sera calculé et affiché sur la facture imprimée.
+              </div>
+            </div>
+
+            <!-- Due date (optional) -->
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.due_date.id_for_label }}">
+                Date d'échéance <span style="font-size:11px;color:var(--text-muted);">(optionnel)</span>
+              </label>
+              <div class="input-icon-wrap">
+                <i class="bi bi-calendar-check-fill"></i>
+                {{ form.due_date }}
+              </div>
+              {% if form.due_date.errors %}
+              <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.due_date.errors|join:", " }}</div>
+              {% endif %}
+              <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                Si non renseignée, l'échéance n'apparaîtra pas sur la facture.
+              </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            {% for error in form.non_field_errors %}
+            <div style="color:var(--danger);font-size:13px;display:flex;gap:8px;margin-bottom:12px;">
+              <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;"></i> {{ error }}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <div class="section-divider"></div>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-amber">
+                <i class="bi bi-check2-circle"></i> Finaliser — Émettre {{ next_reference }}
+              </button>
+              <a href="{% url 'financial:invoice_detail' invoice.pk %}" class="btn btn-ghost">
+                <i class="bi bi-x-lg"></i> Annuler
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="col-lg-5">
+      <div class="isi-card mb-4">
+        <div class="isi-card-header">
+          <div class="card-icon amber"><i class="bi bi-receipt-cutoff"></i></div>
+          <h3>Ce qui va se passer</h3>
+        </div>
+        <div class="isi-card-body">
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 12px;background:#f8fafc;border-radius:8px;">
+              <span style="color:var(--text-muted);">N° Proforma</span>
+              <span style="font-weight:600;font-family:monospace;font-size:12px;">{{ invoice.proforma_reference }}</span>
+            </div>
+            <div style="display:flex;justify-content:center;color:var(--accent);font-size:18px;">
+              <i class="bi bi-arrow-down"></i>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:10px 12px;
+                        background:var(--accent-soft);border-radius:8px;border:1px solid rgba(245,158,11,.25);">
+              <span style="font-weight:600;">N° Facture finale</span>
+              <span style="font-weight:700;font-family:var(--font-head);color:var(--accent);">{{ next_reference }}</span>
+            </div>
+          </div>
+
+          <div style="padding:14px 16px;background:#f8fafc;border-radius:8px;margin-bottom:12px;">
+            <div class="stat-label mb-2">Snapshot client enregistré</div>
+            <div style="font-size:12.5px;color:var(--text-muted);line-height:1.7;">
+              {{ invoice.client.name }}<br>
+              {{ invoice.client.address }}<br>
+              {% if invoice.client.nif %}NIF : {{ invoice.client.nif }}<br>{% endif %}
+              {% if invoice.client.nis %}NIS : {{ invoice.client.nis }}<br>{% endif %}
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+            <span style="color:var(--text-muted);">Montant HT</span>
+            <span style="font-weight:600;">{{ invoice.amount_ht|floatformat:2 }} DA</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+            <span style="color:var(--text-muted);">TVA ({% widthratio invoice.tva_rate 1 100 %}%)</span>
+            <span style="font-weight:600;">
+              {% if invoice.client.is_tva_exempt %}0.00{% else %}{{ invoice.amount_tva|floatformat:2 }}{% endif %} DA
+            </span>
+          </div>
+          <!-- Timbre preview (espèce selected) -->
+          <div id="timbre-summary-row" style="display:none;justify-content:space-between;font-size:13px;margin-bottom:6px;color:#92400e;">
+            <span>Timbre fiscal <span id="timbre-rate-label"></span></span>
+            <span id="timbre-amount-preview" style="font-weight:600;"></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:15px;margin-top:8px;
+                      padding:10px 0;border-top:2px solid var(--accent);">
+            <span style="font-family:var(--font-head);font-weight:700;">Total TTC</span>
+            <span style="font-family:var(--font-head);font-weight:700;color:var(--accent);">
+              {% if invoice.client.is_tva_exempt %}{{ invoice.amount_ht|floatformat:2 }}{% else %}{{ invoice.amount_ttc|floatformat:2 }}{% endif %} DA
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Show timbre notice when mode_reglement = espece
+  const modeSelect = document.getElementById('{{ form.mode_reglement.id_for_label }}');
+  const timbNotice = document.getElementById('timbre-notice');
+  const timbRow    = document.getElementById('timbre-summary-row');
+  const timbRate   = document.getElementById('timbre-rate-label');
+  const timbAmt    = document.getElementById('timbre-amount-preview');
+  const ttcAmount  = {{ invoice.amount_ttc|default:0 }};
+
+  function computeTimbre(ttc) {
+    if (ttc < 300)       return { rate: 0,     label: '' };
+    if (ttc <= 30000)    return { rate: 0.010,  label: '(1%)' };
+    if (ttc <= 100000)   return { rate: 0.015,  label: '(1,5%)' };
+    return                      { rate: 0.020,  label: '(2%)' };
+  }
+
+  function updateTimbre() {
+    if (!modeSelect) return;
+    const isEspece = modeSelect.value === 'espece';
+    timbNotice.style.display = isEspece ? 'block' : 'none';
+    if (isEspece) {
+      const { rate, label } = computeTimbre(ttcAmount);
+      const amt = (ttcAmount * rate).toFixed(2);
+      timbRow.style.display = 'flex';
+      timbRate.textContent = label;
+      timbAmt.textContent  = amt + ' DA';
+    } else {
+      timbRow.style.display = 'none';
+    }
+  }
+
+  if (modeSelect) {
+    modeSelect.addEventListener('change', updateTimbre);
+    // Fire on load so the notice shows if a mode is already selected
+    document.addEventListener('DOMContentLoaded', updateTimbre);
+    updateTimbre();
+  }
+</script>
+{% endblock %}
