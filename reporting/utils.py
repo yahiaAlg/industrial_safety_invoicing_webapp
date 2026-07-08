@@ -101,10 +101,20 @@ def dashboard_kpis(date_from=None, date_to=None):
     exp_approved = Expense.objects.filter(
         date__range=[date_from, date_to],
         approval_status=Expense.ApprovalStatus.APPROVED,
-    ).aggregate(total=Sum("amount"), count=Count("pk"), tva=Sum("tva_amount"))
+    ).aggregate(
+        total=Sum("amount"),
+        count=Count("pk"),
+        tva=Sum("tva_amount"),
+        timbre=Sum("timbre_fiscal"),
+    )
     expenses_year = exp_approved["total"] or Decimal("0")
     expenses_approved_count = exp_approved["count"] or 0
     expenses_tva_year = exp_approved["tva"] or Decimal("0")
+    # Unlike Invoice.timbre_fiscal, Expense.timbre_fiscal is a persisted field
+    # computed unconditionally on every expense's gross_amount (no cash-only
+    # gate) — see Expense.save(). It's purely informational/stats, so this is
+    # a straight DB Sum, not the per-row Python loop the invoice side needs.
+    expenses_timbre_fiscal = exp_approved["timbre"] or Decimal("0")
 
     # -- Expenses (year - all) --
     exp_all = Expense.objects.filter(
@@ -185,6 +195,26 @@ def dashboard_kpis(date_from=None, date_to=None):
     # TVA nette à reverser = TVA collectée (ventes) − TVA déductible (achats)
     tva_net = invoices_tva_total - expenses_tva_year
 
+    # ── Timbre fiscal collecté — facture side (espèces uniquement) ────── #
+    # Invoice.timbre_fiscal is a computed property (never persisted — it
+    # only applies when mode_reglement == ESPECE, on a slab of amount_ttc),
+    # so it can't be summed with a DB aggregate; sum it in Python over the
+    # same finale/non-voided/period invoice set used for the HT/TVA/TTC
+    # breakdown above.
+    timbre_fiscal_invoices = sum(
+        (
+            inv.timbre_fiscal
+            for inv in Invoice.objects.filter(
+                phase=Invoice.Phase.FINALE,
+                invoice_date__range=[date_from, date_to],
+                mode_reglement=Invoice.PaymentMode.ESPECE,
+            )
+            .exclude(status=Invoice.Status.VOIDED)
+            .only("amount_ttc", "mode_reglement")
+        ),
+        Decimal("0"),
+    )
+
     return {
         # Revenue
         "ca_ht": total_ht,
@@ -207,6 +237,12 @@ def dashboard_kpis(date_from=None, date_to=None):
         # TVA
         "expenses_tva_year": expenses_tva_year,
         "tva_net": tva_net,
+        # Timbre fiscal — both sides shown separately, same pairing as TVA
+        # collectée/déductible above (not netted against each other: one is
+        # stamp duty added to cash invoices, the other is stamp duty already
+        # embedded in cash expense purchases — different fiscal flows).
+        "timbre_fiscal_invoices": timbre_fiscal_invoices,
+        "timbre_fiscal_expenses": expenses_timbre_fiscal,
         # Payments
         "payments_total": payments_total,
         # Margins — HT base

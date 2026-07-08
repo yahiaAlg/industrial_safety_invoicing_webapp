@@ -344,6 +344,20 @@
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;">
             <div>
+              <div style="font-size:13px;color:var(--text-muted);">Timbre fiscal <span style="font-size:10px;color:#8b5cf6;font-weight:600;">factures</span></div>
+              <div style="font-size:11px;color:#94a3b8;">collecté sur factures réglées en espèces</div>
+            </div>
+            <span style="font-weight:600;font-size:13.5px;color:#8b5cf6;">{{ kpis.timbre_fiscal_invoices|floatformat:0 }} DA</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+            <div>
+              <div style="font-size:13px;color:var(--text-muted);">Timbre fiscal <span style="font-size:10px;color:#a855f7;font-weight:600;">dépenses</span></div>
+              <div style="font-size:11px;color:#94a3b8;">déjà inclus dans les dépenses approuvées</div>
+            </div>
+            <span style="font-weight:600;font-size:13.5px;color:#a855f7;">{{ kpis.timbre_fiscal_expenses|floatformat:0 }} DA</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+            <div>
               <div style="font-size:13px;color:var(--text-muted);">Total TTC</div>
               <div style="font-size:11px;color:#94a3b8;">HT + TVA (montant client)</div>
             </div>
