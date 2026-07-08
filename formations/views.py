@@ -46,7 +46,13 @@ from formations.utils import (
 
 @admin_required
 def formation_list(request):
-    qs = Formation.objects.select_related("category").all()
+    from django.db.models import Count
+
+    from formations.utils import apply_sorting
+
+    qs = Formation.objects.select_related("category").annotate(
+        sessions_count=Count("sessions", distinct=True)
+    )
     q = request.GET.get("q", "").strip()
     category = request.GET.get("category")
     is_active = request.GET.get("is_active")
@@ -61,6 +67,21 @@ def formation_list(request):
         qs = qs.filter(is_active=True)
     elif is_active == "0":
         qs = qs.filter(is_active=False)
+
+    qs = apply_sorting(
+        qs,
+        request,
+        field_map={
+            "title": "title",
+            "category": "category__name",
+            "duration": "duration_days",
+            "price": "base_price",
+            "capacity": "max_participants",
+            "sessions": "sessions_count",
+            "status": "is_active",
+        },
+        default="title",
+    )
 
     categories = FormationCategory.objects.all()
     paginator = Paginator(qs, 20)
@@ -238,7 +259,21 @@ def formation_sync_capacities(request, pk):
 
 @admin_required
 def category_list(request):
-    categories = FormationCategory.objects.all()
+    from django.db.models import Count
+
+    from formations.utils import apply_sorting
+
+    categories = FormationCategory.objects.annotate(formations_count=Count("formations"))
+    categories = apply_sorting(
+        categories,
+        request,
+        field_map={
+            "code": "code",
+            "name": "name",
+            "formations": "formations_count",
+        },
+        default="code",
+    )
     return render(request, "formations/category_list.html", {"categories": categories})
 
 
@@ -294,7 +329,13 @@ def category_delete(request, pk):
 
 @login_and_active_required
 def session_list(request):
-    qs = Session.objects.select_related("formation", "client", "trainer").all()
+    from django.db.models import Count
+
+    from formations.utils import apply_sorting
+
+    qs = Session.objects.select_related("formation", "client", "trainer").annotate(
+        participant_count_db=Count("participants", distinct=True)
+    )
     form = SessionFilterForm(request.GET or None)
 
     if form.is_valid():
@@ -321,6 +362,24 @@ def session_list(request):
             qs = qs.filter(date_end__lte=date_to)
         if formation:
             qs = qs.filter(formation=formation)
+
+    # "fill" sorts by enrolled participant count as a proxy for remplissage —
+    # a true fill *rate* (participants / capacity) would need a division in
+    # the ORM, which errors on capacity=0 on some DB backends, so we keep it
+    # to the plain annotated count, same spirit as the other sortable columns.
+    qs = apply_sorting(
+        qs,
+        request,
+        field_map={
+            "formation": "formation__title",
+            "date": "date_start",
+            "client": "client__name",
+            "trainer": "trainer__last_name",
+            "fill": "participant_count_db",
+            "status": "status",
+        },
+        default="-date_start",
+    )
 
     paginator = Paginator(qs, 20)
     page_obj = paginator.get_page(request.GET.get("page"))

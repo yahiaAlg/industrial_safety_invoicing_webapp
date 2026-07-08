@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load sort_tags %}
 
 {% block title %}Formateurs{% endblock %}
 
@@ -100,13 +101,13 @@
       <table class="isi-table">
         <thead>
           <tr>
-            <th>Formateur</th>
-            <th>Type</th>
-            <th>Spécialité</th>
-            <th>Téléphone</th>
-            <th>Email</th>
-            <th>Tarif / jour</th>
-            <th>Statut</th>
+            <th>{% sort_th "name" "Formateur" %}</th>
+            <th>{% sort_th "type" "Type" %}</th>
+            <th>{% sort_th "specialty" "Spécialité" %}</th>
+            <th>{% sort_th "phone" "Téléphone" %}</th>
+            <th>{% sort_th "email" "Email" %}</th>
+            <th>{% sort_th "rate" "Tarif / jour" %}</th>
+            <th>{% sort_th "status" "Statut" %}</th>
             <th style="text-align:right;">Actions</th>
           </tr>
         </thead>

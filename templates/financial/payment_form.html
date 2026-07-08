@@ -40,7 +40,7 @@
           <h3>Saisie du paiement</h3>
         </div>
         <div class="isi-card-body">
-          <form method="post" novalidate>
+          <form method="post" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
             <div class="row g-3">
 
@@ -86,6 +86,22 @@
                   {{ form.reference }}
                 </div>
                 <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">N° virement, chèque, reçu…</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">{{ form.proof_document.label }}</label>
+                {{ form.proof_document }}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">{{ form.proof_document.help_text }}</div>
+                {% if form.instance.pk and form.instance.proof_document %}
+                <div style="font-size:12px;margin-top:6px;">
+                  <a href="{{ form.instance.proof_document.url }}" target="_blank" style="color:var(--accent);text-decoration:none;">
+                    <i class="bi bi-file-earmark-arrow-down"></i> Justificatif actuel
+                  </a>
+                </div>
+                {% endif %}
+                {% if form.proof_document.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.proof_document.errors|join:", " }}</div>
+                {% endif %}
               </div>
 
               <div class="col-12">
@@ -191,6 +207,11 @@
           <div>
             <div style="font-size:13px;font-weight:500;">{{ p.date|date:"d/m/Y" }}</div>
             <div style="font-size:11.5px;color:var(--text-muted);">{{ p.get_method_display }}</div>
+            {% if p.proof_document %}
+            <a href="{{ p.proof_document.url }}" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">
+              <i class="bi bi-paperclip"></i> Justificatif
+            </a>
+            {% endif %}
           </div>
           <div style="text-align:right;">
             <div style="font-family:var(--font-head);font-weight:700;font-size:14px;

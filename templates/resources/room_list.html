@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load sort_tags %}
 
 {% block title %}Salles de formation{% endblock %}
 
@@ -74,11 +75,11 @@
       <table class="isi-table">
         <thead>
           <tr>
-            <th>Salle</th>
-            <th>Capacité</th>
-            <th>Emplacement</th>
+            <th>{% sort_th "name" "Salle" %}</th>
+            <th>{% sort_th "capacity" "Capacité" %}</th>
+            <th>{% sort_th "location" "Emplacement" %}</th>
             <th>Description</th>
-            <th>Statut</th>
+            <th>{% sort_th "status" "Statut" %}</th>
             <th style="text-align:right;">Actions</th>
           </tr>
         </thead>

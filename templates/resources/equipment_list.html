@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load sort_tags %}
 
 {% block title %}Équipements{% endblock %}
 
@@ -155,15 +156,15 @@
       <table class="isi-table">
         <thead>
           <tr>
-            <th>Équipement</th>
-            <th>Catégorie</th>
-            <th>État</th>
-            <th>Statut</th>
+            <th>{% sort_th "name" "Équipement" %}</th>
+            <th>{% sort_th "category" "Catégorie" %}</th>
+            <th>{% sort_th "condition" "État" %}</th>
+            <th>{% sort_th "status" "Statut" %}</th>
             {% if request.user.profile.is_admin %}
-            <th>Valeur actuelle</th>
+            <th>{% sort_th "value" "Valeur actuelle" %}</th>
             <th>Maintenance</th>
             {% endif %}
-            <th>Emplacement</th>
+            <th>{% sort_th "location" "Emplacement" %}</th>
             <th style="text-align:right;">Actions</th>
           </tr>
         </thead>

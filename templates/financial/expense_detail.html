@@ -120,6 +120,16 @@
                 </div>
               </div>
               {% endif %}
+              {% if expense.timbre_fiscal %}
+              <div style="margin-top:8px;padding:10px 12px;background:rgba(139,92,246,.05);
+                          border-radius:8px;border:1px solid rgba(139,92,246,.2);
+                          display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:12.5px;color:var(--text-muted);">
+                  <i class="bi bi-info-circle"></i> Timbre fiscal <span style="color:#94a3b8;">(statistique — non inclus ci-dessus)</span>
+                </span>
+                <span style="font-weight:700;font-size:13px;color:#8b5cf6;">{{ expense.timbre_fiscal|floatformat:2 }} DA</span>
+              </div>
+              {% endif %}
             </div>
 
             <div class="col-md-4">

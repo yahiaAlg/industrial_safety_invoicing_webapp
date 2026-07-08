@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load sort_tags %}
 
 {% block title %}Factures{% endblock %}
 
@@ -166,15 +167,15 @@
       <table class="isi-table">
         <thead>
           <tr>
-            <th>Référence</th>
-            <th>Client</th>
-            <th>Type</th>
-            <th>Phase</th>
-            <th>Date</th>
+            <th>{% sort_th "reference" "Référence" %}</th>
+            <th>{% sort_th "client" "Client" %}</th>
+            <th>{% sort_th "invoice_type" "Type" %}</th>
+            <th>{% sort_th "phase" "Phase" %}</th>
+            <th>{% sort_th "date" "Date" %}</th>
             <th>Échéance / Validité</th>
-            <th style="text-align:right;">Montant TTC</th>
-            <th style="text-align:right;">Solde dû</th>
-            <th>Statut</th>
+            <th style="text-align:right;">{% sort_th "amount_ttc" "Montant TTC" align="right" %}</th>
+            <th style="text-align:right;">{% sort_th "amount_remaining" "Solde dû" align="right" %}</th>
+            <th>{% sort_th "status" "Statut" %}</th>
             <th style="text-align:right;">Actions</th>
           </tr>
         </thead>

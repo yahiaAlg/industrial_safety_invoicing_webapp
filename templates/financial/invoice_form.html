@@ -169,6 +169,51 @@
 
             </div>
 
+            <!-- Numérotation avancée — correction manuelle / rattrapage historique -->
+            <details style="margin-top:4px;">
+              <summary style="cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text-muted);
+                               user-select:none;display:flex;align-items:center;gap:6px;">
+                <i class="bi bi-sliders"></i> Numérotation avancée
+              </summary>
+              <div style="margin-top:12px;padding:14px 16px;background:#fff8ec;
+                          border:1px solid rgba(245,158,11,.25);border-radius:10px;">
+                <div style="font-size:11.5px;color:#92400e;margin-bottom:12px;line-height:1.5;">
+                  <i class="bi bi-exclamation-triangle-fill"></i>
+                  Réservé aux corrections d'urgence et au rattrapage de factures anciennes.
+                  La numérotation automatique reste recommandée dans tous les autres cas.
+                </div>
+                <div class="row g-3">
+
+                  <div class="col-md-6">
+                    <label class="form-label" for="{{ form.override_reference.id_for_label }}">
+                      {{ form.override_reference.label }}
+                      {% if invoice and invoice.phase == 'finale' %}
+                        <span style="font-weight:400;color:#94a3b8;">(remplace le N° facture finale)</span>
+                      {% else %}
+                        <span style="font-weight:400;color:#94a3b8;">(remplace le N° proforma)</span>
+                      {% endif %}
+                    </label>
+                    {{ form.override_reference }}
+                    <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">{{ form.override_reference.help_text }}</div>
+                    {% if form.override_reference.errors %}
+                    <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.override_reference.errors|join:", " }}</div>
+                    {% endif %}
+                  </div>
+
+                  {% if not invoice %}
+                  <div class="col-md-6">
+                    <label class="form-label" for="{{ form.sequence_year.id_for_label }}">{{ form.sequence_year.label }}</label>
+                    {{ form.sequence_year }}
+                    <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">{{ form.sequence_year.help_text }}</div>
+                    {% if form.sequence_year.errors %}
+                    <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.sequence_year.errors|join:", " }}</div>
+                    {% endif %}
+                  </div>
+                  {% endif %}
+
+                </div>
+              </div>
+            </details>
 
           </div>
         </div>
@@ -294,6 +339,11 @@
                 <i class="bi bi-sliders"></i>
                 Modifier les compteurs de numérotation
               </a>
+              <p style="font-size:11.5px;color:var(--text-muted);margin:8px 0 0;line-height:1.5;">
+                Besoin de corriger un numéro sur cette facture, ou d'insérer une
+                ancienne facture dans la bonne année ? Ouvrez « Numérotation
+                avancée » ci-dessus.
+              </p>
             </div>
           </div>
         </div>

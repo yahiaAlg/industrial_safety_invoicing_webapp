@@ -5,8 +5,9 @@
 #     and redirects directly to item_add after creation.
 #   * invoice_finalize — wrapped in transaction.atomic() to prevent reference
 #     race conditions; mode_reglement save consolidated correctly.
-#   * invoice_cancel_finalization — new view to revert an UNPAID finale back
-#     to PROFORMA/DRAFT for admin recovery of erroneous finalization.
+#   * invoice_cancel_finalization — reverts a finale back to PROFORMA/DRAFT
+#     for admin recovery/sequence-counter correction. Allowed at any payment
+#     status; confirmed payments are marked REVERSED (kept, not deleted).
 # =============================================================================
 
 from decimal import Decimal
@@ -53,6 +54,7 @@ from financial.models import (
 )
 from financial.utils import (
     amount_to_words_fr,
+    apply_sorting,
     current_year_range,
     outstanding_invoices,
     project_margin,
@@ -70,11 +72,23 @@ from financial.utils import (
 # ─────────────────────────────────────────────────────────────────────────── #
 
 
+# Whitelisted column-sort keys for invoice_list — url key → ORM field path.
+INVOICE_SORT_FIELDS = {
+    "reference": "reference",
+    "client": "client__name",
+    "invoice_type": "invoice_type",
+    "phase": "phase",
+    "date": "invoice_date",
+    "due_date": "due_date",
+    "amount_ttc": "amount_ttc",
+    "amount_remaining": "amount_remaining",
+    "status": "status",
+}
+
+
 @admin_required
 def invoice_list(request):
-    qs = Invoice.objects.select_related("client").order_by(
-        "-invoice_date", "-proforma_reference"
-    )
+    qs = Invoice.objects.select_related("client")
     form = InvoiceFilterForm(request.GET or None)
 
     if form.is_valid():
@@ -111,6 +125,13 @@ def invoice_list(request):
             qs = qs.filter(amount_ttc__gte=amount_min)
         if amount_max is not None:
             qs = qs.filter(amount_ttc__lte=amount_max)
+
+    qs = apply_sorting(
+        qs,
+        request,
+        INVOICE_SORT_FIELDS,
+        default=("-invoice_date", "-proforma_reference"),
+    )
 
     # KPIs for the strip
     kpis = {
@@ -342,7 +363,9 @@ def invoice_finalize(request, pk):
     if invoice.amount_ttc <= 0:
         blockers.append("La facture ne contient aucune ligne de facturation.")
 
-    year = timezone.now().year
+    # Default to invoice_date's year — NOT today's date — so a backfilled
+    # old invoice consumes ITS year's counter, not the current one.
+    year = invoice.invoice_date.year
     next_reference = Invoice._peek_final_reference(invoice.invoice_type, year)
 
     if request.method == "GET":
@@ -352,6 +375,7 @@ def invoice_finalize(request, pk):
                 "amount_in_words": initial_words,
                 "due_date": invoice.due_date,
                 "mode_reglement": invoice.mode_reglement or "",
+                "reference_year": invoice.invoice_date.year,
             }
         )
         return render(
@@ -389,12 +413,17 @@ def invoice_finalize(request, pk):
     )
     due_date = form.cleaned_data.get("due_date")
     mode_reglement = form.cleaned_data.get("mode_reglement", "")
+    reference_year = (
+        form.cleaned_data.get("reference_year") or invoice.invoice_date.year
+    )
 
     try:
         with transaction.atomic():
             # Set mode_reglement before finalize() so it's included in the save
             invoice.mode_reglement = mode_reglement
-            invoice.finalize(amount_in_words=amount_in_words)
+            invoice.finalize(
+                amount_in_words=amount_in_words, reference_year=reference_year
+            )
             # Apply due_date in the same transaction (only update those fields)
             if due_date:
                 Invoice.objects.filter(pk=invoice.pk).update(due_date=due_date)
@@ -422,13 +451,13 @@ def invoice_finalize(request, pk):
 @require_POST
 def invoice_cancel_finalization(request, pk):
     """
-    Revert an UNPAID finalized invoice back to PROFORMA/DRAFT.
-    Used to recover from erroneous or incomplete finalization.
+    Revert a finalized invoice back to PROFORMA/DRAFT — admin recovery.
 
-    Conditions:
-      - Invoice must be in FINALE phase
-      - Status must be UNPAID (no partial payment)
-      - No confirmed payments may exist
+    Used to recover from erroneous or incomplete finalization, or simply to
+    free up / correct the sequence counter. Allowed regardless of payment
+    status (UNPAID / PARTIALLY_PAID / PAID): any confirmed payments are
+    marked REVERSED (kept on record for audit, never deleted) rather than
+    blocking the action. Only FINALE phase is required.
     """
     invoice = get_object_or_404(Invoice, pk=pk)
 
@@ -436,38 +465,43 @@ def invoice_cancel_finalization(request, pk):
         messages.error(request, "Cette facture n'est pas finalisée.")
         return redirect("financial:invoice_detail", pk=pk)
 
-    if invoice.status != Invoice.Status.UNPAID:
-        messages.error(
-            request,
-            "Seule une facture impayée (sans paiements) peut être dé-finalisée.",
-        )
-        return redirect("financial:invoice_detail", pk=pk)
-
-    if invoice.payments.filter(status=Payment.Status.CONFIRMED).exists():
-        messages.error(
-            request,
-            "Impossible : des paiements confirmés existent sur cette facture.",
-        )
-        return redirect("financial:invoice_detail", pk=pk)
-
     with transaction.atomic():
+        # Reverse any confirmed payments first (while the invoice is still
+        # FINALE) so refresh_payment_totals() can settle amount_paid /
+        # amount_remaining / status cleanly before we blank those fields
+        # below. Payments are kept — marked REVERSED, not deleted — so the
+        # money trail survives the dé-finalisation for audit purposes.
+        confirmed_payments = list(
+            invoice.payments.filter(status=Payment.Status.CONFIRMED)
+        )
+        for payment in confirmed_payments:
+            payment.status = Payment.Status.REVERSED
+            note = (
+                f"Annulé automatiquement le {timezone.now():%d/%m/%Y %H:%M} "
+                f"suite à la dé-finalisation de la facture par "
+                f"{request.user.get_username()}."
+            )
+            payment.notes = f"{payment.notes}\n{note}" if payment.notes else note
+            payment.save()  # triggers invoice.refresh_payment_totals()
+
         # Decrement the sequence counter only if this invoice holds the last number
         # (i.e. no newer finale invoice was issued after it).
         if invoice.reference:
             from financial.models import InvoiceSequence
 
             try:
+                # Parse the year straight from the reference (e.g. "F-017-2025"
+                # → 2025). This must match whatever year finalize() actually
+                # consumed — which may differ from finalized_at.year if a
+                # reference_year override was used (historical backfill).
+                ref_parts = invoice.reference.split("-")
+                ref_number = int(ref_parts[-2])
+                ref_year = int(ref_parts[-1])
                 seq = InvoiceSequence.objects.select_for_update().get(
                     invoice_type=invoice.invoice_type,
-                    year=(
-                        invoice.finalized_at.year
-                        if invoice.finalized_at
-                        else timezone.now().year
-                    ),
+                    year=ref_year,
                     phase=InvoiceSequence.Phase.FINALE,
                 )
-                # Extract the number from the reference (e.g. "F-017-2026" → 17)
-                ref_number = int(invoice.reference.split("-")[-2])
                 if seq.last_number == ref_number:
                     seq.last_number -= 1
                     seq.save(update_fields=["last_number"])
@@ -501,6 +535,13 @@ def invoice_cancel_finalization(request, pk):
         from financial.models import ProformaSnapshot
 
         ProformaSnapshot.objects.filter(invoice=invoice).delete()
+
+    if confirmed_payments:
+        messages.warning(
+            request,
+            f"{len(confirmed_payments)} paiement(s) confirmé(s) ont été marqués "
+            "« annulé / retourné » (conservés pour audit, non supprimés).",
+        )
 
     messages.success(
         request,
@@ -790,7 +831,9 @@ def payment_add(request, invoice_pk, pk=None):
             "amount": invoice.amount_remaining,
             "reference": f"{prefix}{seq:04d}",
         }
-    form = PaymentForm(request.POST or None, instance=instance, initial=initial)
+    form = PaymentForm(
+        request.POST or None, request.FILES or None, instance=instance, initial=initial
+    )
 
     if request.method == "POST" and form.is_valid():
         payment = form.save(commit=False)
@@ -953,6 +996,20 @@ def credit_note_print(request, pk):
 # ─────────────────────────────────────────────────────────────────────────── #
 
 
+# Whitelisted column-sort keys for expense_list — url key → ORM field path.
+# ("gross" = Montant brut, "irg" = IRG, "net" = Net (DA) i.e. total cost to org)
+EXPENSE_SORT_FIELDS = {
+    "date": "date",
+    "description": "description",
+    "category": "category__name",
+    "beneficiary": "beneficiary__name",
+    "gross": "gross_amount",
+    "irg": "irg_amount",
+    "net": "amount",
+    "approval_status": "approval_status",
+}
+
+
 @admin_required
 def expense_list(request):
     from django.utils.timezone import now
@@ -964,7 +1021,7 @@ def expense_list(request):
         "beneficiary",
         "beneficiary__beneficiary_type",
         "payment_account",
-    ).order_by("-date")
+    )
     form = ExpenseFilterForm(request.GET or None)
 
     date_from = date_to = None
@@ -1050,6 +1107,8 @@ def expense_list(request):
                     else _date(year + 1, 1, 1)
                 ),
             )
+
+    qs = apply_sorting(qs, request, EXPENSE_SORT_FIELDS, default="-date")
 
     today = now().date()
     first_of_month = today.replace(day=1)

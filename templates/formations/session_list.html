@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load sort_tags %}
 
 {% block title %}Sessions{% endblock %}
 
@@ -103,12 +104,12 @@
       <table class="isi-table">
         <thead>
           <tr>
-            <th>Formation</th>
-            <th>Dates</th>
-            <th>Client</th>
-            <th>Formateur</th>
-            <th>Remplissage</th>
-            <th>Statut</th>
+            <th>{% sort_th "formation" "Formation" %}</th>
+            <th>{% sort_th "date" "Dates" %}</th>
+            <th>{% sort_th "client" "Client" %}</th>
+            <th>{% sort_th "trainer" "Formateur" %}</th>
+            <th>{% sort_th "fill" "Remplissage" %}</th>
+            <th>{% sort_th "status" "Statut" %}</th>
             <th style="text-align:right;">Actions</th>
           </tr>
         </thead>

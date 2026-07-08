@@ -18,7 +18,7 @@
   <div class="page-header">
     <div class="page-header-left">
       <h1>Finaliser la facture</h1>
-      <p>{{ invoice.proforma_reference }} → <strong>{{ next_reference }}</strong></p>
+      <p>{{ invoice.proforma_reference }} → <strong id="header-next-reference">{{ next_reference }}</strong></p>
     </div>
     <a href="{% url 'financial:invoice_detail' invoice.pk %}" class="btn btn-ghost">
       <i class="bi bi-arrow-left"></i> Retour
@@ -179,6 +179,19 @@
               </div>
             </div>
 
+            <!-- Reference year override (backfill old invoices into their real year) -->
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.reference_year.id_for_label }}">{{ form.reference_year.label }}</label>
+              <div class="input-icon-wrap">
+                <i class="bi bi-calendar-range"></i>
+                {{ form.reference_year }}
+              </div>
+              {% if form.reference_year.errors %}
+              <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.reference_year.errors|join:", " }}</div>
+              {% endif %}
+              <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">{{ form.reference_year.help_text }}</div>
+            </div>
+
             {% if form.non_field_errors %}
             {% for error in form.non_field_errors %}
             <div style="color:var(--danger);font-size:13px;display:flex;gap:8px;margin-bottom:12px;">
@@ -190,7 +203,7 @@
             <div class="section-divider"></div>
             <div class="d-flex gap-2">
               <button type="submit" class="btn btn-amber">
-                <i class="bi bi-check2-circle"></i> Finaliser — Émettre {{ next_reference }}
+                <i class="bi bi-check2-circle"></i> Finaliser — Émettre <span id="submit-next-reference">{{ next_reference }}</span>
               </button>
               <a href="{% url 'financial:invoice_detail' invoice.pk %}" class="btn btn-ghost">
                 <i class="bi bi-x-lg"></i> Annuler
@@ -220,7 +233,7 @@
             <div style="display:flex;justify-content:space-between;font-size:13px;padding:10px 12px;
                         background:var(--accent-soft);border-radius:8px;border:1px solid rgba(245,158,11,.25);">
               <span style="font-weight:600;">N° Facture finale</span>
-              <span style="font-weight:700;font-family:var(--font-head);color:var(--accent);">{{ next_reference }}</span>
+              <span id="summary-next-reference" style="font-weight:700;font-family:var(--font-head);color:var(--accent);">{{ next_reference }}</span>
             </div>
           </div>
 
@@ -267,6 +280,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
+{{ next_reference|default:""|json_script:"orig-next-ref" }}
 <script>
   // Show timbre notice when mode_reglement = espece
   const modeSelect = document.getElementById('{{ form.mode_reglement.id_for_label }}');
@@ -304,5 +318,34 @@
     document.addEventListener('DOMContentLoaded', updateTimbre);
     updateTimbre();
   }
+
+  // Keep the "N° Facture finale" previews honest when the year is overridden:
+  // we only know the exact next number for the DEFAULT year (computed
+  // server-side in `next_reference`); for any other year show "???" rather
+  // than a number that hasn't actually been reserved.
+  (function () {
+    const yearInput = document.getElementById('{{ form.reference_year.id_for_label }}');
+    const origEl    = document.getElementById('orig-next-ref');
+    if (!yearInput || !origEl) return;
+
+    const defaultYear = yearInput.value; // initial value = invoice_date's year
+    const origRefText = JSON.parse(origEl.textContent);
+
+    const targets = ['header-next-reference', 'submit-next-reference', 'summary-next-reference']
+      .map(id => document.getElementById(id))
+      .filter(Boolean);
+
+    function refreshPreview() {
+      const isDefault = yearInput.value === defaultYear;
+      const parts  = origRefText.split('-'); // e.g. ["F", "017", "2026"]
+      const prefix = parts.slice(0, -2).join('-');
+      const display = isDefault
+        ? origRefText
+        : `${prefix}-???-${yearInput.value || defaultYear}`;
+      targets.forEach(el => { el.textContent = display; });
+    }
+
+    yearInput.addEventListener('input', refreshPreview);
+  })();
 </script>
 {% endblock %}

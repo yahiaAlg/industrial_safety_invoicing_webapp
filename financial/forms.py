@@ -43,7 +43,40 @@ class ProformaCreateForm(ISIFormMixin, forms.ModelForm):
     Only fields relevant to the PROFORMA phase are exposed.
     reference / proforma_reference are auto-generated; amounts are computed
     from line items.
+
+    Manual numbering override (v4.1)
+    ─────────────────────────────────
+    * override_reference — free-text, not a model field. When filled, it is
+      written verbatim into proforma_reference (draft/proforma phase) or
+      reference (finale phase) instead of the auto-generated value. Use
+      only for urgent corrections — uniqueness is still enforced.
+    * sequence_year — not a model field. Only used on CREATION when
+      override_reference is empty: forces the auto-generated proforma
+      reference to consume the counter for that year instead of the year
+      derived from invoice_date. Use when backfilling old invoices so they
+      land in their correct historical sequence rather than the current one.
     """
+
+    override_reference = forms.CharField(
+        required=False,
+        label="Numéro personnalisé",
+        help_text=(
+            "Laisser vide pour la numérotation automatique. Remplir pour "
+            "forcer une valeur précise (ex. F-015-2025) — correction "
+            "d'urgence uniquement."
+        ),
+    )
+    sequence_year = forms.IntegerField(
+        required=False,
+        label="Année de séquence (numérotation auto)",
+        help_text=(
+            "Ne s'applique qu'à la création, sans numéro personnalisé. Par "
+            "défaut : année de la date d'émission. À utiliser pour insérer "
+            "d'anciennes factures dans la séquence de leur année réelle."
+        ),
+        min_value=2000,
+        max_value=2100,
+    )
 
     class Meta:
         model = Invoice
@@ -90,6 +123,8 @@ class ProformaCreateForm(ISIFormMixin, forms.ModelForm):
             "study_project",
             "notes",
             "footer_text",
+            "override_reference",
+            "sequence_year",
         ):
             self.fields[f].required = False
 
@@ -113,7 +148,47 @@ class ProformaCreateForm(ISIFormMixin, forms.ModelForm):
                 "session",
                 "Une facture Étude ne devrait pas être liée à une session.",
             )
+
+        # ── Manual reference override — uniqueness check ────────────── #
+        override = (cleaned.get("override_reference") or "").strip()
+        if override:
+            cleaned["override_reference"] = override
+            existing = Invoice.objects.filter(proforma_reference=override) | (
+                Invoice.objects.filter(reference=override)
+            )
+            if self.instance.pk:
+                existing = existing.exclude(pk=self.instance.pk)
+            if existing.exists():
+                self.add_error(
+                    "override_reference",
+                    "Ce numéro est déjà utilisé par une autre facture.",
+                )
+
         return cleaned
+
+    def save(self, commit=True):
+        invoice = super().save(commit=False)
+
+        override = (self.cleaned_data.get("override_reference") or "").strip()
+        seq_year = self.cleaned_data.get("sequence_year")
+        is_new = invoice.pk is None
+
+        if override:
+            # Correction d'urgence — écrase la numérotation automatique.
+            if invoice.phase == Invoice.Phase.FINALE:
+                invoice.reference = override
+            else:
+                invoice.proforma_reference = override
+        elif is_new and seq_year:
+            # Force la séquence d'une année précise (backfill de factures
+            # antérieures) au lieu de l'année déduite de invoice_date.
+            invoice.proforma_reference = Invoice._next_proforma_reference(
+                invoice.invoice_type, seq_year
+            )
+
+        if commit:
+            invoice.save()
+        return invoice
 
 
 # Backward-compatible alias used by generic edit views
@@ -195,6 +270,17 @@ class FinalizeInvoiceForm(ISIFormMixin, forms.Form):
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
         help_text="Optionnel — si vide, n'apparaît pas sur la facture imprimée.",
+    )
+    reference_year = forms.IntegerField(
+        label="Année de séquence (numéro final)",
+        required=False,
+        min_value=2000,
+        max_value=2100,
+        help_text=(
+            "Par défaut : année de la date d'émission. Forcer une autre "
+            "année pour insérer cette facture dans la séquence historique "
+            "correcte (utile lors d'un rattrapage de factures anciennes)."
+        ),
     )
 
     def clean_mode_reglement(self):
@@ -332,24 +418,37 @@ class InvoiceItemForm(ISIFormMixin, forms.ModelForm):
 class PaymentForm(ISIFormMixin, forms.ModelForm):
     class Meta:
         model = Payment
-        fields = ["date", "amount", "method", "status", "reference", "notes"]
+        fields = [
+            "date",
+            "amount",
+            "method",
+            "status",
+            "reference",
+            "proof_document",
+            "notes",
+        ]
         labels = {
             "date": "Date",
             "amount": "Montant (DA)",
             "method": "Mode de paiement",
             "status": "Statut",
             "reference": "Référence",
+            "proof_document": "Justificatif de paiement",
             "notes": "Notes",
         }
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),
             "notes": forms.Textarea(attrs={"rows": 2}),
         }
+        help_texts = {
+            "proof_document": "Reçu, avis de virement, copie de chèque… (PDF, JPG, PNG).",
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["reference"].required = False
         self.fields["notes"].required = False
+        self.fields["proof_document"].required = False
 
 
 # ---------------------------------------------------------------------------

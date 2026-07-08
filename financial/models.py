@@ -3,6 +3,24 @@ Financial models — v4.0
 Invoices (3-stage lifecycle: proforma → BC → finale), line items with flexible
 pricing modes, payments, credit notes, expenses.
 
+Changes in v4.2
+──────────────────────────
+* Invoice.finalize() bugfix — reference_year now defaults to invoice_date's
+  year instead of timezone.now().year. Finalizing a backfilled old invoice
+  now correctly consumes THAT year's counter instead of the current year's.
+  reference_year can still be passed explicitly to override.
+* ProformaCreateForm — manual reference override (override_reference) and
+  sequence_year (forces which year's counter a new proforma consumes) for
+  urgent corrections / historical backfills. See financial/forms.py.
+
+Changes in v4.1
+──────────────────────────
+* Expense.timbre_fiscal — new PERSISTED field, computed in Expense.save()
+  from gross_amount (HT+TVA), same tiered slabs as the live form preview.
+  Stored for reporting/stats; does not feed into `amount`.
+* Payment.proof_document — file upload (receipt / virement / chèque scan)
+  attached to a payment as documentary proof.
+
 Changes in v3.2 over v3.1
 ──────────────────────────
 * Invoice.client_tin_snapshot — snapshots Client.tin at finalization.
@@ -433,7 +451,7 @@ class Invoice(TimeStampedModel):
     # Finalization
     # ------------------------------------------------------------------ #
 
-    def finalize(self, amount_in_words: str = "") -> None:
+    def finalize(self, amount_in_words: str = "", reference_year: int = None) -> None:
         """
         Promote a proforma to a finalized invoice.
 
@@ -443,6 +461,12 @@ class Invoice(TimeStampedModel):
 
         The caller should set mode_reglement before calling finalize() when
         the payment mode is known at that point.
+
+        reference_year defaults to invoice_date's year (NOT today's date —
+        finalizing an old backfilled invoice must consume that year's
+        counter, not the current one). Pass reference_year explicitly to
+        override, e.g. when deliberately filing under the finalization year
+        instead.
         """
         if self.phase == self.Phase.FINALE:
             raise ValidationError("Cette facture est déjà finalisée.")
@@ -507,7 +531,7 @@ class Invoice(TimeStampedModel):
             self.amount_tva = Decimal("0.00")
             self.amount_ttc = self.amount_ht
 
-        year = timezone.now().year
+        year = reference_year or self.invoice_date.year
         self.reference = self._next_final_reference(self.invoice_type, year)
         self.phase = self.Phase.FINALE
         self.status = self.Status.UNPAID
@@ -809,6 +833,13 @@ class Payment(TimeStampedModel):
         blank=True,
         verbose_name="Référence",
         help_text="N° virement, n° chèque, etc.",
+    )
+    proof_document = models.FileField(
+        upload_to="payment_proofs/%Y/%m/",
+        blank=True,
+        null=True,
+        verbose_name="Justificatif de paiement",
+        help_text="Reçu, avis de virement, copie de chèque, etc. (PDF, JPG, PNG).",
     )
     notes = models.TextField(blank=True, verbose_name="Notes")
 
@@ -1314,6 +1345,19 @@ class Expense(TimeStampedModel):
         ),
     )
 
+    # ---- Timbre fiscal (informational — stored for reporting/stats) -- #
+    timbre_fiscal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        verbose_name="Timbre fiscal (DA)",
+        help_text=(
+            "Calculé automatiquement sur HT+TVA (montant brut, déjà TTC) : "
+            "≤ 30 000 DA → 1% ; 30 000–100 000 DA → 1,5% ; ≥ 100 000 DA → 2%. "
+            "Stocké pour les statistiques — n'affecte pas le coût total (`amount`)."
+        ),
+    )
+
     amount = models.DecimalField(
         max_digits=14,
         decimal_places=2,
@@ -1448,6 +1492,32 @@ class Expense(TimeStampedModel):
         return f"{self.date} — {self.description} ({self.amount} DA) [{payee}]"
 
     # ------------------------------------------------------------------ #
+    # Timbre fiscal — tiered slab on HT+TVA (gross_amount is already the
+    # TTC figure by the time save() runs — see clean() in ExpenseForm).
+    # ------------------------------------------------------------------ #
+
+    @staticmethod
+    def _compute_timbre_fiscal(base: Decimal) -> Decimal:
+        """
+        base ≤  30 000 DA        → 1%
+        30 000 < base < 100 000  → 1.5%
+        base ≥ 100 000 DA        → 2%
+
+        Unlike Invoice.timbre_fiscal, this is unconditional (Expense has no
+        payment-mode field to gate on) and does NOT feed into `amount` —
+        it's stored purely for reporting/stats.
+        """
+        if not base:
+            return Decimal("0")
+        if base <= Decimal("30000"):
+            rate = Decimal("0.01")
+        elif base < Decimal("100000"):
+            rate = Decimal("0.015")
+        else:
+            rate = Decimal("0.02")
+        return (base * rate).quantize(Decimal("0.01"))
+
+    # ------------------------------------------------------------------ #
     # Save — auto-compute IRG, gross_amount, fiscal_year, quarter
     # ------------------------------------------------------------------ #
 
@@ -1472,6 +1542,9 @@ class Expense(TimeStampedModel):
             )
         else:
             self.tva_amount = Decimal("0")
+
+        # Timbre fiscal — computed on gross_amount (= HT+TVA), stored for stats
+        self.timbre_fiscal = self._compute_timbre_fiscal(self.gross_amount)
 
         # Auto-fill fiscal metadata
         if self.date:

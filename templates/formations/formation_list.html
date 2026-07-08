@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load sort_tags %}
 
 {% block title %}Catalogue des formations{% endblock %}
 
@@ -94,14 +95,14 @@
       <table class="isi-table">
         <thead>
           <tr>
-            <th>Formation</th>
+            <th>{% sort_th "title" "Formation" %}</th>
             <th>Code</th>
-            <th>Catégorie</th>
-            <th>Durée</th>
-            <th>Prix de base</th>
-            <th>Capacité</th>
-            <th>Sessions</th>
-            <th>Statut</th>
+            <th>{% sort_th "category" "Catégorie" %}</th>
+            <th>{% sort_th "duration" "Durée" %}</th>
+            <th>{% sort_th "price" "Prix de base" %}</th>
+            <th>{% sort_th "capacity" "Capacité" %}</th>
+            <th>{% sort_th "sessions" "Sessions" %}</th>
+            <th>{% sort_th "status" "Statut" %}</th>
             <th style="text-align:right;">Actions</th>
           </tr>
         </thead>
@@ -163,7 +164,7 @@
               </span>
             </td>
             <td>
-              <span style="font-weight:600;">{{ formation.sessions.count }}</span>
+              <span style="font-weight:600;">{{ formation.sessions_count }}</span>
             </td>
             <td>
               {% if formation.is_active %}

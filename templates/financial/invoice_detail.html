@@ -469,6 +469,12 @@
                   <span style="color:var(--text-muted);font-size:13px;font-family:monospace;">
                     {{ payment.reference|default:"—" }}
                   </span>
+                  {% if payment.proof_document %}
+                  <a href="{{ payment.proof_document.url }}" target="_blank" title="Voir le justificatif"
+                     style="margin-left:6px;color:var(--accent);">
+                    <i class="bi bi-paperclip"></i>
+                  </a>
+                  {% endif %}
                 </td>
                 <td>
                   {% if payment.status == 'confirmed' %}
@@ -864,15 +870,27 @@
           {% endif %}
 
           <!-- Cancel finalization — revert to proforma (admin recovery) -->
-          {% if invoice.phase == 'finale' and invoice.status == 'unpaid' %}
+          {% if invoice.phase == 'finale' and invoice.status not in 'voided credit_note' %}
           <form method="post" action="{% url 'financial:invoice_cancel_finalization' invoice.pk %}" class="mb-3">
             {% csrf_token %}
+            {% if invoice.status == 'unpaid' %}
             <button type="submit" class="btn btn-ghost btn-sm w-100"
                     style="color:#f59e0b;border-color:rgba(245,158,11,.3);justify-content:flex-start;"
                     onclick="return confirm('Annuler la finalisation et remettre en brouillon proforma ? Le numéro final sera libéré.')">
               <i class="bi bi-arrow-counterclockwise" style="color:var(--accent);"></i>
               Annuler la finalisation (remettre en proforma)
             </button>
+            {% else %}
+            <button type="submit" class="btn btn-ghost btn-sm w-100"
+                    style="color:var(--danger);border-color:rgba(239,68,68,.3);justify-content:flex-start;"
+                    onclick="return confirm('Cette facture a des paiements enregistrés (statut : {{ invoice.get_status_display }}). Annuler quand même la finalisation ? Les paiements confirmés seront marqués « annulé / retourné » (conservés pour audit, non supprimés) et le numéro final sera libéré. Cette action est réservée à la correction du compteur de séquence.')">
+              <i class="bi bi-arrow-counterclockwise"></i>
+              Annuler la finalisation (facture {{ invoice.get_status_display|lower }})
+            </button>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+              ⚠️ Paiements confirmés existants → marqués « annulé / retourné ».
+            </div>
+            {% endif %}
           </form>
           {% endif %}
 

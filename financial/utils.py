@@ -377,3 +377,26 @@ def amount_to_words_fr(amount: Decimal) -> str:
     if centimes:
         result += f" et {centimes:02d}/100"
     return result
+
+
+# ── Column-sort helper (used by sortable list-view <th> headers) ────────── #
+
+
+def apply_sorting(qs, request, field_map, default):
+    """
+    Apply a whitelisted ?sort=<key>&dir=asc|desc from the request to a queryset.
+
+    field_map: {url_key: orm_field_path} — only keys present here are honored,
+    so arbitrary/unknown fields can never reach order_by().
+    default: fallback ordering (e.g. "-invoice_date") used when 'sort' is
+             absent or not in field_map.
+    """
+    sort_key = request.GET.get("sort")
+    direction = request.GET.get("dir", "asc")
+    if sort_key and sort_key in field_map:
+        order_field = field_map[sort_key]
+        if direction == "desc":
+            order_field = f"-{order_field}"
+        return qs.order_by(order_field)
+    default_fields = [default] if isinstance(default, str) else list(default)
+    return qs.order_by(*default_fields)

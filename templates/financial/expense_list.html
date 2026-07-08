@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load sort_tags %}
 
 {% block title %}Dépenses{% endblock %}
 
@@ -261,17 +262,17 @@
         <table class="table isi-table mb-0">
           <thead>
             <tr>
-              <th style="width:90px;">Date</th>
-              <th>Description</th>
-              <th>Catégorie</th>
-              <th>Bénéficiaire</th>
+              <th style="width:90px;">{% sort_th "date" "Date" %}</th>
+              <th>{% sort_th "description" "Description" %}</th>
+              <th>{% sort_th "category" "Catégorie" %}</th>
+              <th>{% sort_th "beneficiary" "Bénéficiaire" %}</th>
               <th>Affectation</th>
-              <th style="text-align:right;">Montant brut</th>
-              <th style="text-align:right;">IRG</th>
-              <th style="text-align:right;font-weight:700;">Net (DA)</th>
+              <th style="text-align:right;">{% sort_th "gross" "Montant brut" align="right" %}</th>
+              <th style="text-align:right;">{% sort_th "irg" "IRG" align="right" %}</th>
+              <th style="text-align:right;font-weight:700;">{% sort_th "net" "Net (DA)" align="right" %}</th>
               <th style="text-align:center;">G50</th>
               <th style="text-align:center;">Justif.</th>
-              <th style="text-align:center;">Statut</th>
+              <th style="text-align:center;">{% sort_th "approval_status" "Statut" align="center" %}</th>
               <th style="width:48px;"></th>
             </tr>
           </thead>

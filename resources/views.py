@@ -30,6 +30,8 @@ from resources.utils import (
 
 @admin_required
 def trainer_list(request):
+    from resources.utils import apply_sorting
+
     qs = Trainer.objects.all()
     q = request.GET.get("q", "").strip()
     is_active = request.GET.get("is_active", "")
@@ -47,7 +49,38 @@ def trainer_list(request):
     elif is_active == "0":
         qs = qs.filter(is_active=False)
 
-    return render(request, "resources/trainer_list.html", {"trainers": qs})
+    qs = apply_sorting(
+        qs,
+        request,
+        field_map={
+            "name": "last_name",
+            "type": "trainer_type",
+            "specialty": "specialty",
+            "phone": "phone",
+            "email": "email",
+            "rate": "daily_rate",
+            "status": "is_active",
+        },
+        default=["last_name", "first_name"],
+    )
+
+    return render(
+        request,
+        "resources/trainer_list.html",
+        {
+            "trainers": qs,
+            # KPI cards — always reflect the full table, not the current filters,
+            # so the numbers stay stable as the admin filters/sorts the list.
+            "trainers_active_count": Trainer.objects.filter(is_active=True).count(),
+            "trainers_total_count": Trainer.objects.count(),
+            "trainers_internal_count": Trainer.objects.filter(
+                trainer_type=Trainer.TRAINER_TYPE_INTERNAL
+            ).count(),
+            "trainers_external_count": Trainer.objects.filter(
+                trainer_type=Trainer.TRAINER_TYPE_EXTERNAL
+            ).count(),
+        },
+    )
 
 
 @admin_required
@@ -135,8 +168,33 @@ def trainer_deactivate(request, pk):
 
 @admin_required
 def room_list(request):
-    rooms = TrainingRoom.objects.all()
-    return render(request, "resources/room_list.html", {"rooms": rooms})
+    from django.db.models import Sum
+
+    from resources.utils import apply_sorting
+
+    rooms = apply_sorting(
+        TrainingRoom.objects.all(),
+        request,
+        field_map={
+            "name": "name",
+            "capacity": "capacity",
+            "location": "location",
+            "status": "is_active",
+        },
+        default="name",
+    )
+    active_rooms = TrainingRoom.objects.filter(is_active=True)
+    return render(
+        request,
+        "resources/room_list.html",
+        {
+            "rooms": rooms,
+            # KPI cards reflect all active rooms, independent of table sorting.
+            "rooms_active_count": active_rooms.count(),
+            "total_capacity": active_rooms.aggregate(total=Sum("capacity"))["total"]
+            or 0,
+        },
+    )
 
 
 @admin_required
@@ -239,6 +297,8 @@ def room_availability(request, pk):
 
 @admin_required
 def equipment_list(request):
+    from resources.utils import apply_sorting
+
     qs = Equipment.objects.all()
     q = request.GET.get("q", "").strip()
     status = request.GET.get("status", "")
@@ -256,9 +316,29 @@ def equipment_list(request):
     if condition:
         qs = qs.filter(condition=condition)
 
+    # Sort while qs is still a queryset — is_maintenance_due below is a Python
+    # property, so once it turns qs into a list, order_by is no longer usable
+    # and the sort would silently stop applying.
+    qs = apply_sorting(
+        qs,
+        request,
+        field_map={
+            "name": "name",
+            "category": "category",
+            "condition": "condition",
+            "status": "status",
+            "value": "current_value",
+            "location": "location",
+        },
+        default=["category", "name"],
+    )
+
     if maintenance_due == "1":
-        # is_maintenance_due is a property — filter in Python
+        # is_maintenance_due is a property — filter in Python. List
+        # comprehension preserves the ordering applied just above.
         qs = [e for e in qs if e.is_maintenance_due]
+
+    from django.db.models import Sum
 
     return render(
         request,
@@ -267,6 +347,18 @@ def equipment_list(request):
             "equipment_list": qs,
             "status_choices": Equipment.STATUS_CHOICES,
             "condition_choices": Equipment.CONDITION_CHOICES,
+            # KPI cards — computed over the whole inventory, independent of
+            # the table's current filters/sort, using the same helpers as
+            # the dedicated idle/maintenance-due reports for consistency.
+            "equipment_active_count": Equipment.objects.filter(
+                status=Equipment.STATUS_ACTIVE
+            ).count(),
+            "maintenance_due_count": len(equipment_maintenance_due_list()),
+            "idle_count": equipment_idle_list().count(),
+            "total_value": Equipment.objects.aggregate(total=Sum("current_value"))[
+                "total"
+            ]
+            or 0,
         },
     )
 
