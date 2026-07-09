@@ -1522,17 +1522,27 @@ class Expense(TimeStampedModel):
     # ------------------------------------------------------------------ #
 
     def save(self, *args, **kwargs):
+        # Timbre fiscal — user-editable (see ExpenseForm); only applies when the
+        # expense was paid in cash. Defaults to 0 and is left as submitted —
+        # the JS "Suggérer" button pre-fills the computed slab value client-side,
+        # but save() must NOT silently overwrite a manually entered amount.
+        # Resolved BEFORE the total-cost computation below so it is included
+        # in `amount` regardless of whether the entered figure was HT or TTC.
+        if self.timbre_fiscal is None:
+            self.timbre_fiscal = Decimal("0.00")
+
         # Compute IRG and total cost
         if self.gross_amount is not None:
             self.irg_amount = (self.gross_amount * self.irg_rate).quantize(
                 Decimal("0.01")
             )
-            # IRG is paid ADDITIONALLY to the State — total org cost = gross + IRG
-            self.amount = self.gross_amount + self.irg_amount
+            # IRG is paid ADDITIONALLY to the State — total org cost = gross + IRG + timbre
+            self.amount = self.gross_amount + self.irg_amount + self.timbre_fiscal
         else:
             # gross_amount not provided — treat amount as net (no IRG)
             self.gross_amount = self.amount
             self.irg_amount = Decimal("0")
+            self.amount = self.gross_amount + self.timbre_fiscal
 
         # Compute TVA extracted from the TTC amount (gross_amount = TTC paid)
         tva_rate = self.tva_rate or Decimal("0")
@@ -1542,13 +1552,6 @@ class Expense(TimeStampedModel):
             )
         else:
             self.tva_amount = Decimal("0")
-
-        # Timbre fiscal — user-editable (see ExpenseForm); only applies when the
-        # expense was paid in cash. Defaults to 0 and is left as submitted —
-        # the JS "Suggérer" button pre-fills the computed slab value client-side,
-        # but save() must NOT silently overwrite a manually entered amount.
-        if self.timbre_fiscal is None:
-            self.timbre_fiscal = Decimal("0.00")
 
         # Auto-fill fiscal metadata
         if self.date:
