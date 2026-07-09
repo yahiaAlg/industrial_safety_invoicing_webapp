@@ -992,30 +992,34 @@
     const isTTC    = ttcCheckbox && ttcCheckbox.checked;
     const fmt      = n => n.toLocaleString('fr-DZ', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' DA';
 
-    let ht, tva, ttc;
+    let ht, tva, ttcTax;
     if (isTTC) {
       // User entered TTC — extract HT and TVA
-      ttc = entered;
-      tva = tvaRate > 0 ? Math.round(ttc * tvaRate / (1 + tvaRate) * 100) / 100 : 0;
-      ht  = Math.round((ttc - tva) * 100) / 100;
+      ttcTax = entered;
+      tva = tvaRate > 0 ? Math.round(ttcTax * tvaRate / (1 + tvaRate) * 100) / 100 : 0;
+      ht  = Math.round((ttcTax - tva) * 100) / 100;
     } else {
       // User entered HT — compute TTC and TVA
       ht  = entered;
       tva = tvaRate > 0 ? Math.round(ht * tvaRate * 100) / 100 : 0;
-      ttc = Math.round((ht + tva) * 100) / 100;
+      ttcTax = Math.round((ht + tva) * 100) / 100;
     }
 
-    // IRG applied on TTC (amount actually paid)
-    const irg = Math.round(ttc * irgRate * 100) / 100;
+    // IRG applied on the tax-only TTC (HT+TVA) — the amount actually invoiced,
+    // unaffected by timbre since timbre is a payment-method cost, not a tax base.
+    const irg = Math.round(ttcTax * irgRate * 100) / 100;
 
     // Timbre fiscal — whatever is currently in the field (manually typed or
     // filled via "Suggérer") is included in the total, same as save() does.
     const timbreEntered = parseFloat(timbreFiscalInput ? timbreFiscalInput.value : 0) || 0;
-    const net = Math.round((ttc + irg + timbreEntered) * 100) / 100;  // total org cost
+
+    // Montant TTC displayed = HT + TVA + timbre, per the requested formula.
+    const ttc = Math.round((ttcTax + timbreEntered) * 100) / 100;
+    const net = Math.round((ttc + irg) * 100) / 100;  // total org cost
 
     // Suggested value shown next to the "Suggérer" button — informational,
     // only written into the field when the button is clicked.
-    const timbre = computeTimbreFiscal(ttc);
+    const timbre = computeTimbreFiscal(ttcTax);
 
     // Update preview bar
     const el = id => document.getElementById(id);
@@ -1032,7 +1036,7 @@
     lastTimbreSuggestion = timbre;
 
     // Side panel (if present)
-    el('side-gross')      && (el('side-gross').textContent      = entered > 0 ? fmt(isTTC ? ttc : ht) : '—');
+    el('side-gross')      && (el('side-gross').textContent      = entered > 0 ? fmt(isTTC ? ttcTax : ht) : '—');
     el('side-irg-rate')   && (el('side-irg-rate').textContent   = irgRate > 0 ? (irgRate * 100).toFixed(0) + ' %' : '0 %');
     el('side-irg-amount') && (el('side-irg-amount').textContent = irg > 0 ? fmt(irg) : '0,00 DA');
     el('side-net')        && (el('side-net').textContent        = entered > 0 ? fmt(net) : '—');
