@@ -1543,8 +1543,12 @@ class Expense(TimeStampedModel):
         else:
             self.tva_amount = Decimal("0")
 
-        # Timbre fiscal — computed on gross_amount (= HT+TVA), stored for stats
-        self.timbre_fiscal = self._compute_timbre_fiscal(self.gross_amount)
+        # Timbre fiscal — user-editable (see ExpenseForm); only applies when the
+        # expense was paid in cash. Defaults to 0 and is left as submitted —
+        # the JS "Suggérer" button pre-fills the computed slab value client-side,
+        # but save() must NOT silently overwrite a manually entered amount.
+        if self.timbre_fiscal is None:
+            self.timbre_fiscal = Decimal("0.00")
 
         # Auto-fill fiscal metadata
         if self.date:

@@ -387,7 +387,11 @@ class InvoiceItemForm(ISIFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["order"].required = False
         self.fields["discount_percent"].required = False
-        if invoice and not self.instance.pk and invoice.invoice_type == Invoice.InvoiceType.ETUDE:
+        if (
+            invoice
+            and not self.instance.pk
+            and invoice.invoice_type == Invoice.InvoiceType.ETUDE
+        ):
             self.fields["pricing_mode"].initial = InvoiceItem.PricingMode.PER_UNIT
 
     def clean(self):
@@ -399,7 +403,9 @@ class InvoiceItemForm(ISIFormMixin, forms.ModelForm):
         if mode == InvoiceItem.PricingMode.PER_PERSON and nb_persons <= 0:
             self.add_error("nb_persons", "Indiquez le nombre de personnes.")
         if mode == InvoiceItem.PricingMode.PER_UNIT and nb_persons <= 0:
-            self.add_error("nb_persons", "Indiquez le nombre d'unités (études) réalisées.")
+            self.add_error(
+                "nb_persons", "Indiquez le nombre d'unités (études) réalisées."
+            )
         if mode == InvoiceItem.PricingMode.PER_DAY and nb_days <= 0:
             self.add_error("nb_days", "Indiquez le nombre de jours.")
         if mode == InvoiceItem.PricingMode.PER_PERSON_PER_DAY:
@@ -734,6 +740,7 @@ class ExpenseForm(ISIFormMixin, forms.ModelForm):
             "gross_amount",
             "irg_rate",
             "tva_rate",
+            "timbre_fiscal",
             "payment_reference",
             "payment_date",
             # Trainer-specific
@@ -764,6 +771,7 @@ class ExpenseForm(ISIFormMixin, forms.ModelForm):
             "gross_amount": "Montant brut (DA)",
             "irg_rate": "Taux IRG",
             "tva_rate": "Taux TVA",
+            "timbre_fiscal": "Timbre fiscal (DA)",
             "payment_reference": "Réf. paiement",
             "payment_date": "Date de règlement",
             "trainer_payment_mode": "Mode de paiement formateur",
@@ -793,11 +801,13 @@ class ExpenseForm(ISIFormMixin, forms.ModelForm):
             "tva_rate": forms.NumberInput(
                 attrs={"step": "0.01", "min": "0", "max": "1"}
             ),
+            "timbre_fiscal": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
         }
         help_texts = {
             "gross_amount": "Montant avant retenue IRG. Si IRG = 0, identique au montant net.",
             "irg_rate": "0 = pas de retenue ; 0.10 = 10% (prestataires externes).",
             "tva_rate": "0 = exonere ou inconnu ; 0.09 = 9% ; 0.19 = 19%.",
+            "timbre_fiscal": "Uniquement si réglée en espèces — sinon laissez à 0.",
             "g50_month": "Premier jour du mois de déclaration G50 (ex. 2026-01-01).",
             "training_period_label": "Ex. « 22-24/12/2023 » — description libre de la période.",
             "supplier": "Utilisez ce champ uniquement si le bénéficiaire n'est pas enregistré.",
