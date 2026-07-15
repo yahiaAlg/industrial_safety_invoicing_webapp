@@ -105,8 +105,15 @@ class ProformaCreateForm(ISIFormMixin, forms.ModelForm):
             "footer_text": "Pied de page (personnalisé)",
         }
         widgets = {
-            "invoice_date": forms.DateInput(attrs={"type": "date"}),
-            "validity_date": forms.DateInput(attrs={"type": "date"}),
+            # format="%Y-%m-%d" required: with LANGUAGE_CODE="fr-dz" and
+            # USE_L10N=True, Django would otherwise render the bound value
+            # as DD/MM/YYYY, which <input type="date"> can't parse — the
+            # field then looks empty on edit, and invoice_form.html's
+            # "fill today if empty" JS overwrites it.
+            "invoice_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "validity_date": forms.DateInput(
+                attrs={"type": "date"}, format="%Y-%m-%d"
+            ),
             "notes": forms.Textarea(attrs={"rows": 3}),
             "footer_text": forms.Textarea(attrs={"rows": 3}),
         }
@@ -218,7 +225,9 @@ class BonCommandeForm(ISIFormMixin, forms.ModelForm):
             "bon_commande_scan": "Scan / document BC",
         }
         widgets = {
-            "bon_commande_date": forms.DateInput(attrs={"type": "date"}),
+            "bon_commande_date": forms.DateInput(
+                attrs={"type": "date"}, format="%Y-%m-%d"
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -268,7 +277,7 @@ class FinalizeInvoiceForm(ISIFormMixin, forms.Form):
     due_date = forms.DateField(
         label="Date d'échéance",
         required=False,
-        widget=forms.DateInput(attrs={"type": "date"}),
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         help_text="Optionnel — si vide, n'apparaît pas sur la facture imprimée.",
     )
     reference_year = forms.IntegerField(
