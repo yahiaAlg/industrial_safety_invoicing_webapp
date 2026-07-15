@@ -37,6 +37,15 @@ CSRF_TRUSTED_ORIGINS = config(
 )
 USE_X_FORWARDED_HOST = True
 
+# nginx reverse-proxies this app under /facturation/ in production. Django
+# computes its URL "script prefix" (used by reverse()/redirect()) once, very
+# early in WSGIHandler — before ScriptNameFromHeaderMiddleware ever runs — so
+# relying on that middleware alone leaves every redirect() missing the
+# prefix. FORCE_SCRIPT_NAME is read directly by get_script_prefix() and
+# fixes this regardless of middleware order. Left unset (None) in local dev,
+# where the app is served at the domain root with no prefix.
+FORCE_SCRIPT_NAME = config("FORCE_SCRIPT_NAME", default=None)
+
 
 # ── Application definition ────────────────────────────────────────────────── #
 
