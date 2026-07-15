@@ -725,6 +725,15 @@ class ExpenseForm(ISIFormMixin, forms.ModelForm):
     must be set. Enforced in Expense.clean().
     """
 
+    # <input type="date"> always submits/expects ISO (YYYY-MM-DD). With
+    # LANGUAGE_CODE="fr-dz", Django's localized DATE_INPUT_FORMATS may not
+    # include that format for *parsing*, which would reject a valid submit.
+    # Declaring input_formats explicitly here guarantees ISO is accepted
+    # regardless of locale, independent of the widget's display format below.
+    date = forms.DateField(input_formats=["%Y-%m-%d"])
+    payment_date = forms.DateField(input_formats=["%Y-%m-%d"], required=False)
+    g50_month = forms.DateField(input_formats=["%Y-%m-%d"], required=False)
+
     class Meta:
         model = Expense
         fields = [
@@ -790,9 +799,14 @@ class ExpenseForm(ISIFormMixin, forms.ModelForm):
             "notes": "Notes",
         }
         widgets = {
-            "date": forms.DateInput(attrs={"type": "date"}),
-            "g50_month": forms.DateInput(attrs={"type": "date"}),
-            "payment_date": forms.DateInput(attrs={"type": "date"}),
+            # format="%Y-%m-%d" is required here: with LANGUAGE_CODE="fr-dz"
+            # and USE_L10N=True, Django would otherwise render the bound
+            # value as DD/MM/YYYY, which <input type="date"> can't parse —
+            # the field then LOOKS empty on edit, and the page's JS
+            # "fill today if empty" fallback overwrites it.
+            "date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "g50_month": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "payment_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "notes": forms.Textarea(attrs={"rows": 2}),
             "approval_notes": forms.Textarea(attrs={"rows": 2}),
             "irg_rate": forms.NumberInput(

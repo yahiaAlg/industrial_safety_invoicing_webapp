@@ -38,7 +38,6 @@ from formations.utils import (
     parse_participant_excel,
 )
 
-
 # ---------------------------------------------------------------------------
 # Formation catalog
 # ---------------------------------------------------------------------------
@@ -263,7 +262,9 @@ def category_list(request):
 
     from formations.utils import apply_sorting
 
-    categories = FormationCategory.objects.annotate(formations_count=Count("formations"))
+    categories = FormationCategory.objects.annotate(
+        formations_count=Count("formations")
+    )
     categories = apply_sorting(
         categories,
         request,
@@ -620,7 +621,7 @@ def session_create(request):
             request, "Session créée. Créez maintenant la facture proforma."
         )
         # Step 3 of guided workflow: go straight to invoice creation
-        return redirect(f"/financial/invoices/create/?session={session.pk}")
+        return redirect(f"/facturation/financial/invoices/create/?session={session.pk}")
 
     ctx = _session_form_context()
     ctx.update(
