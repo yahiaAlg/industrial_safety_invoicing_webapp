@@ -730,9 +730,20 @@ class ExpenseForm(ISIFormMixin, forms.ModelForm):
     # include that format for *parsing*, which would reject a valid submit.
     # Declaring input_formats explicitly here guarantees ISO is accepted
     # regardless of locale, independent of the widget's display format below.
-    date = forms.DateField(input_formats=["%Y-%m-%d"])
-    payment_date = forms.DateField(input_formats=["%Y-%m-%d"], required=False)
-    g50_month = forms.DateField(input_formats=["%Y-%m-%d"], required=False)
+    date = forms.DateField(
+        input_formats=["%Y-%m-%d"],
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+    )
+    payment_date = forms.DateField(
+        input_formats=["%Y-%m-%d"],
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+    )
+    g50_month = forms.DateField(
+        input_formats=["%Y-%m-%d"],
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+    )
 
     class Meta:
         model = Expense
@@ -799,14 +810,10 @@ class ExpenseForm(ISIFormMixin, forms.ModelForm):
             "notes": "Notes",
         }
         widgets = {
-            # format="%Y-%m-%d" is required here: with LANGUAGE_CODE="fr-dz"
-            # and USE_L10N=True, Django would otherwise render the bound
-            # value as DD/MM/YYYY, which <input type="date"> can't parse —
-            # the field then LOOKS empty on edit, and the page's JS
-            # "fill today if empty" fallback overwrites it.
-            "date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
-            "g50_month": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
-            "payment_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            # date / payment_date / g50_month are declared explicitly above
+            # (with widget + input_formats together) rather than here —
+            # an explicit field declaration always overrides Meta.widgets,
+            # so listing them in both places is dead code and misleading.
             "notes": forms.Textarea(attrs={"rows": 2}),
             "approval_notes": forms.Textarea(attrs={"rows": 2}),
             "irg_rate": forms.NumberInput(
