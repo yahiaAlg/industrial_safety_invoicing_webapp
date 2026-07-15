@@ -1733,7 +1733,7 @@ class FinancialPeriod(TimeStampedModel):
         ordering = ["-date_start"]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(date_end__gte=models.F("date_start")),
+                condition=models.Q(date_end__gte=models.F("date_start")),
                 name="financial_period_end_after_start",
             )
         ]
