@@ -3,12 +3,13 @@
 Sequel seed — Part 2: mixed-industry invoices (2026)
 
 Loads:
-  • 8 new Clients
+  • 9 new Clients
   • Formations (reuses HSE category where applicable, adds 1 new
     FormationCategory : Industrie & Métallurgie (MET))
-  • 8 finalised FORMATION invoices for year 2026 (028–035)
+  • 9 finalised FORMATION invoices for year 2026 (027–035)
 
 Source invoices:
+  - FACTURE_027 / 12-05-2026 → EURL ALPHAS SERVICES
   - FACTURE_028 / 14-05-2026 → SARL GROUPE RIADH EL-FETH
   - FACTURE_029 / 14-05-2026 → SARL EIMI TRANSFO
   - FACTURE_030 / 20-05-2026 → EURL PRO TAM STEEL
@@ -39,6 +40,7 @@ ZERO = Decimal("0.00")
 YEAR = 2026
 
 CLIENT_NAMES = [
+    "EURL ALPHAS SERVICES",
     "SARL GROUPE RIADH EL-FETH",
     "SARL EIMI TRANSFO",
     "EURL PRO TAM STEEL",
@@ -99,11 +101,18 @@ class Command(BaseCommand):
 
         # (title, category, duration_days, duration_hours, base_price)
         formations = [
+            ("Formation Certifiant ISM-ATEX", cat_hse, 4, 32, Decimal("130000.00")),
             ("Gestion de Conflit", cat_hse, 6, 48, Decimal("80000.00")),
             ("Habilitation Électrique", cat_hse, 4, 32, Decimal("45000.00")),
             ("Superviseur HSE + IOSH MS", cat_hse, 1, 8, Decimal("60000.00")),
             ("IOSH MS + Superviseurs HSE", cat_hse, 5, 40, Decimal("26000.00")),
-            ("Habilitation de Conduite des Chariots Élévateurs", cat_met, 1, 8, Decimal("22000.00")),
+            (
+                "Habilitation de Conduite des Chariots Élévateurs",
+                cat_met,
+                1,
+                8,
+                Decimal("22000.00"),
+            ),
             ("Overhead Crane Training", cat_hse, 5, 40, Decimal("80000.00")),
             ("Advanced Excel Training", cat_hse, 3, 24, Decimal("60000.00")),
         ]
@@ -146,6 +155,21 @@ class Command(BaseCommand):
         E = Client.ClientType.ENTREPRISE
 
         specs = [
+            (
+                "alphas_services",
+                dict(
+                    name="EURL ALPHAS SERVICES",
+                    client_type=E,
+                    forme_juridique=fj_eurl,
+                    address="Cité 2038 Logts, Bt 35, Bab Ezzouar, Alger",
+                    city="Alger",
+                    activity_sector="Maintenance et Montage des Pompes Hydrauliques",
+                    rc="22B1050983-00/16",
+                    nif="002216105098376",
+                    nis="002216210218558",
+                    article_imposition="061014515192",
+                ),
+            ),
             (
                 "riadh_el_feth",
                 dict(
@@ -288,6 +312,27 @@ class Command(BaseCommand):
             return Invoice._next_final_reference(Invoice.InvoiceType.FORMATION, YEAR)
 
         specs = [
+            # ── 027 / EURL ALPHAS SERVICES — Certifiant ISM-ATEX ───────
+            dict(
+                target_number=27,
+                date=datetime.date(2026, 5, 12),
+                client=C["alphas_services"],
+                bc="",
+                mode="Chèque",
+                amount_ht=D("520000.00"),
+                amount_tva=D("46800.00"),
+                amount_ttc=D("566800.00"),
+                items=[
+                    (
+                        1,
+                        "Formation Certifiant ISM-ATEX (2 E-M, 01 P, 04 P)",
+                        PP,
+                        D("4"),
+                        D("1"),
+                        D("130000.00"),
+                    ),
+                ],
+            ),
             # ── 028 / RIADH EL-FETH — Gestion de Conflit ────────────────
             dict(
                 target_number=28,
@@ -299,7 +344,14 @@ class Command(BaseCommand):
                 amount_tva=D("66852.00"),
                 amount_ttc=D("809852.00"),
                 items=[
-                    (1, "Formation Gestion de Conflit", PD, D("1"), D("6"), D("80000.00")),
+                    (
+                        1,
+                        "Formation Gestion de Conflit",
+                        PD,
+                        D("1"),
+                        D("6"),
+                        D("80000.00"),
+                    ),
                     (2, "Frais pédagogique", PD, D("1"), D("6"), D("43800.00")),
                 ],
             ),
@@ -314,7 +366,14 @@ class Command(BaseCommand):
                 amount_tva=D("16200.00"),
                 amount_ttc=D("196200.00"),
                 items=[
-                    (1, "Formation Habilitation Électrique", PP, D("4"), D("1"), D("45000.00")),
+                    (
+                        1,
+                        "Formation Habilitation Électrique",
+                        PP,
+                        D("4"),
+                        D("1"),
+                        D("45000.00"),
+                    ),
                 ],
             ),
             # ── 030 / PRO TAM STEEL — Superviseur HSE + IOSH MS ────────
@@ -328,7 +387,14 @@ class Command(BaseCommand):
                 amount_tva=D("5400.00"),
                 amount_ttc=D("65400.00"),
                 items=[
-                    (1, "Formation Superviseur HSE + IOSH MS", FF, D("1"), D("1"), D("60000.00")),
+                    (
+                        1,
+                        "Formation Superviseur HSE + IOSH MS",
+                        FF,
+                        D("1"),
+                        D("1"),
+                        D("60000.00"),
+                    ),
                 ],
             ),
             # ── 031 / BAIT EL OUTOUR — IOSH MS + Superviseurs HSE ──────
@@ -363,7 +429,14 @@ class Command(BaseCommand):
                 amount_tva=D("13500.00"),
                 amount_ttc=D("163500.00"),
                 items=[
-                    (1, "Formation Habilitation Électrique", PD, D("1"), D("3"), D("50000.00")),
+                    (
+                        1,
+                        "Formation Habilitation Électrique",
+                        PD,
+                        D("1"),
+                        D("3"),
+                        D("50000.00"),
+                    ),
                 ],
             ),
             # ── 033 / MOF VET — Habilitation Conduite Chariots ─────────
@@ -413,9 +486,23 @@ class Command(BaseCommand):
                 amount_ttc=D("1219165.00"),
                 items=[
                     (1, "Advanced Excel Training", PD, D("1"), D("3"), D("60000.00")),
-                    (2, "Single room for candidates (29)", FF, D("1"), D("1"), D("768000.00")),
+                    (
+                        2,
+                        "Single room for candidates (29)",
+                        FF,
+                        D("1"),
+                        D("1"),
+                        D("768000.00"),
+                    ),
                     (3, "Coffee break (27)", FF, D("1"), D("1"), D("54000.00")),
-                    (4, "Restauration for candidates (29)", FF, D("1"), D("1"), D("116000.00")),
+                    (
+                        4,
+                        "Restauration for candidates (29)",
+                        FF,
+                        D("1"),
+                        D("1"),
+                        D("116000.00"),
+                    ),
                 ],
             ),
         ]
