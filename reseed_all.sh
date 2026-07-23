@@ -24,7 +24,7 @@ print('  ✓ Invoice / InvoiceItem / InvoiceSequence cleared')
 
 
 
-echo "== 2/7: core formation catalog + clients + invoices =="
+echo "== 1/7: core formation catalog + clients + invoices =="
 python manage.py seed_formations
 
 echo "== 3/7: sequel P0 =="
