@@ -5,10 +5,24 @@
 # Usage:
 #   source venv/bin/activate
 #   ./reseed_all.sh
+#
+# Invoice numbering (proforma_reference) is generated from a shared,
+# per-year sequence. The sequel scripts force that sequence to specific
+# historical numbers, so any leftover invoices from a previous partial
+# run WILL collide. We therefore always flush invoices/sequences first —
+# clients and formations are left untouched (get_or_create, safe to reuse).
 set -euo pipefail
 
-echo "== 1/7: base data (institute, formes juridiques, expense categories) =="
-python manage.py seed_db
+echo "== 0/7: flush invoices & sequences (clients/formations kept) =="
+python manage.py shell -c "
+from financial.models import Invoice, InvoiceItem, InvoiceSequence
+InvoiceItem.objects.all().delete()
+Invoice.objects.all().delete()
+InvoiceSequence.objects.all().delete()
+print('  ✓ Invoice / InvoiceItem / InvoiceSequence cleared')
+"
+
+
 
 echo "== 2/7: core formation catalog + clients + invoices =="
 python manage.py seed_formations
