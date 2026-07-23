@@ -103,13 +103,13 @@ class Command(BaseCommand):
 
         # (title, category, duration_days, duration_hours, base_price)
         formations = [
-            ("Premiers Secours", cat_hse, 2, 16, Decimal("50000.00")),
-            ("Advanced Excel Training", cat_hse, 3, 24, Decimal("60000.00")),
-            ("Gestion de Stock", cat_com, 4, 32, Decimal("67278.29")),
-            ("Habilitation de Conduite des Chariots Élévateurs", cat_met, 2, 16, Decimal("48000.00")),
+            ("Premier Secours", cat_hse, 2, 16, Decimal("50000.00")),
+            ("Excel et Word Avancés", cat_hse, 3, 24, Decimal("60000.00")),
+            ("gestion de stock", cat_com, 4, 32, Decimal("67278.29")),
+            ("Habilitation Conduite des Chariots Élévateurs", cat_met, 2, 16, Decimal("48000.00")),
             ("Superviseur HSE", cat_hse, 2, 16, Decimal("45000.00")),
-            ("Formation Power BI", cat_com, 2, 16, Decimal("57000.00")),
-            ("Habilitation Produits Chimiques", cat_hse, 5, 40, Decimal("53000.00")),
+            ("Power BI", cat_com, 2, 16, Decimal("57000.00")),
+            ("Habilitation d'Utilisation Produit Chimique", cat_hse, 5, 40, Decimal("53000.00")),
             ("Habilitation Électrique", cat_hse, 4, 32, Decimal("55000.00")),
             (
                 "Fondamentaux des Opérations dans une Entreprise Industrielle "

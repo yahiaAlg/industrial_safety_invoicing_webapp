@@ -114,17 +114,17 @@ class Command(BaseCommand):
 
         # (title, category, duration_days, duration_hours, base_price)
         formations = [
-            ("Formation ISO 9001 version 2015", cat_qua, 2, 16, Decimal("65000.00")),
-            ("Formation ISO 45001", cat_qua, 2, 16, Decimal("65000.00")),
-            ("Formation d'Utilisation des Produits Chimiques", cat_hse, 3, 24, Decimal("250000.00")),
-            ("Hazard Analysis Critical Control Point (HACCP)", cat_hse, 3, 24, Decimal("60000.00")),
+            ("Formation ISO 9001", cat_qua, 2, 16, Decimal("65000.00")),
+            ("Formation ISO 9001 / ISO 14001 / ISO 45001", cat_qua, 2, 16, Decimal("65000.00")),
+            ("Habilitation d'Utilisation Produit Chimique", cat_hse, 3, 24, Decimal("250000.00")),
+            ("HACCP — Hazard Analysis Critical Control Point", cat_hse, 3, 24, Decimal("60000.00")),
             ("Leadership et Culture HSE", cat_hse, 5, 40, Decimal("40000.00")),
-            ("Habilitation de Conduite des Chariots Élévateurs", cat_met, 2, 16, Decimal("22000.00")),
+            ("Habilitation Conduite des Chariots Élévateurs", cat_met, 2, 16, Decimal("22000.00")),
             ("Formation Leadership Managérial", cat_com, 2, 16, Decimal("80000.00")),
             ("Formation Management RH", cat_com, 5, 40, Decimal("50000.00")),
             ("Formation Gestion de Trésorerie", cat_com, 4, 32, Decimal("55000.00")),
             ("Formation des Agents de Sécurité", cat_hse, 3, 24, Decimal("55000.00")),
-            ("Formation Gestion de Conflits", cat_com, 3, 24, Decimal("65000.00")),
+            ("Gestion de Conflits", cat_com, 3, 24, Decimal("65000.00")),
         ]
 
         created = 0

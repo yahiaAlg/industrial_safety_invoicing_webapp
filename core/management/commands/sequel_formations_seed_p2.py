@@ -101,20 +101,19 @@ class Command(BaseCommand):
 
         # (title, category, duration_days, duration_hours, base_price)
         formations = [
-            ("Formation Certifiant ISM-ATEX", cat_hse, 4, 32, Decimal("130000.00")),
-            ("Gestion de Conflit", cat_hse, 6, 48, Decimal("80000.00")),
+            ("Formation Certifiant ISM-ATEX 2 E-M", cat_hse, 4, 32, Decimal("130000.00")),
+            ("Gestion de Conflits", cat_hse, 6, 48, Decimal("80000.00")),
             ("Habilitation Électrique", cat_hse, 4, 32, Decimal("45000.00")),
             ("Superviseur HSE + IOSH MS", cat_hse, 1, 8, Decimal("60000.00")),
-            ("IOSH MS + Superviseurs HSE", cat_hse, 5, 40, Decimal("26000.00")),
             (
-                "Habilitation de Conduite des Chariots Élévateurs",
+                "Habilitation Conduite des Chariots Élévateurs",
                 cat_met,
                 1,
                 8,
                 Decimal("22000.00"),
             ),
-            ("Overhead Crane Training", cat_hse, 5, 40, Decimal("80000.00")),
-            ("Advanced Excel Training", cat_hse, 3, 24, Decimal("60000.00")),
+            ("Formation de conduite de pont roulant", cat_hse, 5, 40, Decimal("80000.00")),
+            ("Excel et Word Avancés", cat_hse, 3, 24, Decimal("60000.00")),
         ]
 
         created = 0

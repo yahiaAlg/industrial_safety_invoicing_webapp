@@ -116,13 +116,13 @@ class Command(BaseCommand):
         # (title, category, duration_days, duration_hours, base_price)
         formations = [
             (
-                "Formation de Qualification de Conduite de Transport Personnel",
+                "qualification de conduite de transport personnel",
                 cat_hse,
                 1,
                 8,
                 Decimal("32000.00"),
             ),
-            ("Formation ATEX, Non Certifiant", cat_hse, 2, 16, Decimal("80000.00")),
+            ("Formation ATEX , Non Certifiant", cat_hse, 2, 16, Decimal("80000.00")),
             (
                 "Formation Animateur / Superviseur HSE",
                 cat_hse,
@@ -131,15 +131,15 @@ class Command(BaseCommand):
                 Decimal("10000.00"),
             ),
             (
-                "Formation de Conduite en Sécurité des Chariots Élévateurs",
+                "Habilitation Conduite des Chariots Élévateurs",
                 cat_met,
                 8,
                 64,
                 Decimal("18000.00"),
             ),
-            ("Formation Sûreté Interne", cat_hse, 3, 24, Decimal("50000.00")),
+            ("Formation sureté interne", cat_hse, 3, 24, Decimal("50000.00")),
             (
-                "Formation de Conduite de Pont Roulant",
+                "Formation de conduite de pont roulant",
                 cat_met,
                 2,
                 16,
@@ -147,7 +147,7 @@ class Command(BaseCommand):
             ),
             ("Audit SST", cat_hse, 1, 8, Decimal("55000.00")),
             (
-                "Formation Non-Certifiant ISM-ATEX",
+                "Formation NON- Certifiant ISM-ATEX",
                 cat_hse,
                 2,
                 16,
