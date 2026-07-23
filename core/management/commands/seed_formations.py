@@ -974,6 +974,14 @@ class Command(BaseCommand):
         for spec in specs:
             client = spec["client"]
 
+            # Guardrail: skip if this invoice already exists (re-run safe)
+            if Invoice.objects.filter(
+                client=client,
+                bon_commande_number=spec["bc"],
+                invoice_date=spec["date"],
+            ).exists():
+                continue
+
             inv = Invoice.objects.create(
                 invoice_type=Invoice.InvoiceType.FORMATION,
                 phase=Invoice.Phase.PROFORMA,

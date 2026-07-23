@@ -485,6 +485,15 @@ class Command(BaseCommand):
         created = 0
         for spec in specs:
             client = spec["client"]
+
+            # Guardrail: skip if this invoice already exists (re-run safe)
+            if Invoice.objects.filter(
+                client=client,
+                bon_commande_number=spec["bc"],
+                invoice_date=spec["date"],
+            ).exists():
+                continue
+
             final_ref = _prime_and_get_ref(spec["target_number"])
 
             inv = Invoice.objects.create(
