@@ -45,6 +45,23 @@
   <form method="post" enctype="multipart/form-data" novalidate id="settings-form">
     {% csrf_token %}
 
+    {% if form.errors %}
+    <div class="alert alert-danger mb-4">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      Les modifications n'ont pas été enregistrées, merci de corriger les erreurs ci-dessous :
+      <ul class="mb-0">
+        {% for field in form %}
+          {% for error in field.errors %}
+            <li>{{ field.label }} : {{ error }}</li>
+          {% endfor %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
     {% if request.resolver_match.url_name == 'institute_info' %}
     <!-- ═══ INSTITUTE INFO ═══ -->
     <div class="row g-4">
@@ -312,6 +329,15 @@
                 <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Ex: F → F-2026-001</div>
               </div>
               <div class="col-sm-4">
+                <label class="form-label">Préfixe des proformas</label>
+                {% with field=form.proforma_prefix %}
+                <input type="text" name="{{ field.html_name }}" class="form-control {% if field.errors %}is-invalid{% endif %}"
+                       value="{{ field.value|default:'' }}" placeholder="FP" maxlength="10" style="text-transform:uppercase;">
+                {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors|join:", " }}</div>{% endif %}
+                {% endwith %}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Ex: FP → FP-001-2026</div>
+              </div>
+              <div class="col-sm-4">
                 <label class="form-label">Taux de TVA</label>
                 {% with field=form.tva_rate %}
                 <input type="number" name="{{ field.html_name }}" class="form-control {% if field.errors %}is-invalid{% endif %}"
@@ -503,6 +529,15 @@
                 {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors|join:", " }}</div>{% endif %}
                 {% endwith %}
                 <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Ex: E → E-2026-001</div>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label">Préfixe des proformas</label>
+                {% with field=form.proforma_prefix %}
+                <input type="text" name="{{ field.html_name }}" class="form-control {% if field.errors %}is-invalid{% endif %}"
+                       value="{{ field.value|default:'' }}" placeholder="FP-E" maxlength="10" style="text-transform:uppercase;">
+                {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors|join:", " }}</div>{% endif %}
+                {% endwith %}
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Ex: FP-E → FP-E-001-2026</div>
               </div>
               <div class="col-sm-4">
                 <label class="form-label">Taux de TVA</label>
