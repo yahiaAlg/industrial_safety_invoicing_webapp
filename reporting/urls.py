@@ -15,6 +15,11 @@ urlpatterns = [
         "reports/revenue/by-client/", views.revenue_by_client, name="revenue_by_client"
     ),
     path(
+        "reports/revenue/by-client/export/",
+        views.export_revenue_by_client_csv,
+        name="export_revenue_by_client_csv",
+    ),
+    path(
         "reports/revenue/by-business-line/",
         views.revenue_by_business_line,
         name="revenue_by_business_line",

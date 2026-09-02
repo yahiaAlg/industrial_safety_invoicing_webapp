@@ -210,8 +210,14 @@ def proformas_ready_to_finalize():
     )
 
 
-def top_clients_by_revenue(limit=10, date_from=None, date_to=None):
-    """Clients annotated with total_paid from FINALE invoices, desc order."""
+def top_clients_by_revenue(
+    limit=10, date_from=None, date_to=None, min_revenue=None, max_revenue=None
+):
+    """Clients annotated with total_paid from FINALE invoices, desc order.
+
+    min_revenue/max_revenue filter on the annotated total_paid.
+    Pass limit=None to return all matching clients (no top-N cap).
+    """
     from clients.models import Client
     from financial.models import Invoice
 
@@ -224,12 +230,18 @@ def top_clients_by_revenue(limit=10, date_from=None, date_to=None):
     if date_to:
         filters &= Q(invoices__invoice_date__lte=date_to)
 
-    return (
+    qs = (
         Client.objects.filter(filters)
         .annotate(total_paid=Sum("invoices__amount_ttc"))
         .distinct()
-        .order_by("-total_paid")[:limit]
     )
+    if min_revenue is not None:
+        qs = qs.filter(total_paid__gte=min_revenue)
+    if max_revenue is not None:
+        qs = qs.filter(total_paid__lte=max_revenue)
+
+    qs = qs.order_by("-total_paid")
+    return qs[:limit] if limit else qs
 
 
 # ── Session / project margin ──────────────────────────────────────────────── #

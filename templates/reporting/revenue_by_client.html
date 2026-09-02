@@ -14,11 +14,14 @@
     <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
       <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Du</label><input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
       <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">Au</label><input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" style="width:160px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">CA min</label><input type="number" step="1" name="min_revenue" value="{{ min_revenue|default_if_none:'' }}" class="form-control" placeholder="0" style="width:140px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;"><label class="form-label mb-0">CA max</label><input type="number" step="1" name="max_revenue" value="{{ max_revenue|default_if_none:'' }}" class="form-control" placeholder="—" style="width:140px;"></div>
       <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+      <a class="btn btn-outline-secondary" href="{% url 'reporting:export_revenue_by_client_csv' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% if min_revenue is not None %}&min_revenue={{ min_revenue }}{% endif %}{% if max_revenue is not None %}&max_revenue={{ max_revenue }}{% endif %}"><i class="bi bi-download"></i> Exporter CSV</a>
     </form>
   </div></div>
   <div class="isi-card">
-    <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-building-fill"></i></div><h3>Top clients</h3></div>
+    <div class="isi-card-header"><div class="card-icon amber"><i class="bi bi-building-fill"></i></div><h3>Clients ({{ clients|length }})</h3></div>
     <div style="overflow-x:auto;">
       <table class="isi-table">
         <thead><tr><th>#</th><th>Client</th><th style="text-align:right;">CA payé (DA)</th><th style="text-align:right;">Factures</th><th style="text-align:right;">Solde impayé</th></tr></thead>

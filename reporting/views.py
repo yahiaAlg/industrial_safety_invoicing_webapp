@@ -61,6 +61,21 @@ def _csv_response(filename):
     return resp
 
 
+def _parse_revenue_range(request):
+    """Read optional min_revenue/max_revenue query params as Decimal or None."""
+
+    def _dec(param):
+        raw = request.GET.get(param)
+        if not raw:
+            return None
+        try:
+            return Decimal(raw)
+        except Exception:
+            return None
+
+    return _dec("min_revenue"), _dec("max_revenue")
+
+
 def _monthly_revenue(date_from, date_to):
     from financial.utils import revenue_by_month as _fn
 
@@ -173,17 +188,72 @@ def revenue_by_client(request):
     from financial.utils import top_clients_by_revenue
 
     date_from, date_to = _parse_date_range(request)
+    min_revenue, max_revenue = _parse_revenue_range(request)
     return render(
         request,
         "reporting/revenue_by_client.html",
         {
             "clients": top_clients_by_revenue(
-                limit=20, date_from=date_from, date_to=date_to
+                limit=None,
+                date_from=date_from,
+                date_to=date_to,
+                min_revenue=min_revenue,
+                max_revenue=max_revenue,
             ),
             "date_from": date_from,
             "date_to": date_to,
+            "min_revenue": min_revenue,
+            "max_revenue": max_revenue,
         },
     )
+
+
+@admin_required
+def export_revenue_by_client_csv(request):
+    from financial.utils import top_clients_by_revenue
+
+    date_from, date_to = _parse_date_range(request)
+    min_revenue, max_revenue = _parse_revenue_range(request)
+    clients = top_clients_by_revenue(
+        limit=None,
+        date_from=date_from,
+        date_to=date_to,
+        min_revenue=min_revenue,
+        max_revenue=max_revenue,
+    )
+
+    resp = _csv_response(f"revenus_par_client_{date_from}_{date_to}.csv")
+    w = csv.writer(resp)
+    w.writerow(
+        [
+            "Client",
+            "Ville",
+            "Secteur d'activité",
+            "Téléphone",
+            "Email",
+            "NIF",
+            "RC",
+            "CA payé (DA)",
+            "Factures",
+            "Solde impayé (DA)",
+        ]
+    )
+    for c in clients:
+        w.writerow(
+            [
+                c.name,
+                c.city,
+                c.activity_sector,
+                c.phone,
+                c.email,
+                c.nif,
+                c.rc,
+                c.total_paid or 0,
+                c.invoice_count,
+                c.outstanding_balance,
+            ]
+        )
+    return resp
 
 
 @admin_required
