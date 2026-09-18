@@ -1597,8 +1597,6 @@ def invoice_sequence_list(request):
     from financial.models import InvoiceSequence
 
     current_year = date.today().year
-    # Show current year + adjacent years so ops can set up coming year in advance
-    years = [current_year - 1, current_year, current_year + 1]
 
     if request.method == "POST":
         seq_id = request.POST.get("seq_id")
@@ -1617,8 +1615,10 @@ def invoice_sequence_list(request):
             messages.error(request, "Numéro invalide.")
         return redirect("financial:invoice_sequence_list")
 
-    # Ensure rows exist for the displayed year × type × phase combinations
-    for year in years:
+    # Make sure the current year + next year always have rows so ops can set
+    # up the coming year's counters in advance, without hiding any other
+    # year that already has data in the DB.
+    for year in (current_year, current_year + 1):
         for inv_type in Invoice.InvoiceType.values:
             for phase in InvoiceSequence.Phase.values:
                 InvoiceSequence.objects.get_or_create(
@@ -1628,8 +1628,15 @@ def invoice_sequence_list(request):
                     defaults={"last_number": 0},
                 )
 
-    sequences = InvoiceSequence.objects.filter(year__in=years).order_by(
+    # Pull every year that actually exists in the database — instead of a
+    # hardcoded fixed window — so historical/older sequences are never
+    # silently hidden from this page.
+    sequences = InvoiceSequence.objects.all().order_by(
         "-year", "invoice_type", "phase"
+    )
+    years = sorted(
+        InvoiceSequence.objects.values_list("year", flat=True).distinct(),
+        reverse=True,
     )
     return render(
         request,
