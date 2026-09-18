@@ -1592,11 +1592,7 @@ def revenue_chart_data(request):
 @admin_required
 def invoice_sequence_list(request):
     """List all known sequences and allow setting the next number for each."""
-    from datetime import date
-
     from financial.models import InvoiceSequence
-
-    current_year = date.today().year
 
     if request.method == "POST":
         seq_id = request.POST.get("seq_id")
@@ -1615,29 +1611,12 @@ def invoice_sequence_list(request):
             messages.error(request, "Numéro invalide.")
         return redirect("financial:invoice_sequence_list")
 
-    # Make sure the current year + next year always have rows so ops can set
-    # up the coming year's counters in advance, without hiding any other
-    # year that already has data in the DB.
-    for year in (current_year, current_year + 1):
-        for inv_type in Invoice.InvoiceType.values:
-            for phase in InvoiceSequence.Phase.values:
-                InvoiceSequence.objects.get_or_create(
-                    invoice_type=inv_type,
-                    year=year,
-                    phase=phase,
-                    defaults={"last_number": 0},
-                )
-
-    # Pull every year that actually exists in the database — instead of a
-    # hardcoded fixed window — so historical/older sequences are never
-    # silently hidden from this page.
-    sequences = InvoiceSequence.objects.all().order_by(
-        "-year", "invoice_type", "phase"
-    )
-    years = sorted(
-        InvoiceSequence.objects.values_list("year", flat=True).distinct(),
-        reverse=True,
-    )
+    sequences = InvoiceSequence.objects.all().order_by("-year", "invoice_type", "phase")
+    # Show only the (type, phase, year) combos that actually exist in the
+    # DB — no fabricated rows. A given year may legitimately have only
+    # Formation, only Étude, only Finale, or only Proforma counters; the
+    # card for that year must reflect exactly that, not all 4 combos.
+    years = sorted({s.year for s in sequences}, reverse=True)
     return render(
         request,
         "financial/invoice_sequence_list.html",
