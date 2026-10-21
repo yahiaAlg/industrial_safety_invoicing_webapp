@@ -307,6 +307,63 @@ class CreditNoteAdmin(ImportExportModelAdmin):
         return f"{obj.coverage_percent} %"
 
 
+
+# ---------------------------------------------------------------------------
+# Filters
+# ---------------------------------------------------------------------------
+
+
+class G50DateRangeFilter(admin.SimpleListFilter):
+    """From / To date picker on Expense.g50_month (combines with other filters)."""
+
+    title = "Mois G50 (période)"
+    parameter_name = "g50_from"
+    param_to = "g50_to"
+    template = "admin/financial/date_range_filter.html"
+
+    def __init__(self, request, params, model, model_admin):
+        # SimpleListFilter only pops parameter_name; pop the second one too.
+        self._to_value = params.pop(self.param_to, None)
+        if isinstance(self._to_value, list):
+            self._to_value = self._to_value[-1]
+        self._request = request
+        super().__init__(request, params, model, model_admin)
+
+    def lookups(self, request, model_admin):
+        return [("", "")]
+
+    def has_output(self):
+        return True
+
+    def expected_parameters(self):
+        return [self.parameter_name, self.param_to]
+
+    def queryset(self, request, queryset):
+        date_from = self.value()
+        if date_from:
+            queryset = queryset.filter(g50_month__gte=date_from)
+        if self._to_value:
+            queryset = queryset.filter(g50_month__lte=self._to_value)
+        return queryset
+
+    def choices(self, changelist):
+        keep = [
+            (k, v)
+            for k, v in self._request.GET.items()
+            if k not in (self.parameter_name, self.param_to, "p")
+        ]
+        yield {
+            "param_from": self.parameter_name,
+            "param_to": self.param_to,
+            "value_from": self.value() or "",
+            "value_to": self._to_value or "",
+            "preserved_params": keep,
+            "clear_url": changelist.get_query_string(
+                remove=[self.parameter_name, self.param_to]
+            ),
+        }
+
+
 # ---------------------------------------------------------------------------
 # Expenses
 # ---------------------------------------------------------------------------
@@ -368,6 +425,7 @@ class ExpenseAdmin(ImportExportModelAdmin):
         "fiscal_year",
         "quarter",
         "g50_month",
+        G50DateRangeFilter,
     ]
     search_fields = ["description", "supplier", "beneficiary__name"]
     raw_id_fields = [

@@ -1,0 +1,21 @@
+{% load i18n %}
+{% with c=choices.0 %}
+<details data-filter-title="{{ title }}" open>
+  <summary>{% blocktranslate with filter_title=title %} Par {{ filter_title }} {% endblocktranslate %}</summary>
+  <form method="get" style="padding: 4px 0;">
+    {% for k, v in c.preserved_params %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    <p style="margin: 4px 0;">
+      <label for="id_{{ c.param_from }}">Du</label><br>
+      <input type="date" id="id_{{ c.param_from }}" name="{{ c.param_from }}" value="{{ c.value_from }}">
+    </p>
+    <p style="margin: 4px 0;">
+      <label for="id_{{ c.param_to }}">Au</label><br>
+      <input type="date" id="id_{{ c.param_to }}" name="{{ c.param_to }}" value="{{ c.value_to }}">
+    </p>
+    <p style="margin: 6px 0;">
+      <input type="submit" value="Filtrer">
+      {% if c.value_from or c.value_to %}<a href="{{ c.clear_url }}" style="margin-left: 8px;">Effacer</a>{% endif %}
+    </p>
+  </form>
+</details>
+{% endwith %}
