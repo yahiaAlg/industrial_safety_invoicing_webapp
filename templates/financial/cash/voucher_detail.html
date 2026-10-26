@@ -22,8 +22,8 @@
       <div class="col-12"><div class="stat-label">Montant en lettres</div><i>{{ words }}</i></div>
       <div class="col-12"><div class="stat-label">Désignation</div>{{ voucher.label }}</div>
       {% if voucher.notes %}<div class="col-12"><div class="stat-label">Notes</div>{{ voucher.notes }}</div>{% endif %}
-      {% if voucher.payment %}<div class="col-12"><div class="stat-label">Source</div><a href="{% url 'financial:invoice_detail' voucher.payment.invoice_id %}">Paiement sur facture {{ voucher.payment.invoice.reference }}</a></div>{% endif %}
-      {% if voucher.expense %}<div class="col-12"><div class="stat-label">Source</div><a href="{% url 'financial:expense_detail' voucher.expense_id %}">Dépense #{{ voucher.expense_id }}</a></div>{% endif %}
+      {% if voucher.payment %}<div class="col-12"><div class="stat-label">Source (copie)</div><a href="{% url 'financial:invoice_detail' voucher.payment.invoice_id %}">Paiement sur facture {{ voucher.payment.invoice.reference }}</a></div>{% endif %}
+      {% if voucher.expense %}<div class="col-12"><div class="stat-label">Source (copie)</div><a href="{% url 'financial:expense_detail' voucher.expense_id %}">Dépense #{{ voucher.expense_id }}</a></div>{% endif %}
     </div>
     <div class="section-divider"></div>
     <form method="post" action="{% url 'financial:cash_voucher_delete' voucher.pk %}" onsubmit="return confirm('Supprimer cette pièce ? Le solde du journal sera recalculé.');">

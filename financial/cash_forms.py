@@ -36,10 +36,6 @@ class CashVoucherForm(ISIFormMixin, forms.ModelForm):
             "Versé par" if kind == CashVoucher.Kind.IN else "Bénéficiaire"
         )
         self.fields["notes"].required = False
-        # Vouchers synced from a Payment / Expense: amounts & dates come from the source.
-        if self.instance.pk and self.instance.is_linked:
-            for f in ("date", "amount", "label", "counterparty"):
-                self.fields[f].disabled = True
 
     def clean_amount(self):
         amount = self.cleaned_data["amount"]
