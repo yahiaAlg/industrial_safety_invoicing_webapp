@@ -1,35 +1,33 @@
 {% load cash_tags %}
-<div class="head">
-  <div>
-    <div class="logo">{% if institute.logo %}<img src="{{ institute.logo.url }}" alt="Logo">{% else %}Logo{% endif %}</div>
-    {% if institute %}<div class="org"><b>{{ institute.name }}</b></div>{% endif %}
-  </div>
-  <div class="titles">
-    <h1>PIÈCE DE CAISSE</h1>
-    <h2>{% if voucher.is_in %}RECETTES{% else %}DÉPENSES{% endif %}</h2>
-    <div class="num">N° : <b>{{ voucher.reference }}</b></div>
+<!-- ══════════ PARTY + AMOUNT ══════════ -->
+<div class="parties-row">
+  <div class="party-block">
+    <div class="party-label">{% if voucher.is_in %}Versé par{% else %}Bénéficiaire{% endif %}</div>
+    <div class="party-name">{{ voucher.counterparty|default:"…………………………………………" }}</div>
   </div>
   <div class="amount-box">
-    <div class="amount-label">MONTANT</div>
-    <div class="amount-val">{{ voucher.amount|da }}</div>
-    <div class="amount-cur">DA</div>
+    <div class="amount-box-label">Montant</div>
+    <div class="amount-box-value">{{ voucher.amount|da }}<small>DA</small></div>
   </div>
 </div>
 
-<div class="field"><span class="lbl">Date :</span> <span class="val">{{ voucher.date|date:"d/m/Y" }}</span></div>
-<div class="field"><span class="lbl">{% if voucher.is_in %}Versé par :{% else %}Bénéficiaire :{% endif %}</span> <span class="val">{{ voucher.counterparty }}</span></div>
-
-<div class="block">
-  <div class="lbl">Montant en lettres :</div>
-  <div class="box words">{{ words }}</div>
-</div>
-<div class="block">
-  <div class="lbl">Désignation de l'opération :</div>
-  <div class="box designation">{{ voucher.label }}{% if voucher.notes %}<div class="notes">{{ voucher.notes }}</div>{% endif %}</div>
+<div class="meta-row">
+  <div class="meta-cell"><div class="meta-cell-label">N° de pièce</div><div class="meta-cell-value">{{ voucher.reference }}</div></div>
+  <div class="meta-cell"><div class="meta-cell-label">Date</div><div class="meta-cell-value">{{ voucher.date|date:"d/m/Y" }}</div></div>
+  <div class="meta-cell"><div class="meta-cell-label">Journal de caisse</div><div class="meta-cell-value">{{ voucher.journal.name }}</div></div>
 </div>
 
-<div class="signs">
-  <div class="sign"><div class="sign-title">Direction</div></div>
-  <div class="sign"><div class="sign-title">Caisse</div></div>
-  {% if third_sign %}<div class="sign"><div class="sign-title">Bénéficiaire</div></div>{% endif %}
+<div class="amount-words">
+  Arrêtée la présente pièce à la somme de : <strong>{{ words }}</strong>
+</div>
+
+<div class="text-block">
+  <div class="party-label">Désignation de l'opération</div>
+  <div class="text-box">{{ voucher.label }}{% if voucher.notes %}<div class="notes">{{ voucher.notes }}</div>{% endif %}</div>
+</div>
+
+<div class="sign-row">
+  <div class="sign-box"><div class="sign-title">Direction</div></div>
+  <div class="sign-box"><div class="sign-title">Caisse</div></div>
+  {% if third_sign %}<div class="sign-box"><div class="sign-title">Bénéficiaire</div></div>{% endif %}
 </div>

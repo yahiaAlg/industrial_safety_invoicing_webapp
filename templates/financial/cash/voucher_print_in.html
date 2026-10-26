@@ -1,21 +1,10 @@
 {% extends "financial/cash/print_base.html" %}
 {% block doc_title %}Pièce de caisse — Recettes {{ voucher.reference }}{% endblock %}
-{% block extra_css %}
-  .num { margin-top: 6px; font-size: 13px; }
-  .amount-box { width: 52mm; border: 2px solid #000; text-align: center; padding: 6px 4px; }
-  .amount-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; }
-  .amount-val { font-size: 24px; font-weight: 700; margin-top: 2px; white-space: nowrap; }
-  .amount-cur { font-size: 12px; font-weight: 700; }
-  .field { margin: 5mm 0; font-size: 14px; }
-  .lbl { font-weight: 700; }
-  .val { display: inline-block; min-width: 100mm; border-bottom: 1px dotted #000; padding: 0 4px; }
-  .block { margin: 6mm 0; }
-  .box { border: 1.5px solid #000; padding: 4mm; margin-top: 2mm; font-size: 14px; }
-  .words { min-height: 22mm; font-style: italic; }
-  .designation { min-height: 55mm; }
-  .notes { margin-top: 3mm; font-size: 12px; color: #374151; }
-  .signs { display: flex; gap: 6mm; margin-top: 12mm; }
-  .sign { flex: 1; border: 1.5px solid #000; height: 38mm; text-align: center; }
-  .sign-title { font-weight: 700; padding: 2mm; border-bottom: 1.5px solid #000; background: #f3f4f6; }
+{% block back_url %}{% url 'financial:cash_voucher_detail' voucher.pk %}{% endblock %}
+{% block title_block %}
+  <div class="doc-title in">Pièce de caisse</div>
+  <div class="doc-sub">Recettes</div>
+  <div class="doc-ref">{{ voucher.reference }}</div>
+  <div class="doc-date">Émise le {{ voucher.date|date:"d/m/Y" }}</div>
 {% endblock %}
 {% block body %}{% include "financial/cash/_voucher_print_body.html" with third_sign=False %}{% endblock %}

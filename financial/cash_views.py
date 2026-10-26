@@ -13,7 +13,7 @@ from financial.cash_forms import CashJournalForm, CashPeriodForm, CashVoucherFor
 from financial.cash_utils import amount_in_words, journal_statement, resolve_period
 from financial.models import CashJournal, CashVoucher, Expense, Payment
 
-MIN_PRINT_ROWS = 12
+MIN_PRINT_ROWS = 6
 
 
 def _period_ctx(request):
