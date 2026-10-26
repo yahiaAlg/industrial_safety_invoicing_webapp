@@ -1888,6 +1888,10 @@ class CashJournal(TimeStampedModel):
         verbose_name="Solde initial (DA)",
         help_text="Solde de départ de la caisse (modifiable). 0 par défaut.",
     )
+    period_start = models.DateField(
+        null=True, blank=True, verbose_name="Période du"
+    )
+    period_end = models.DateField(null=True, blank=True, verbose_name="Période au")
     is_active = models.BooleanField(default=True, verbose_name="Actif")
     notes = models.TextField(blank=True, verbose_name="Notes")
 
@@ -1898,6 +1902,20 @@ class CashJournal(TimeStampedModel):
 
     def __str__(self):
         return self.name
+
+    @property
+    def period_label(self) -> str:
+        if not (self.period_start or self.period_end):
+            return ""
+        return "Du {} au {}".format(
+            self.period_start.strftime("%d/%m/%Y") if self.period_start else "…",
+            self.period_end.strftime("%d/%m/%Y") if self.period_end else "…",
+        )
+
+    def in_period(self, d) -> bool:
+        return (not self.period_start or d >= self.period_start) and (
+            not self.period_end or d <= self.period_end
+        )
 
     def _sum(self, kind, **flt):
         return self.vouchers.filter(kind=kind, **flt).aggregate(s=Sum("amount"))[

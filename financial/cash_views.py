@@ -16,9 +16,30 @@ from financial.models import CashJournal, CashVoucher, Expense, Payment
 MIN_PRINT_ROWS = 6
 
 
-def _period_ctx(request):
-    d_from, d_to, label = resolve_period(request.GET)
-    return d_from, d_to, label, CashPeriodForm(request.GET or None)
+def _params(request, journal):
+    """GET params; falls back to the journal's own period when none is given."""
+    params = request.GET
+    if not any(params.get(k) for k in ("month", "year", "date_from", "date_to")):
+        if journal.period_start or journal.period_end:
+            params = params.copy()
+            params["date_from"] = journal.period_start.isoformat() if journal.period_start else ""
+            params["date_to"] = journal.period_end.isoformat() if journal.period_end else ""
+    return params
+
+
+def _period_ctx(request, journal):
+    params = _params(request, journal)
+    d_from, d_to, label = resolve_period(params)
+    return d_from, d_to, label, CashPeriodForm(params), params.get("q", "")
+
+
+def _warn_if_out_of_period(request, journal, d):
+    if not journal.in_period(d):
+        messages.warning(
+            request,
+            f"Attention : la date {d:%d/%m/%Y} est hors de la période du journal "
+            f"({journal.period_label}).",
+        )
 
 
 def _warn_if_negative(request, journal):
@@ -70,12 +91,13 @@ def cash_journal_edit(request, pk):
 @admin_required
 def cash_journal_detail(request, pk):
     journal = get_object_or_404(CashJournal, pk=pk)
-    d_from, d_to, label, form = _period_ctx(request)
-    stmt = journal_statement(journal, d_from, d_to)
+    d_from, d_to, label, form, q = _period_ctx(request, journal)
+    stmt = journal_statement(journal, d_from, d_to, q)
     return render(
         request,
         "financial/cash/journal_detail.html",
         {
+            "q": q,
             "journal": journal,
             "stmt": stmt,
             "period_label": label,
@@ -90,10 +112,10 @@ def cash_journal_detail(request, pk):
 def cash_journal_print(request, pk):
     """Journal de caisse — A4 paysage, filtered by month/year or custom range."""
     journal = get_object_or_404(CashJournal, pk=pk)
-    d_from, d_to, label = resolve_period(request.GET)
-    stmt = journal_statement(journal, d_from, d_to)
+    d_from, d_to, label, _form, q = _period_ctx(request, journal)
+    stmt = journal_statement(journal, d_from, d_to, q)
     n = len(stmt["rows"])
-    blank = list(range(n + 1, max(n, MIN_PRINT_ROWS) + 1))
+    blank = [] if q else list(range(n + 1, max(n, MIN_PRINT_ROWS) + 1))
     return render(
         request,
         "financial/cash/journal_print.html",
@@ -103,6 +125,7 @@ def cash_journal_print(request, pk):
             "period_label": label,
             "date_from": d_from,
             "date_to": d_to,
+            "q": q,
             "blank_rows": blank,
             "printed_at": timezone.localtime(),
         },
@@ -126,6 +149,7 @@ def cash_voucher_create(request, journal_pk, kind):
         voucher.save()
         messages.success(request, f"Pièce {voucher.reference} enregistrée.")
         _warn_if_negative(request, journal)
+        _warn_if_out_of_period(request, journal, voucher.date)
         return redirect("financial:cash_voucher_detail", pk=voucher.pk)
     return render(
         request,
@@ -235,6 +259,11 @@ def cash_import(request, journal_pk):
             )
             created += 1
         messages.success(request, f"{created} opération(s) importée(s) dans la caisse.")
+        if created:
+            for d in journal.vouchers.order_by("-id")[:created].values_list("date", flat=True):
+                if not journal.in_period(d):
+                    _warn_if_out_of_period(request, journal, d)
+                    break
         _warn_if_negative(request, journal)
         return redirect("financial:cash_journal_detail", pk=journal.pk)
     return render(

@@ -10,7 +10,7 @@
 {% block breadcrumb_active %}{{ journal.name }}{% endblock %}
 {% block topbar_actions %}
 <a href="{% url 'financial:cash_journal_print' journal.pk %}?{{ querystring }}" target="_blank" class="topbar-btn"><i class="bi bi-printer-fill"></i> Imprimer le journal</a>
-<a href="{% url 'financial:cash_import' journal.pk %}" class="topbar-btn"><i class="bi bi-download"></i> Importer</a>
+<a href="{% url 'financial:cash_import' journal.pk %}" class="topbar-btn"><i class="bi bi-download"></i> Importer / Dépense existante</a>
 <a href="{% url 'financial:cash_journal_edit' journal.pk %}" class="topbar-btn"><i class="bi bi-pencil-fill"></i> Modifier</a>
 <a href="{% url 'financial:cash_voucher_create' journal.pk 'out' %}" class="topbar-btn"><i class="bi bi-dash-lg"></i> Dépense</a>
 <a href="{% url 'financial:cash_voucher_create' journal.pk 'in' %}" class="topbar-btn primary"><i class="bi bi-plus-lg"></i> Recette</a>
@@ -19,7 +19,7 @@
 <div class="fade-up">
   <div class="page-header"><div class="page-header-left">
     <h1>{{ journal.name }}</h1>
-    <p>Période : <b>{{ period_label }}</b> — suivi indépendant, sans impact sur les autres calculs</p>
+    <p>Période : <b>{{ period_label }}</b>{% if q %} · Recherche : <b>« {{ q }} »</b>{% endif %} — suivi indépendant, sans impact sur les autres calculs</p>
   </div></div>
 
   <div class="row g-3 mb-4">
@@ -62,12 +62,13 @@
     <div class="isi-card-body" style="padding:16px 20px;">
       <form method="get">
         <div class="row g-3 align-items-end">
+          <div class="col-md-4 col-sm-12"><label class="form-label">Recherche</label>{{ period_form.q }}</div>
           <div class="col-md-2 col-sm-6"><label class="form-label">Mois</label>{{ period_form.month }}</div>
           <div class="col-md-2 col-sm-6"><label class="form-label">Année</label>{{ period_form.year }}</div>
-          <div class="col-md-3 col-sm-6"><label class="form-label">Du</label>{{ period_form.date_from }}</div>
-          <div class="col-md-3 col-sm-6"><label class="form-label">Au</label>{{ period_form.date_to }}</div>
-          <div class="col-md-2 col-sm-12"><div class="d-flex gap-2">
-            <button type="submit" class="btn btn-amber flex-grow-1"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+          <div class="col-md-2 col-sm-6"><label class="form-label">Du</label>{{ period_form.date_from }}</div>
+          <div class="col-md-2 col-sm-6"><label class="form-label">Au</label>{{ period_form.date_to }}</div>
+          <div class="col-12"><div class="d-flex gap-2 justify-content-end">
+            <button type="submit" class="btn btn-amber"><i class="bi bi-funnel-fill"></i> Filtrer</button>
             <a href="?" class="btn btn-ghost" title="Réinitialiser"><i class="bi bi-x-lg"></i></a>
           </div></div>
         </div>
@@ -115,14 +116,14 @@
             </div></td>
           </tr>
           {% empty %}
-          <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px;">Aucune opération sur cette période.</td></tr>
+          <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px;">{% if q %}Aucun résultat pour cette recherche.{% else %}Aucune opération sur cette période.{% endif %}</td></tr>
           {% endfor %}
         </tbody>
         <tfoot>
           <tr style="background:#f8fafc;border-top:2px solid var(--card-border);">
             <td colspan="5" style="text-align:right;font-family:var(--font-head);font-weight:700;letter-spacing:1.2px;font-size:11px;text-transform:uppercase;color:var(--text-muted);">Totaux</td>
-            <td style="text-align:right;">{% include "financial/cash/_amt.html" with value=stmt.total_in color="var(--success)" %}</td>
-            <td style="text-align:right;">{% include "financial/cash/_amt.html" with value=stmt.total_out color="var(--danger)" %}</td>
+            <td style="text-align:right;">{% include "financial/cash/_amt.html" with value=stmt.match_in color="var(--success)" %}</td>
+            <td style="text-align:right;">{% include "financial/cash/_amt.html" with value=stmt.match_out color="var(--danger)" %}</td>
             <td style="text-align:right;">{% if stmt.closing < 0 %}{% include "financial/cash/_amt.html" with value=stmt.closing color="var(--danger)" %}{% else %}{% include "financial/cash/_amt.html" with value=stmt.closing %}{% endif %}</td>
             <td></td>
           </tr>

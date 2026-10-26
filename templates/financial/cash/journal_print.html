@@ -16,7 +16,7 @@
   <div class="meta-cell"><div class="meta-cell-label">Entreprise</div><div class="meta-cell-value">{{ institute.name|default:journal.name }}</div></div>
   <div class="meta-cell"><div class="meta-cell-label">Journal</div><div class="meta-cell-value">{{ journal.name }}</div></div>
   <div class="meta-cell"><div class="meta-cell-label">Période</div><div class="meta-cell-value">{{ period_label }}</div></div>
-  <div class="meta-cell"><div class="meta-cell-label">Opérations</div><div class="meta-cell-value">{{ stmt.rows|length }}</div></div>
+  <div class="meta-cell"><div class="meta-cell-label">{% if q %}Recherche : « {{ q }} » — {% endif %}Opérations</div><div class="meta-cell-value">{{ stmt.rows|length }}</div></div>
 </div>
 
 <table class="items-table">
@@ -34,10 +34,10 @@
     {% for r in stmt.rows %}
     <tr>
       <td class="muted">{{ r.n }}</td>
-      <td class="muted">{{ r.v.date|date:"d/m/Y" }}</td>
+      <td class="strong">{{ r.v.date|date:"d/m/Y" }}</td>
       <td style="font-family:var(--font-head);font-weight:700;letter-spacing:.3px;">{{ r.v.reference }}</td>
-      <td>{{ r.v.label }}</td>
-      <td class="muted">{{ r.v.counterparty }}</td>
+      <td class="strong">{{ r.v.label }}</td>
+      <td class="strong">{{ r.v.counterparty }}</td>
       <td class="right in">{% if r.v.is_in %}{{ r.v.amount|da }}{% endif %}</td>
       <td class="right out">{% if not r.v.is_in %}{{ r.v.amount|da }}{% endif %}</td>
       <td class="right {% if r.balance < 0 %}neg{% endif %}">{{ r.balance|da }}</td>
@@ -46,7 +46,7 @@
     {% for num in blank_rows %}<tr><td class="muted">{{ num }}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}
     <tr class="total">
       <td colspan="5" class="right">TOTAUX</td>
-      <td class="right in">{{ stmt.total_in|da }}</td><td class="right out">{{ stmt.total_out|da }}</td><td class="right">{{ stmt.closing|da }}</td>
+      <td class="right in">{{ stmt.match_in|da }}</td><td class="right out">{{ stmt.match_out|da }}</td><td class="right">{{ stmt.closing|da }}</td>
     </tr>
   </tbody>
 </table>

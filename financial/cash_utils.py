@@ -1,6 +1,7 @@
 """Cash journal helpers: amount in French words, period resolution, statement."""
 
 import calendar
+import unicodedata
 from datetime import date
 from decimal import Decimal
 
@@ -16,6 +17,14 @@ MONTHS_FR = [
     "", "Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet",
     "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ]
+
+
+def _fold(text: str) -> str:
+    """Lowercase + strip accents, for forgiving text search."""
+    return "".join(
+        c for c in unicodedata.normalize("NFD", (text or "").casefold())
+        if unicodedata.category(c) != "Mn"
+    )
 
 
 def _under_100(n: int, final: bool) -> str:
@@ -114,10 +123,12 @@ def resolve_period(params):
     return None, None, "Toutes périodes"
 
 
-def journal_statement(journal, date_from=None, date_to=None):
+def journal_statement(journal, date_from=None, date_to=None, q=""):
     """
     Chronological statement for the period: opening balance (initial balance
     + everything before date_from), rows with running balance, totals, closing.
+    `q` filters displayed rows (designation, beneficiary, notes, reference, amount);
+    running balances stay true; match_in/match_out are the totals of matching rows.
     """
     from financial.models import CashVoucher
 
@@ -137,20 +148,35 @@ def journal_statement(journal, date_from=None, date_to=None):
     if date_to:
         qs = qs.filter(date__lte=date_to)
 
+    needle = " ".join(_fold(q).split())
     balance, rows = opening, []
-    total_in = total_out = Decimal("0")
-    for i, v in enumerate(qs.order_by("date", "id"), start=1):
+    total_in = total_out = match_in = match_out = Decimal("0")
+    for v in qs.order_by("date", "id"):
         if v.kind == CashVoucher.Kind.IN:
             balance += v.amount
             total_in += v.amount
         else:
             balance -= v.amount
             total_out += v.amount
-        rows.append({"n": i, "v": v, "balance": balance})
+        if needle:
+            hay = _fold(" ".join(
+                [v.label, v.counterparty, v.notes, v.reference, f"{v.amount:.2f}",
+                 v.date.strftime("%d/%m/%Y")]
+            ))
+            if not all(w in hay for w in needle.split()):
+                continue
+        if v.kind == CashVoucher.Kind.IN:
+            match_in += v.amount
+        else:
+            match_out += v.amount
+        rows.append({"n": len(rows) + 1, "v": v, "balance": balance})
     return {
         "opening": opening,
         "rows": rows,
         "total_in": total_in,
         "total_out": total_out,
+        "match_in": match_in,
+        "match_out": match_out,
+        "filtered": bool(needle),
         "closing": opening + total_in - total_out,
     }

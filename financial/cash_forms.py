@@ -8,15 +8,24 @@ from financial.models import CashJournal, CashVoucher
 class CashJournalForm(ISIFormMixin, forms.ModelForm):
     class Meta:
         model = CashJournal
-        fields = ["name", "initial_balance", "is_active", "notes"]
+        fields = ["name", "initial_balance", "period_start", "period_end", "is_active", "notes"]
         widgets = {
             "initial_balance": forms.NumberInput(attrs={"step": "0.01"}),
+            "period_start": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "period_end": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "notes": forms.Textarea(attrs={"rows": 2}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["notes"].required = False
+
+    def clean(self):
+        data = super().clean()
+        d_from, d_to = data.get("period_start"), data.get("period_end")
+        if d_from and d_to and d_from > d_to:
+            self.add_error("period_end", "La date de fin doit être après la date de début.")
+        return data
 
 
 class CashVoucherForm(ISIFormMixin, forms.ModelForm):
@@ -60,4 +69,11 @@ class CashPeriodForm(ISIFormMixin, forms.Form):
     )
     date_to = forms.DateField(
         label="Au", required=False, widget=forms.DateInput(attrs={"type": "date"})
+    )
+    q = forms.CharField(
+        label="Recherche",
+        required=False,
+        widget=forms.TextInput(
+            attrs={"placeholder": "Désignation, bénéficiaire, n° bon, montant…"}
+        ),
     )

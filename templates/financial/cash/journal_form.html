@@ -17,7 +17,7 @@
       <form method="post" novalidate>{% csrf_token %}
         <div class="row g-3">
           {% for f in form %}
-          <div class="col-12 {% if f.name == 'initial_balance' %}col-md-6{% endif %}">
+          <div class="col-12 {% if f.name == 'initial_balance' or f.name == 'period_start' or f.name == 'period_end' %}col-md-6{% endif %}">
             {% if f.name == 'is_active' %}<div class="form-check">{{ f }} <label class="form-check-label">{{ f.label }}</label></div>
             {% else %}<label class="form-label">{{ f.label }}</label>{{ f }}{% endif %}
             {% if f.help_text %}<div style="font-size:12px;color:var(--text-muted)">{{ f.help_text }}</div>{% endif %}
