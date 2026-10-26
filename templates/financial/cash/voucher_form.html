@@ -3,6 +3,8 @@
 {% block breadcrumb %}
 <i class="bi bi-house-fill" style="font-size:12px;"></i>
 <i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:cash_journal_list' %}" style="color:var(--text-muted);text-decoration:none;">Caisse</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
 {% endblock %}
 {% block breadcrumb_active %}{{ action }}{% endblock %}
 {% block content %}
@@ -24,7 +26,7 @@
         <div class="section-divider"></div>
         <div class="d-flex gap-2">
           <button type="submit" class="btn btn-amber"><i class="bi bi-check-lg"></i> Enregistrer</button>
-          <a href="{% if voucher %}{% url 'financial:cash_voucher_detail' voucher.pk %}{% else %}{% url 'financial:cash_journal_detail' journal.pk %}{% endif %}" class="btn btn-ghost">Annuler</a>
+          <a href="{% if voucher %}{% url 'financial:cash_voucher_detail' voucher.pk %}{% else %}{% url 'financial:cash_journal_detail' journal.pk %}{% endif %}" class="btn btn-ghost"><i class="bi bi-x-lg"></i> Annuler</a>
         </div>
       </form>
     </div></div>

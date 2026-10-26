@@ -1,34 +1,51 @@
 {% extends "base.html" %}
-{% load cash_tags %}
+{% load humanize %}
 {% block title %}{{ voucher.reference }}{% endblock %}
 {% block breadcrumb %}
 <i class="bi bi-house-fill" style="font-size:12px;"></i>
 <i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:cash_journal_list' %}" style="color:var(--text-muted);text-decoration:none;">Caisse</a>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
 {% endblock %}
 {% block breadcrumb_active %}{{ voucher.reference }}{% endblock %}
 {% block topbar_actions %}
-<a href="{% url 'financial:cash_voucher_print' voucher.pk %}" target="_blank" class="topbar-btn primary"><i class="bi bi-printer-fill"></i> Imprimer</a>
 <a href="{% url 'financial:cash_voucher_edit' voucher.pk %}" class="topbar-btn"><i class="bi bi-pencil-fill"></i> Modifier</a>
+<a href="{% url 'financial:cash_voucher_print' voucher.pk %}" target="_blank" class="topbar-btn primary"><i class="bi bi-printer-fill"></i> Imprimer</a>
 {% endblock %}
 {% block content %}
 <div class="fade-up">
-  <div class="page-header"><div class="page-header-left"><h1>{{ voucher.reference }}</h1>
-    <p>{{ voucher.get_kind_display }} · <a href="{% url 'financial:cash_journal_detail' voucher.journal.pk %}">{{ voucher.journal.name }}</a></p></div></div>
-  <div class="isi-card"><div class="isi-card-body">
-    <div class="row g-3">
-      <div class="col-md-3"><div class="stat-label">Date</div>{{ voucher.date|date:"d/m/Y" }}</div>
-      <div class="col-md-3"><div class="stat-label">Montant</div><b style="color:{% if voucher.is_in %}var(--success){% else %}var(--danger){% endif %}">{% if voucher.is_in %}+{% else %}−{% endif %}{{ voucher.amount|da }} DA</b></div>
-      <div class="col-md-6"><div class="stat-label">{% if voucher.is_in %}Versé par{% else %}Bénéficiaire{% endif %}</div>{{ voucher.counterparty|default:"—" }}</div>
-      <div class="col-12"><div class="stat-label">Montant en lettres</div><i>{{ words }}</i></div>
-      <div class="col-12"><div class="stat-label">Désignation</div>{{ voucher.label }}</div>
-      {% if voucher.notes %}<div class="col-12"><div class="stat-label">Notes</div>{{ voucher.notes }}</div>{% endif %}
-      {% if voucher.payment %}<div class="col-12"><div class="stat-label">Source (copie)</div><a href="{% url 'financial:invoice_detail' voucher.payment.invoice_id %}">Paiement sur facture {{ voucher.payment.invoice.reference }}</a></div>{% endif %}
-      {% if voucher.expense %}<div class="col-12"><div class="stat-label">Source (copie)</div><a href="{% url 'financial:expense_detail' voucher.expense_id %}">Dépense #{{ voucher.expense_id }}</a></div>{% endif %}
-    </div>
-    <div class="section-divider"></div>
-    <form method="post" action="{% url 'financial:cash_voucher_delete' voucher.pk %}" onsubmit="return confirm('Supprimer cette pièce ? Le solde du journal sera recalculé.');">
-      {% csrf_token %}<button class="btn btn-ghost" style="color:var(--danger)"><i class="bi bi-trash"></i> Supprimer</button>
-    </form>
+  <div class="page-header"><div class="page-header-left">
+    <h1>{{ voucher.reference }}
+      {% if voucher.is_in %}<span class="isi-badge green" style="vertical-align:middle;margin-left:6px;"><i class="bi bi-arrow-down-circle-fill"></i> Recette</span>
+      {% else %}<span class="isi-badge red" style="vertical-align:middle;margin-left:6px;"><i class="bi bi-arrow-up-circle-fill"></i> Dépense</span>{% endif %}
+    </h1>
+    <p>Journal : <a href="{% url 'financial:cash_journal_detail' voucher.journal.pk %}" style="color:var(--text-primary);font-weight:600;text-decoration:none;">{{ voucher.journal.name }}</a></p>
   </div></div>
+
+  <div class="isi-card">
+    <div class="isi-card-header"><div class="card-icon {% if voucher.is_in %}green{% else %}red{% endif %}"><i class="bi bi-receipt"></i></div><h3>Pièce de caisse</h3></div>
+    <div class="isi-card-body">
+      <div class="row g-4">
+        <div class="col-md-3"><div class="stat-label mb-1">Date</div><span style="font-weight:600;">{{ voucher.date|date:"d/m/Y" }}</span></div>
+        <div class="col-md-3"><div class="stat-label mb-1">Montant</div>
+          {% if voucher.is_in %}{% include "financial/cash/_amt.html" with value=voucher.amount color="var(--success)" %}{% else %}{% include "financial/cash/_amt.html" with value=voucher.amount color="var(--danger)" %}{% endif %}</div>
+        <div class="col-md-6"><div class="stat-label mb-1">{% if voucher.is_in %}Versé par{% else %}Bénéficiaire{% endif %}</div><span style="font-weight:600;">{{ voucher.counterparty|default:"—" }}</span></div>
+        <div class="col-12"><div class="stat-label mb-1">Montant en lettres</div><span style="font-style:italic;">{{ words }}</span></div>
+        <div class="col-12"><div class="stat-label mb-1">Désignation de l'opération</div><span style="font-weight:600;">{{ voucher.label }}</span></div>
+        {% if voucher.notes %}<div class="col-12"><div class="stat-label mb-1">Notes</div>{{ voucher.notes|linebreaksbr }}</div>{% endif %}
+        {% if voucher.payment %}<div class="col-12"><div class="stat-label mb-1">Source (copie indépendante)</div>
+          <a href="{% url 'financial:invoice_detail' voucher.payment.invoice_id %}" class="isi-badge gray" style="text-decoration:none;"><i class="bi bi-download"></i> Paiement — facture {{ voucher.payment.invoice.reference }}</a></div>{% endif %}
+        {% if voucher.expense %}<div class="col-12"><div class="stat-label mb-1">Source (copie indépendante)</div>
+          <a href="{% url 'financial:expense_detail' voucher.expense_id %}" class="isi-badge gray" style="text-decoration:none;"><i class="bi bi-download"></i> Dépense #{{ voucher.expense_id }}</a></div>{% endif %}
+      </div>
+      <div class="section-divider"></div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'financial:cash_journal_detail' voucher.journal.pk %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i> Retour au journal</a>
+        <form method="post" action="{% url 'financial:cash_voucher_delete' voucher.pk %}" onsubmit="return confirm('Supprimer cette pièce ? Le solde du journal sera recalculé.');">
+          {% csrf_token %}<button class="btn btn-danger-soft"><i class="bi bi-trash-fill"></i> Supprimer</button>
+        </form>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

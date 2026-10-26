@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load cash_tags %}
+{% load humanize %}
 {% block title %}Caisse{% endblock %}
 {% block breadcrumb %}
 <i class="bi bi-house-fill" style="font-size:12px;"></i>
@@ -12,28 +12,49 @@
 {% block content %}
 <div class="fade-up">
   <div class="page-header"><div class="page-header-left">
-    <h1>Gestion de caisse</h1><p>Journaux de caisse, pièces de recettes et de dépenses</p>
+    <h1>Gestion de caisse</h1><p>Journaux de caisse — suivi indépendant, sans impact sur la comptabilité de l'application</p>
   </div></div>
+
   <div class="isi-card">
-    <div class="isi-card-header"><div class="card-icon blue"><i class="bi bi-cash-stack"></i></div><h3>Journaux</h3></div>
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-cash-stack"></i></div>
+      <h3>Journaux de caisse
+        {% if journals %}<span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">— {{ journals|length }} journal{{ journals|length|pluralize:"ux" }}</span>{% endif %}
+      </h3>
+    </div>
     {% if journals %}
-    <div style="overflow-x:auto;"><table class="isi-table">
-      <thead><tr><th>Journal</th><th style="text-align:right">Solde initial</th><th style="text-align:right">Recettes</th><th style="text-align:right">Dépenses</th><th style="text-align:right">Solde actuel</th><th></th></tr></thead>
-      <tbody>
-      {% for j in journals %}
-      <tr>
-        <td><a href="{% url 'financial:cash_journal_detail' j.pk %}"><b>{{ j.name }}</b></a>{% if not j.is_active %} <span class="text-muted">(inactif)</span>{% endif %}</td>
-        <td style="text-align:right">{{ j.initial_balance|da }}</td>
-        <td style="text-align:right;color:var(--success)">{{ j.total_in|da }}</td>
-        <td style="text-align:right;color:var(--danger)">{{ j.total_out|da }}</td>
-        <td style="text-align:right"><b {% if j.current_balance < 0 %}style="color:var(--danger)"{% endif %}>{{ j.current_balance|da }} DA</b></td>
-        <td style="text-align:right"><a class="btn btn-ghost btn-sm" href="{% url 'financial:cash_journal_detail' j.pk %}">Ouvrir</a></td>
-      </tr>
-      {% endfor %}
-      </tbody></table></div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr>
+          <th>Journal</th><th>Statut</th>
+          <th style="text-align:right;">Solde initial</th><th style="text-align:right;">Recettes</th>
+          <th style="text-align:right;">Dépenses</th><th style="text-align:right;">Solde actuel</th>
+          <th style="text-align:right;">Actions</th>
+        </tr></thead>
+        <tbody>
+        {% for j in journals %}
+        <tr>
+          <td><a href="{% url 'financial:cash_journal_detail' j.pk %}" style="font-family:var(--font-head);font-weight:700;font-size:15px;color:var(--text-primary);text-decoration:none;letter-spacing:.3px;">{{ j.name }}</a></td>
+          <td>{% if j.is_active %}<span class="isi-badge green"><i class="bi bi-check-circle-fill"></i> Actif</span>{% else %}<span class="isi-badge gray">Inactif</span>{% endif %}</td>
+          <td style="text-align:right;">{% include "financial/cash/_amt.html" with value=j.initial_balance %}</td>
+          <td style="text-align:right;">{% include "financial/cash/_amt.html" with value=j.total_in color="var(--success)" %}</td>
+          <td style="text-align:right;">{% include "financial/cash/_amt.html" with value=j.total_out color="var(--danger)" %}</td>
+          <td style="text-align:right;">{% if j.current_balance < 0 %}{% include "financial/cash/_amt.html" with value=j.current_balance color="var(--danger)" %}{% else %}{% include "financial/cash/_amt.html" with value=j.current_balance %}{% endif %}</td>
+          <td><div style="display:flex;justify-content:flex-end;gap:4px;">
+            <a href="{% url 'financial:cash_journal_detail' j.pk %}" class="btn btn-ghost btn-sm" title="Ouvrir"><i class="bi bi-eye-fill"></i></a>
+            <a href="{% url 'financial:cash_journal_edit' j.pk %}" class="btn btn-ghost btn-sm" title="Modifier"><i class="bi bi-pencil-fill"></i></a>
+            <a href="{% url 'financial:cash_journal_print' j.pk %}" class="btn btn-ghost btn-sm" title="Imprimer le journal" target="_blank"><i class="bi bi-printer-fill"></i></a>
+          </div></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
     {% else %}
-    <div class="isi-card-body" style="text-align:center;color:var(--text-muted);padding:32px;">
-      Aucun journal. <a href="{% url 'financial:cash_journal_create' %}">Créer le premier journal de caisse</a>.
+    <div class="isi-card-body" style="text-align:center;color:var(--text-muted);padding:40px;">
+      <i class="bi bi-cash-stack" style="font-size:32px;display:block;margin-bottom:8px;"></i>
+      Aucun journal de caisse.<br>
+      <a href="{% url 'financial:cash_journal_create' %}" class="btn btn-amber btn-sm mt-3"><i class="bi bi-plus-lg"></i> Créer un journal</a>
     </div>
     {% endif %}
   </div>

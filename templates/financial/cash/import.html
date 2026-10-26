@@ -1,28 +1,59 @@
 {% extends "base.html" %}
-{% load cash_tags %}
+{% load humanize %}
 {% block title %}Importer dans la caisse{% endblock %}
 {% block breadcrumb %}
 <i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:cash_journal_list' %}" style="color:var(--text-muted);text-decoration:none;">Caisse</a>
 <i class="bi bi-chevron-right" style="font-size:10px;"></i>
 {% endblock %}
 {% block breadcrumb_active %}Importer{% endblock %}
 {% block content %}
 <div class="fade-up">
-  <div class="page-header"><div class="page-header-left"><h1>Importer des opérations en espèces</h1>
-    <p>Paiements en espèces et dépenses payées en espèces non encore reportés — journal « {{ journal.name }} »</p></div></div>
+  <div class="page-header"><div class="page-header-left">
+    <h1>Importer des opérations en espèces</h1>
+    <p>Copie indépendante dans « {{ journal.name }} » — les paiements et dépenses d'origine ne sont jamais modifiés</p>
+  </div></div>
+
   <form method="post">{% csrf_token %}
-  <div class="isi-card mb-3"><div class="isi-card-header"><h3>Recettes — paiements de factures (espèces)</h3></div>
-    {% if payments %}<table class="isi-table"><thead><tr><th></th><th>Date</th><th>Facture</th><th>Client</th><th style="text-align:right">Montant</th></tr></thead><tbody>
-    {% for p in payments %}<tr><td><input type="checkbox" name="payments" value="{{ p.pk }}" checked></td><td>{{ p.date|date:"d/m/Y" }}</td><td>{{ p.invoice.reference }}</td><td>{{ p.invoice.client.name }}</td><td style="text-align:right">{{ p.amount|da }}</td></tr>{% endfor %}
-    </tbody></table>{% else %}<div class="isi-card-body text-muted">Aucun paiement en espèces à importer.</div>{% endif %}
+  <div class="isi-card mb-4">
+    <div class="isi-card-header"><div class="card-icon green"><i class="bi bi-arrow-down-circle-fill"></i></div><h3>Recettes — paiements de factures en espèces</h3></div>
+    {% if payments %}
+    <div style="overflow-x:auto;"><table class="isi-table">
+      <thead><tr><th style="width:40px;"></th><th>Date</th><th>Facture</th><th>Client</th><th style="text-align:right;">Montant</th></tr></thead>
+      <tbody>{% for p in payments %}
+        <tr>
+          <td><input type="checkbox" class="form-check-input" name="payments" value="{{ p.pk }}" checked></td>
+          <td><span style="color:var(--text-muted);font-size:13px;">{{ p.date|date:"d/m/Y" }}</span></td>
+          <td><span style="font-family:var(--font-head);font-weight:700;font-size:15px;letter-spacing:.3px;">{{ p.invoice.reference }}</span></td>
+          <td><span style="font-weight:600;">{{ p.invoice.client.name }}</span></td>
+          <td style="text-align:right;">{% include "financial/cash/_amt.html" with value=p.amount color="var(--success)" %}</td>
+        </tr>{% endfor %}
+      </tbody></table></div>
+    {% else %}<div class="isi-card-body" style="color:var(--text-muted);text-align:center;">Aucun paiement en espèces à importer.</div>{% endif %}
   </div>
-  <div class="isi-card mb-3"><div class="isi-card-header"><h3>Dépenses approuvées payées en espèces</h3></div>
-    {% if expenses %}<table class="isi-table"><thead><tr><th></th><th>Date</th><th>Description</th><th>Bénéficiaire</th><th style="text-align:right">Montant</th></tr></thead><tbody>
-    {% for e in expenses %}<tr><td><input type="checkbox" name="expenses" value="{{ e.pk }}" checked></td><td>{{ e.payment_date|default:e.date|date:"d/m/Y" }}</td><td>{{ e.description }}</td><td>{{ e.beneficiary.name|default:e.supplier }}</td><td style="text-align:right">{{ e.amount|da }}</td></tr>{% endfor %}
-    </tbody></table>{% else %}<div class="isi-card-body text-muted">Aucune dépense en espèces à importer.</div>{% endif %}
+
+  <div class="isi-card mb-4">
+    <div class="isi-card-header"><div class="card-icon red"><i class="bi bi-arrow-up-circle-fill"></i></div><h3>Dépenses approuvées payées en espèces</h3></div>
+    {% if expenses %}
+    <div style="overflow-x:auto;"><table class="isi-table">
+      <thead><tr><th style="width:40px;"></th><th>Date</th><th>Description</th><th>Bénéficiaire</th><th style="text-align:right;">Montant</th></tr></thead>
+      <tbody>{% for e in expenses %}
+        <tr>
+          <td><input type="checkbox" class="form-check-input" name="expenses" value="{{ e.pk }}" checked></td>
+          <td><span style="color:var(--text-muted);font-size:13px;">{{ e.payment_date|default:e.date|date:"d/m/Y" }}</span></td>
+          <td><span style="font-weight:600;">{{ e.description }}</span></td>
+          <td><span style="color:var(--text-muted);font-size:13px;">{{ e.beneficiary.name|default:e.supplier|default:"—" }}</span></td>
+          <td style="text-align:right;">{% include "financial/cash/_amt.html" with value=e.amount color="var(--danger)" %}</td>
+        </tr>{% endfor %}
+      </tbody></table></div>
+    {% else %}<div class="isi-card-body" style="color:var(--text-muted);text-align:center;">Aucune dépense en espèces à importer.</div>{% endif %}
   </div>
-  <div class="d-flex gap-2"><button class="btn btn-amber"><i class="bi bi-download"></i> Importer la sélection</button>
-  <a class="btn btn-ghost" href="{% url 'financial:cash_journal_detail' journal.pk %}">Annuler</a></div>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-amber"><i class="bi bi-download"></i> Importer la sélection</button>
+    <a href="{% url 'financial:cash_journal_detail' journal.pk %}" class="btn btn-ghost"><i class="bi bi-x-lg"></i> Annuler</a>
+  </div>
   </form>
 </div>
 {% endblock %}

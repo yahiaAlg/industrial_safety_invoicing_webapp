@@ -1,64 +1,134 @@
 {% extends "base.html" %}
-{% load cash_tags %}
+{% load humanize %}
 {% block title %}{{ journal.name }}{% endblock %}
 {% block breadcrumb %}
 <i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+<a href="{% url 'financial:cash_journal_list' %}" style="color:var(--text-muted);text-decoration:none;">Caisse</a>
 <i class="bi bi-chevron-right" style="font-size:10px;"></i>
 {% endblock %}
 {% block breadcrumb_active %}{{ journal.name }}{% endblock %}
 {% block topbar_actions %}
 <a href="{% url 'financial:cash_journal_print' journal.pk %}?{{ querystring }}" target="_blank" class="topbar-btn"><i class="bi bi-printer-fill"></i> Imprimer le journal</a>
 <a href="{% url 'financial:cash_import' journal.pk %}" class="topbar-btn"><i class="bi bi-download"></i> Importer</a>
+<a href="{% url 'financial:cash_journal_edit' journal.pk %}" class="topbar-btn"><i class="bi bi-pencil-fill"></i> Modifier</a>
 <a href="{% url 'financial:cash_voucher_create' journal.pk 'out' %}" class="topbar-btn"><i class="bi bi-dash-lg"></i> Dépense</a>
 <a href="{% url 'financial:cash_voucher_create' journal.pk 'in' %}" class="topbar-btn primary"><i class="bi bi-plus-lg"></i> Recette</a>
 {% endblock %}
 {% block content %}
 <div class="fade-up">
-  <div class="page-header"><div class="page-header-left"><h1>{{ journal.name }}</h1>
-    <p>Période : <b>{{ period_label }}</b> · <a href="{% url 'financial:cash_journal_edit' journal.pk %}">modifier le journal / solde initial</a></p></div></div>
-
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-lg-3"><div class="isi-card h-100"><div class="isi-card-body"><div class="stat-label">Solde initial (période)</div>
-      <div style="font-size:24px;font-weight:700">{{ stmt.opening|da }} <small>DA</small></div></div></div></div>
-    <div class="col-6 col-lg-3"><div class="isi-card h-100"><div class="isi-card-body"><div class="stat-label">Recettes</div>
-      <div style="font-size:24px;font-weight:700;color:var(--success)">+{{ stmt.total_in|da }} <small>DA</small></div></div></div></div>
-    <div class="col-6 col-lg-3"><div class="isi-card h-100"><div class="isi-card-body"><div class="stat-label">Dépenses</div>
-      <div style="font-size:24px;font-weight:700;color:var(--danger)">−{{ stmt.total_out|da }} <small>DA</small></div></div></div></div>
-    <div class="col-6 col-lg-3"><div class="isi-card h-100"><div class="isi-card-body"><div class="stat-label">Solde final (période)</div>
-      <div style="font-size:24px;font-weight:700;{% if stmt.closing < 0 %}color:var(--danger){% endif %}">{{ stmt.closing|da }} <small>DA</small></div>
-      <div style="font-size:12px;color:var(--text-muted)">Solde actuel global : {{ current_balance|da }} DA</div></div></div></div>
-  </div>
-
-  <div class="isi-card mb-3"><div class="isi-card-body">
-    <form method="get" class="row g-2 align-items-end">
-      <div class="col-6 col-md-2"><label class="form-label">{{ period_form.month.label }}</label>{{ period_form.month }}</div>
-      <div class="col-6 col-md-2"><label class="form-label">{{ period_form.year.label }}</label>{{ period_form.year }}</div>
-      <div class="col-6 col-md-3"><label class="form-label">{{ period_form.date_from.label }}</label>{{ period_form.date_from }}</div>
-      <div class="col-6 col-md-3"><label class="form-label">{{ period_form.date_to.label }}</label>{{ period_form.date_to }}</div>
-      <div class="col-12 col-md-2 d-flex gap-2"><button class="btn btn-amber">Filtrer</button><a class="btn btn-ghost" href="?">Tout</a></div>
-    </form>
+  <div class="page-header"><div class="page-header-left">
+    <h1>{{ journal.name }}</h1>
+    <p>Période : <b>{{ period_label }}</b> — suivi indépendant, sans impact sur les autres calculs</p>
   </div></div>
 
-  <div class="isi-card"><div class="isi-card-header"><div class="card-icon blue"><i class="bi bi-journal-text"></i></div><h3>Journal chronologique</h3></div>
-    <div style="overflow-x:auto;"><table class="isi-table">
-      <thead><tr><th>N°</th><th>Date</th><th>N° bon</th><th>Désignation</th><th>Bénéficiaire / Versé par</th><th style="text-align:right">Recettes</th><th style="text-align:right">Dépenses</th><th style="text-align:right">Solde</th><th></th></tr></thead>
-      <tbody>
-        <tr style="font-style:italic"><td colspan="7">Solde initial de la période</td><td style="text-align:right">{{ stmt.opening|da }}</td><td></td></tr>
-        {% for r in stmt.rows %}
-        <tr>
-          <td>{{ r.n }}</td><td>{{ r.v.date|date:"d/m/Y" }}</td>
-          <td><a href="{% url 'financial:cash_voucher_detail' r.v.pk %}">{{ r.v.reference }}</a>{% if r.v.is_linked %} <i class="bi bi-link-45deg" title="Lié à un paiement / une dépense"></i>{% endif %}</td>
-          <td>{{ r.v.label }}</td><td>{{ r.v.counterparty }}</td>
-          <td style="text-align:right;color:var(--success)">{% if r.v.is_in %}{{ r.v.amount|da }}{% endif %}</td>
-          <td style="text-align:right;color:var(--danger)">{% if not r.v.is_in %}{{ r.v.amount|da }}{% endif %}</td>
-          <td style="text-align:right"><b {% if r.balance < 0 %}style="color:var(--danger)"{% endif %}>{{ r.balance|da }}</b></td>
-          <td style="white-space:nowrap"><a href="{% url 'financial:cash_voucher_print' r.v.pk %}" target="_blank" title="Imprimer la pièce"><i class="bi bi-printer"></i></a>
-            <a href="{% url 'financial:cash_voucher_edit' r.v.pk %}" title="Modifier"><i class="bi bi-pencil"></i></a></td>
-        </tr>
-        {% empty %}<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px">Aucune opération sur cette période.</td></tr>{% endfor %}
-        <tr style="font-weight:700;background:rgba(0,0,0,.04)"><td colspan="5" style="text-align:right">TOTAUX</td>
-          <td style="text-align:right">{{ stmt.total_in|da }}</td><td style="text-align:right">{{ stmt.total_out|da }}</td><td style="text-align:right">{{ stmt.closing|da }}</td><td></td></tr>
-      </tbody></table></div>
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="isi-card h-100"><div class="isi-card-body" style="padding:16px 20px;">
+        <div class="stat-label mb-1">Solde initial (période)</div>
+        <div style="font-family:var(--font-head);font-size:26px;font-weight:700;">{{ stmt.opening|floatformat:2|intcomma }}
+          <span style="font-size:13px;font-weight:400;color:var(--text-muted);">DA</span></div>
+        <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Report des périodes précédentes</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="isi-card h-100"><div class="isi-card-body" style="padding:16px 20px;">
+        <div class="stat-label mb-1">Recettes</div>
+        <div style="font-family:var(--font-head);font-size:26px;font-weight:700;color:var(--success);">{{ stmt.total_in|floatformat:2|intcomma }}
+          <span style="font-size:13px;font-weight:400;color:var(--text-muted);">DA</span></div>
+        <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Entrées de la période</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="isi-card h-100"><div class="isi-card-body" style="padding:16px 20px;">
+        <div class="stat-label mb-1">Dépenses</div>
+        <div style="font-family:var(--font-head);font-size:26px;font-weight:700;color:var(--danger);">{{ stmt.total_out|floatformat:2|intcomma }}
+          <span style="font-size:13px;font-weight:400;color:var(--text-muted);">DA</span></div>
+        <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Sorties de la période</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="isi-card h-100"><div class="isi-card-body" style="padding:16px 20px;">
+        <div class="stat-label mb-1">Solde final (période)</div>
+        <div style="font-family:var(--font-head);font-size:26px;font-weight:700;{% if stmt.closing < 0 %}color:var(--danger);{% endif %}">{{ stmt.closing|floatformat:2|intcomma }}
+          <span style="font-size:13px;font-weight:400;color:var(--text-muted);">DA</span></div>
+        <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Solde actuel global : {{ current_balance|floatformat:2|intcomma }} DA</div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ── Filters ───────────────────────────────────────────── -->
+  <div class="isi-card mb-4">
+    <div class="isi-card-body" style="padding:16px 20px;">
+      <form method="get">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-2 col-sm-6"><label class="form-label">Mois</label>{{ period_form.month }}</div>
+          <div class="col-md-2 col-sm-6"><label class="form-label">Année</label>{{ period_form.year }}</div>
+          <div class="col-md-3 col-sm-6"><label class="form-label">Du</label>{{ period_form.date_from }}</div>
+          <div class="col-md-3 col-sm-6"><label class="form-label">Au</label>{{ period_form.date_to }}</div>
+          <div class="col-md-2 col-sm-12"><div class="d-flex gap-2">
+            <button type="submit" class="btn btn-amber flex-grow-1"><i class="bi bi-funnel-fill"></i> Filtrer</button>
+            <a href="?" class="btn btn-ghost" title="Réinitialiser"><i class="bi bi-x-lg"></i></a>
+          </div></div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Statement ─────────────────────────────────────────── -->
+  <div class="isi-card">
+    <div class="isi-card-header">
+      <div class="card-icon amber"><i class="bi bi-journal-text"></i></div>
+      <h3>Journal chronologique
+        <span style="font-size:13px;font-weight:400;color:var(--text-muted);margin-left:8px;">— {{ stmt.rows|length }} opération{{ stmt.rows|length|pluralize }}</span>
+      </h3>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="isi-table">
+        <thead><tr>
+          <th>N°</th><th>Date</th><th>N° bon</th><th>Désignation</th><th>Bénéficiaire / Versé par</th>
+          <th style="text-align:right;">Recettes</th><th style="text-align:right;">Dépenses</th>
+          <th style="text-align:right;">Solde</th><th style="text-align:right;">Actions</th>
+        </tr></thead>
+        <tbody>
+          <tr style="background:#f8fafc;">
+            <td colspan="7" style="color:var(--text-muted);font-size:13px;"><i class="bi bi-arrow-return-right"></i> Solde initial de la période</td>
+            <td style="text-align:right;">{% include "financial/cash/_amt.html" with value=stmt.opening %}</td><td></td>
+          </tr>
+          {% for r in stmt.rows %}
+          <tr>
+            <td style="color:var(--text-muted);font-size:13px;">{{ r.n }}</td>
+            <td><span style="color:var(--text-muted);font-size:13px;">{{ r.v.date|date:"d/m/Y" }}</span></td>
+            <td>
+              <a href="{% url 'financial:cash_voucher_detail' r.v.pk %}" style="font-family:var(--font-head);font-weight:700;font-size:15px;color:var(--text-primary);text-decoration:none;letter-spacing:.3px;">{{ r.v.reference }}</a>
+              {% if r.v.is_linked %}<div><span class="isi-badge gray" style="margin-top:2px;"><i class="bi bi-download"></i> Importée</span></div>{% endif %}
+            </td>
+            <td><span style="font-weight:600;color:var(--text-primary);">{{ r.v.label }}</span></td>
+            <td><span style="color:var(--text-muted);font-size:13px;">{{ r.v.counterparty|default:"—" }}</span></td>
+            <td style="text-align:right;">{% if r.v.is_in %}{% include "financial/cash/_amt.html" with value=r.v.amount color="var(--success)" %}{% else %}<span style="color:var(--text-muted);font-size:12px;">—</span>{% endif %}</td>
+            <td style="text-align:right;">{% if not r.v.is_in %}{% include "financial/cash/_amt.html" with value=r.v.amount color="var(--danger)" %}{% else %}<span style="color:var(--text-muted);font-size:12px;">—</span>{% endif %}</td>
+            <td style="text-align:right;">{% if r.balance < 0 %}{% include "financial/cash/_amt.html" with value=r.balance color="var(--danger)" %}{% else %}{% include "financial/cash/_amt.html" with value=r.balance %}{% endif %}</td>
+            <td><div style="display:flex;justify-content:flex-end;gap:4px;">
+              <a href="{% url 'financial:cash_voucher_detail' r.v.pk %}" class="btn btn-ghost btn-sm" title="Voir le détail"><i class="bi bi-eye-fill"></i></a>
+              <a href="{% url 'financial:cash_voucher_edit' r.v.pk %}" class="btn btn-ghost btn-sm" title="Modifier"><i class="bi bi-pencil-fill"></i></a>
+              <a href="{% url 'financial:cash_voucher_print' r.v.pk %}" class="btn btn-ghost btn-sm" title="Imprimer la pièce" target="_blank"><i class="bi bi-printer-fill"></i></a>
+            </div></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px;">Aucune opération sur cette période.</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr style="background:#f8fafc;border-top:2px solid var(--card-border);">
+            <td colspan="5" style="text-align:right;font-family:var(--font-head);font-weight:700;letter-spacing:1.2px;font-size:11px;text-transform:uppercase;color:var(--text-muted);">Totaux</td>
+            <td style="text-align:right;">{% include "financial/cash/_amt.html" with value=stmt.total_in color="var(--success)" %}</td>
+            <td style="text-align:right;">{% include "financial/cash/_amt.html" with value=stmt.total_out color="var(--danger)" %}</td>
+            <td style="text-align:right;">{% if stmt.closing < 0 %}{% include "financial/cash/_amt.html" with value=stmt.closing color="var(--danger)" %}{% else %}{% include "financial/cash/_amt.html" with value=stmt.closing %}{% endif %}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   </div>
 </div>
 {% endblock %}
