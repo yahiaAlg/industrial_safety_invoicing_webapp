@@ -741,3 +741,26 @@ class ProformaSnapshotAdmin(ImportExportModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+
+# ── Cash journal ─────────────────────────────────────────────────────────── #
+from financial.models import CashJournal, CashVoucher  # noqa: E402
+
+
+class CashVoucherInline(admin.TabularInline):
+    model = CashVoucher
+    extra = 0
+    fields = ("kind", "date", "amount", "label", "counterparty")
+    show_change_link = True
+
+
+@admin.register(CashJournal)
+class CashJournalAdmin(admin.ModelAdmin):
+    list_display = ("name", "initial_balance", "is_active")
+
+
+@admin.register(CashVoucher)
+class CashVoucherAdmin(admin.ModelAdmin):
+    list_display = ("reference", "journal", "date", "amount", "label")
+    list_filter = ("kind", "journal")
+    search_fields = ("label", "counterparty")

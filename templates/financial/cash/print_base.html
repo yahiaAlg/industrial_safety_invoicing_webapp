@@ -1,0 +1,40 @@
+{% load cash_tags %}<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block doc_title %}Caisse{% endblock %}</title>
+<style>
+  @page { size: {% block page_size %}A4 portrait{% endblock %}; margin: 12mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #000; background: #e5e7eb; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .toolbar { position: sticky; top: 0; background: #111827; padding: 10px 16px; display: flex; gap: 8px; justify-content: center; z-index: 5; }
+  .toolbar button, .toolbar a { background: #f59e0b; color: #111; border: 0; padding: 8px 18px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; text-decoration: none; }
+  .toolbar a.ghost { background: #374151; color: #fff; }
+  .sheet { background: #fff; margin: 16px auto; padding: 12mm; {% block sheet_size %}width: 210mm; min-height: 297mm;{% endblock %} }
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8mm; }
+  .logo { width: 38mm; height: 20mm; border: 1px dashed #9ca3af; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 11px; overflow: hidden; }
+  .logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .org { margin-top: 4px; font-size: 11px; color: #374151; margin-top: 2px; max-width: 70mm; }
+  .titles { text-align: center; flex: 1; }
+  .titles h1 { font-size: 22px; letter-spacing: 1px; }
+  .titles h2 { font-size: 15px; letter-spacing: 2px; margin-top: 2px; font-weight: 700; }
+  @media print {
+    body { background: #fff; }
+    .toolbar { display: none; }
+    .sheet { margin: 0; padding: 0; width: auto; min-height: 0; box-shadow: none; }
+  }
+  {% block extra_css %}{% endblock %}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button onclick="window.print()">🖨 Imprimer</button>
+  <a class="ghost" href="javascript:history.back()">← Retour</a>
+</div>
+<div class="sheet">
+  {% block body %}{% endblock %}
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

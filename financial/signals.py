@@ -180,3 +180,36 @@ def beneficiary_saved(sender, instance, created, **kwargs):
 
     except Exception:
         pass  # formations app may not be migrated yet
+
+
+# ─────────────────────────────────────────────────────────────────────────── #
+# Cash journal sync — corrections to a Payment / Expense flow into the journal
+# ─────────────────────────────────────────────────────────────────────────── #
+
+from django.db.models.signals import post_save  # noqa: E402
+from django.dispatch import receiver  # noqa: E402
+
+from financial.models import CashVoucher, Expense, Payment  # noqa: E402
+
+
+@receiver(post_save, sender=Payment)
+def _sync_cash_voucher_from_payment(sender, instance, created, **kwargs):
+    v = CashVoucher.objects.filter(payment=instance).first()
+    if v:
+        v.date, v.amount = instance.date, instance.amount
+        v.label = f"Règlement facture {instance.invoice.reference}"
+        v.counterparty = str(instance.invoice.client)
+        v.save(update_fields=["date", "amount", "label", "counterparty", "updated_at"])
+
+
+@receiver(post_save, sender=Expense)
+def _sync_cash_voucher_from_expense(sender, instance, created, **kwargs):
+    v = CashVoucher.objects.filter(expense=instance).first()
+    if v:
+        v.date = instance.payment_date or instance.date
+        v.amount = instance.amount
+        v.label = instance.description
+        v.counterparty = (
+            instance.beneficiary.name if instance.beneficiary_id else instance.supplier
+        )
+        v.save(update_fields=["date", "amount", "label", "counterparty", "updated_at"])

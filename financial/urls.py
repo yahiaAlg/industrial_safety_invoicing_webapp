@@ -4,7 +4,7 @@
 # ============================================================
 
 from django.urls import path
-from financial import views
+from financial import cash_views, views
 
 app_name = "financial"
 
@@ -189,4 +189,20 @@ urlpatterns = [
         views.beneficiary_accounts_json,
         name="beneficiary_accounts_json",
     ),
+    # ── Cash journal (Caisse) ─────────────────────────────────────────────── #
+    path("cash/", cash_views.cash_journal_list, name="cash_journal_list"),
+    path("cash/journals/create/", cash_views.cash_journal_create, name="cash_journal_create"),
+    path("cash/journals/<int:pk>/", cash_views.cash_journal_detail, name="cash_journal_detail"),
+    path("cash/journals/<int:pk>/edit/", cash_views.cash_journal_edit, name="cash_journal_edit"),
+    path("cash/journals/<int:pk>/print/", cash_views.cash_journal_print, name="cash_journal_print"),
+    path("cash/journals/<int:journal_pk>/import/", cash_views.cash_import, name="cash_import"),
+    path(
+        "cash/journals/<int:journal_pk>/vouchers/new/<str:kind>/",
+        cash_views.cash_voucher_create,
+        name="cash_voucher_create",
+    ),
+    path("cash/vouchers/<int:pk>/", cash_views.cash_voucher_detail, name="cash_voucher_detail"),
+    path("cash/vouchers/<int:pk>/edit/", cash_views.cash_voucher_edit, name="cash_voucher_edit"),
+    path("cash/vouchers/<int:pk>/delete/", cash_views.cash_voucher_delete, name="cash_voucher_delete"),
+    path("cash/vouchers/<int:pk>/print/", cash_views.cash_voucher_print, name="cash_voucher_print"),
 ]

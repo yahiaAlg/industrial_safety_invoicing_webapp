@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ action }}{% endblock %}
+{% block breadcrumb %}
+<i class="bi bi-house-fill" style="font-size:12px;"></i>
+<i class="bi bi-chevron-right" style="font-size:10px;"></i>
+{% endblock %}
+{% block breadcrumb_active %}{{ action }}{% endblock %}
+{% block content %}
+<div class="fade-up">
+  <div class="page-header"><div class="page-header-left"><h1>{{ action }} — {% if kind == 'in' %}Recette{% else %}Dépense{% endif %}</h1>
+    <p>Journal : {{ journal.name }}{% if voucher.is_linked %} · pièce liée : modifiez la source (paiement / dépense){% endif %}</p></div></div>
+  <div class="row justify-content-center"><div class="col-lg-6 col-md-9">
+    <div class="isi-card"><div class="isi-card-header"><div class="card-icon {% if kind == 'in' %}green{% else %}red{% endif %}"><i class="bi bi-receipt"></i></div><h3>Pièce de caisse</h3></div>
+    <div class="isi-card-body">
+      <form method="post" novalidate>{% csrf_token %}
+        <div class="row g-3">
+          {% for f in form %}
+          <div class="col-12 {% if f.name == 'date' or f.name == 'amount' %}col-md-6{% endif %}">
+            <label class="form-label">{{ f.label }}</label>{{ f }}
+            {% if f.errors %}<div style="color:var(--danger);font-size:12px;">{{ f.errors|join:", " }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        <div class="section-divider"></div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-amber"><i class="bi bi-check-lg"></i> Enregistrer</button>
+          <a href="{% if voucher %}{% url 'financial:cash_voucher_detail' voucher.pk %}{% else %}{% url 'financial:cash_journal_detail' journal.pk %}{% endif %}" class="btn btn-ghost">Annuler</a>
+        </div>
+      </form>
+    </div></div>
+  </div></div>
+</div>
+{% endblock %}

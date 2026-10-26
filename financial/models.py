@@ -42,6 +42,7 @@ Changes in v3.1 over v3.0
 
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models import Sum
@@ -1863,3 +1864,159 @@ class InvoiceSequence(models.Model):
             raise ValueError("Le numéro de départ doit être ≥ 1.")
         self.last_number = n - 1
         self.save(update_fields=["last_number"])
+
+
+# ======================================================================= #
+# Cash journal (Caisse) — v4.3
+# ======================================================================= #
+
+
+class CashJournal(TimeStampedModel):
+    """
+    A cash journal (journal de caisse) with an editable opening balance.
+
+    The running balance is never stored: it is always derived as
+    initial_balance + Σ recettes − Σ dépenses, so any correction of a
+    voucher is automatically reflected in every report.
+    """
+
+    name = models.CharField(max_length=150, verbose_name="Nom du journal")
+    initial_balance = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        verbose_name="Solde initial (DA)",
+        help_text="Solde de départ de la caisse (modifiable). 0 par défaut.",
+    )
+    is_active = models.BooleanField(default=True, verbose_name="Actif")
+    notes = models.TextField(blank=True, verbose_name="Notes")
+
+    class Meta:
+        verbose_name = "Journal de caisse"
+        verbose_name_plural = "Journaux de caisse"
+        ordering = ["-is_active", "name"]
+
+    def __str__(self):
+        return self.name
+
+    def _sum(self, kind, **flt):
+        return self.vouchers.filter(kind=kind, **flt).aggregate(s=Sum("amount"))[
+            "s"
+        ] or Decimal("0")
+
+    @property
+    def total_in(self) -> Decimal:
+        return self._sum(CashVoucher.Kind.IN)
+
+    @property
+    def total_out(self) -> Decimal:
+        return self._sum(CashVoucher.Kind.OUT)
+
+    @property
+    def current_balance(self) -> Decimal:
+        return self.initial_balance + self.total_in - self.total_out
+
+
+class CashVoucher(TimeStampedModel):
+    """
+    A cash voucher (pièce de caisse): a recette (money in) or a
+    dépense (money out). Optionally linked to an existing Payment (espèces)
+    or Expense so the cash journal never duplicates existing records.
+    """
+
+    class Kind(models.TextChoices):
+        IN = "in", "Recette"
+        OUT = "out", "Dépense"
+
+    journal = models.ForeignKey(
+        CashJournal,
+        on_delete=models.PROTECT,
+        related_name="vouchers",
+        verbose_name="Journal",
+    )
+    kind = models.CharField(max_length=3, choices=Kind.choices, verbose_name="Type")
+    year = models.PositiveSmallIntegerField(editable=False, db_index=True)
+    seq = models.PositiveIntegerField(editable=False)
+
+    date = models.DateField(verbose_name="Date", db_index=True)
+    amount = models.DecimalField(
+        max_digits=14, decimal_places=2, verbose_name="Montant (DA)"
+    )
+    label = models.CharField(max_length=500, verbose_name="Désignation de l'opération")
+    counterparty = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Bénéficiaire / Versé par",
+    )
+    notes = models.TextField(blank=True, verbose_name="Notes")
+
+    payment = models.OneToOneField(
+        "financial.Payment",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cash_voucher",
+        verbose_name="Paiement lié",
+    )
+    expense = models.OneToOneField(
+        "financial.Expense",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cash_voucher",
+        verbose_name="Dépense liée",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        editable=False,
+        related_name="+",
+        verbose_name="Saisi par",
+    )
+
+    class Meta:
+        verbose_name = "Pièce de caisse"
+        verbose_name_plural = "Pièces de caisse"
+        ordering = ["date", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["journal", "kind", "year", "seq"],
+                name="uniq_cash_voucher_number",
+            )
+        ]
+
+    PREFIX = {"in": "PCR", "out": "PCD"}
+
+    def __str__(self):
+        return self.reference
+
+    @property
+    def reference(self) -> str:
+        return f"{self.PREFIX.get(self.kind, 'PC')}-{self.year}-{self.seq:04d}"
+
+    @property
+    def is_in(self) -> bool:
+        return self.kind == self.Kind.IN
+
+    @property
+    def is_linked(self) -> bool:
+        return bool(self.payment_id or self.expense_id)
+
+    def clean(self):
+        if self.amount is not None and self.amount <= 0:
+            raise ValidationError({"amount": "Le montant doit être positif."})
+
+    @transaction.atomic
+    def save(self, *args, **kwargs):
+        if not self.seq:
+            self.year = self.date.year
+            last = (
+                CashVoucher.objects.select_for_update()
+                .filter(journal=self.journal, kind=self.kind, year=self.year)
+                .aggregate(m=models.Max("seq"))["m"]
+                or 0
+            )
+            self.seq = last + 1
+        super().save(*args, **kwargs)

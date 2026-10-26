@@ -1,0 +1,35 @@
+{% load cash_tags %}
+<div class="head">
+  <div>
+    <div class="logo">{% if institute.logo %}<img src="{{ institute.logo.url }}" alt="Logo">{% else %}Logo{% endif %}</div>
+    {% if institute %}<div class="org"><b>{{ institute.name }}</b></div>{% endif %}
+  </div>
+  <div class="titles">
+    <h1>PIÈCE DE CAISSE</h1>
+    <h2>{% if voucher.is_in %}RECETTES{% else %}DÉPENSES{% endif %}</h2>
+    <div class="num">N° : <b>{{ voucher.reference }}</b></div>
+  </div>
+  <div class="amount-box">
+    <div class="amount-label">MONTANT</div>
+    <div class="amount-val">{{ voucher.amount|da }}</div>
+    <div class="amount-cur">DA</div>
+  </div>
+</div>
+
+<div class="field"><span class="lbl">Date :</span> <span class="val">{{ voucher.date|date:"d/m/Y" }}</span></div>
+<div class="field"><span class="lbl">{% if voucher.is_in %}Versé par :{% else %}Bénéficiaire :{% endif %}</span> <span class="val">{{ voucher.counterparty }}</span></div>
+
+<div class="block">
+  <div class="lbl">Montant en lettres :</div>
+  <div class="box words">{{ words }}</div>
+</div>
+<div class="block">
+  <div class="lbl">Désignation de l'opération :</div>
+  <div class="box designation">{{ voucher.label }}{% if voucher.notes %}<div class="notes">{{ voucher.notes }}</div>{% endif %}</div>
+</div>
+
+<div class="signs">
+  <div class="sign"><div class="sign-title">Direction</div></div>
+  <div class="sign"><div class="sign-title">Caisse</div></div>
+  {% if third_sign %}<div class="sign"><div class="sign-title">Bénéficiaire</div></div>{% endif %}
+</div>

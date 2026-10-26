@@ -628,6 +628,9 @@
     <a href="{% url 'financial:expense_list' %}" class="nav-item-link {% if request.resolver_match.namespace == 'financial' and 'expense' in request.resolver_match.url_name %}active{% endif %}">
       <i class="bi bi-credit-card-fill"></i> Dépenses
     </a>
+    <a href="{% url 'financial:cash_journal_list' %}" class="nav-item-link {% if request.resolver_match.namespace == 'financial' and 'cash' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-cash-stack"></i> Caisse
+    </a>
     {% endif %}
 
     <!-- Resources -->
